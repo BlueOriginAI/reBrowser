@@ -1,0 +1,10 @@
+COMPANY_FULLNAME=Remocode Development
+COMPANY_SHORTNAME=Remocode Dev
+PRODUCT_FULLNAME=reBrowser Dev
+PRODUCT_SHORTNAME=reBrowser Dev
+PRODUCT_INSTALLER_FULLNAME=reBrowser Dev Installer
+PRODUCT_INSTALLER_SHORTNAME=reBrowser Dev Installer
+COPYRIGHT=Copyright @2025@ BrowserOS Development. All rights reserved.
+MAC_BUNDLE_ID=com.remocode.dev.RemocodeBrowserNeo
+MAC_CREATOR_CODE=Cr24
+MAC_TEAM_ID=

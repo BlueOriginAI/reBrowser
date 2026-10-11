@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <title>reBrowser app icon</title>
+  <defs><linearGradient id="coral" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#E86F4C"/><stop offset="1" stop-color="#EB5F37"/></linearGradient></defs>
+  <rect x="92" y="92" width="840" height="840" rx="175" fill="url(#coral)"/>
+  <path fill="#FFFAF6" d="M320 188H646L777 322V453L644 584L803 759L725 831L488 585L696 381L617 305H362L281 375V531L411 650V772H240L362 650L240 540V258Z"/>
+  <g fill="none" stroke="#FFFAF6" stroke-width="16" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="476" cy="435" r="79"/><ellipse cx="476" cy="435" rx="27" ry="79"/><path d="M397 435H555"/>
+  </g>
+</svg>

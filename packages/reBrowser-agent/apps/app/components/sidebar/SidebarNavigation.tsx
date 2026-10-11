@@ -1,0 +1,105 @@
+import { useLocale } from '@browseros/i18n/react'
+import { CalendarClock, Home, PlugZap, Settings } from 'lucide-react'
+import type { FC } from 'react'
+import { NavLink, useLocation } from 'react-router'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { cn } from '@/lib/utils'
+import { SidebarHistory } from './SidebarHistory'
+
+export interface SidebarNavigationProps {
+  expanded?: boolean
+  onNavigate?: () => void
+}
+
+type NavItem = {
+  nameKey: string
+  to: string
+  icon: typeof Home
+}
+
+const primaryNavItems: NavItem[] = [
+  { nameKey: 'nav.home', to: '/home', icon: Home },
+  {
+    nameKey: 'nav.connectApps',
+    to: '/connect-apps',
+    icon: PlugZap,
+  },
+  { nameKey: 'nav.scheduledTasks', to: '/scheduled', icon: CalendarClock },
+  {
+    nameKey: 'nav.settings',
+    to: '/settings/ai',
+    icon: Settings,
+  },
+]
+
+function isNavItemActive(item: NavItem, pathname: string): boolean {
+  if (item.to === '/settings/ai') {
+    return pathname.startsWith('/settings')
+  }
+
+  return pathname === item.to
+}
+
+export const SidebarNavigation: FC<SidebarNavigationProps> = ({
+  expanded = true,
+  onNavigate,
+}) => {
+  const { t } = useLocale()
+  const location = useLocation()
+
+  return (
+    <TooltipProvider delayDuration={0}>
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-2">
+        <nav className="space-y-1">
+          {primaryNavItems.map((item) => {
+            const Icon = item.icon
+            const isActive = isNavItemActive(item, location.pathname)
+
+            const name = t(item.nameKey)
+            const navItem = (
+              <NavLink
+                to={item.to}
+                onClick={onNavigate}
+                className={cn(
+                  'flex h-9 items-center gap-2 overflow-hidden whitespace-nowrap rounded-md px-3 font-medium text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
+                  isActive &&
+                    'bg-sidebar-accent text-sidebar-accent-foreground',
+                )}
+              >
+                <Icon className="size-4 shrink-0" />
+                <span
+                  className={cn(
+                    'truncate transition-opacity duration-200',
+                    expanded ? 'opacity-100' : 'opacity-0',
+                  )}
+                >
+                  {name}
+                </span>
+              </NavLink>
+            )
+
+            return (
+              <div key={item.to}>
+                {/* Expansion unmounts the content, so the trigger must own closing on pointer leave. */}
+                <Tooltip disableHoverableContent>
+                  <TooltipTrigger asChild>{navItem}</TooltipTrigger>
+                  {!expanded && (
+                    <TooltipContent side="right">{name}</TooltipContent>
+                  )}
+                </Tooltip>
+                {item.to === '/home' && (
+                  <SidebarHistory expanded={expanded} onNavigate={onNavigate} />
+                )}
+              </div>
+            )
+          })}
+        </nav>
+      </div>
+    </TooltipProvider>
+  )
+}

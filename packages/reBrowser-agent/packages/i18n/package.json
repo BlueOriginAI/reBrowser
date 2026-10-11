@@ -1,0 +1,41 @@
+{
+  "name": "@browseros/i18n",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./core": {
+      "types": "./src/core.ts",
+      "default": "./src/core.ts"
+    },
+    "./store": {
+      "types": "./src/store.ts",
+      "default": "./src/store.ts"
+    },
+    "./react": {
+      "types": "./src/react.tsx",
+      "default": "./src/react.tsx"
+    },
+    "./format": {
+      "types": "./src/format.ts",
+      "default": "./src/format.ts"
+    }
+  },
+  "scripts": {
+    "test": "bun test ./tests",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "i18next": "26.4.2",
+    "react-i18next": "17.0.15"
+  },
+  "peerDependencies": {
+    "react": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@types/bun": "^1.4.2",
+    "react-dom": "^19.3.0"
+  }
+}

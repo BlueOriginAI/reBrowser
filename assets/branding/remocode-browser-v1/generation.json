@@ -1,0 +1,24 @@
+{
+  "mode": "Built-in image_gen for concept exploration; native SVG refinement and sharp raster export for production.",
+  "references": [
+    "Remocode IDE family icon reference",
+    "Remocode Bar family icon reference"
+  ],
+  "prompts": [
+    "Use case: logo-brand. Create a production macOS app icon for RemocodeBrowser, a sibling of Remocode IDE and Remocode Bar. Image 1 is the Remocode IDE R-symbol design reference; image 2 is the Remocode Bar app-icon style and orange-tile reference. Preserve the distinctive angular white R silhouette from image 1, with chamfered corners, broad consistent strokes and its bold diagonal lower leg. Replace only the tiny >_ terminal symbol inside the R's orange upper counter with a simple white globe icon: one circular outline, one vertical oval meridian and one horizontal equator, clean and generously spaced. The globe must fit entirely within the counter and never touch the R. Match the family coral orange palette, approximately #EB5F37 to #E86F4C with only an extremely subtle warm vertical shift; white/off-white #FFFAF6 glyph. Center the mark on a coral rounded-square app tile with the same corner geometry and safe margins as the Bar reference. Square 1024 by 1024 composition; tile occupies about 82 percent of the canvas and R about 56 percent, optically centered. Actual alpha transparency outside the rounded tile. Flat crisp vector-like execution, polished macOS icon, sharp edges readable at 32 pixels. No words, no letters besides the R silhouette, no neo label, no terminal prompt, no dog/claw, no Chrome multicolor motif, no blue/purple, no gradients with different hues, no 3D bevel, no perspective, no mockup, no watermark, no background or checkerboard painted into the image. Produce one icon.",
+    "Use case: precise-object-edit / logo-brand. Edit the supplied RemocodeBrowser app icon into a standalone transparent brand mark. Keep the white R outline and the inner globe EXACTLY the same silhouette, relative positions, optical proportions, chamfered corners and globe line geometry. Remove the entire coral rounded-square tile and all background/texture. Recolor the R and the globe together to a uniform solid Remocode coral #EB633B. Every area that was orange, inside and outside the letter, must become real alpha transparency, including the negative space around and inside the globe. Do not add outlines, shadows, glow, bevel, circles, background, checkerboard, lettering or text. Place the isolated coral R-plus-globe mark centered on a square transparent canvas with generous padding. Crisp flat vector-like edges, a usable website/toolbar logo. Produce exactly one standalone mark.",
+    "Clean up this transparent RemocodeBrowser logo only. Preserve the existing R-and-globe shape, exact layout, dimensions, negative spaces and silhouette. The current output has residual orange flecks, grain, patchy transparency and a gradient; remove ALL stray pixels and grain. The R and globe must be perfectly flat ONE solid coral color #EB633B, uniform fill, crisp smooth antialiased vector-style boundaries. Everything except the intentional R shape and globe lines is fully transparent alpha 0: outside the R, inside its counter, between the globe lines. No little dots anywhere. No texture, gradient, shadow, glow, background, checkerboard or new geometry. The result is a clean professional flat transparent PNG brand mark."
+  ],
+  "selectedConcept": "concept-imagegen.png",
+  "productionMasters": [
+    "icon-master.svg",
+    "logo-mark.svg"
+  ],
+  "palette": {
+    "tileTop": "#E86F4C",
+    "tileBottom": "#EB5F37",
+    "glyph": "#FFFAF6",
+    "mark": "#EB633B"
+  },
+  "design": "Preserve the Remocode IDE chamfered R silhouette. Replace >_ with a simplified globe to identify the browser."
+}
