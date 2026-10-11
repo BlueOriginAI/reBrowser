@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..f687bc2c1a5353117d53dfbd56e85ef95c32d6b8
 --- /dev/null
 +++ b/chrome/browser/browseros/extensions/browseros_extension_loader.cc
-@@ -0,0 +1,456 @@
+@@ -0,0 +1,459 @@
 +// Copyright 2024 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -312,6 +312,9 @@ index 0000000000000000000000000000000000000000..f687bc2c1a5353117d53dfbd56e85ef9
 +
 +void BrowserOSExtensionLoader::CheckForUpdates() {
 +  DCHECK_CURRENTLY_ON(content::BrowserThread::UI);
++  if (IsBrowserClawProduct()) {
++    return;
++  }
 +  if (!profile_ || !local_discovery_complete_ || remote_requested_ ||
 +      (!maintenance_started_ && !waiting_for_ready_) ||
 +      (waiting_for_ready_ && HasUsableLocalPrimary())) {

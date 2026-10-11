@@ -15,7 +15,8 @@
 - 扩展公钥与 ID、CORS/native 配置必须一致。自有扩展签名私钥只在本机使用，不提交、打印或上传；构建临时密钥文件应为 `0600` 并及时移除。
 - 首版只捆绑自有源码构建的主扩展，不分发来源与许可未核验的上游 Feedback CRX；反馈入口指向本仓库 GitHub Issues。兼容构建的 common prepared 清单可以保留本机已校验的旧 reporter，但产品 staging 和最终 app 必须排除它。
 - 其他外部组件必须记录实际版本、来源、license 和 SHA256；不得把旧二进制宣称为当前源码构建，也不得把上游服务宣称为 reBrowser 自营云服务。
-- 复用已验证的 Chromium 基线和缓存安全同步源码，运行 GN 与增量编译，不清理或重置用户 checkout。
+- 首版关闭当前产品的原生崩溃上传、原生统计初始化、上游后端 OTA 和主扩展远程配置拉取。Rust 与 UI 构建不嵌入 PostHog 项目 Key 或 Sentry DSN；不得沿用其他应用的环境凭据。用户主动配置模型提供商仍会连接其选择的服务。
+- 复用已验证的 Chromium 基线和缓存安全同步源码，运行 GN 与增量编译，不清理或重置用户 checkout。正式 Developer ID 签名/Apple 公证不等同于 Chromium 的 `is_official_build` 优化选项；首版使用现有 release 配置并分别记录该选项。
 
 完成原生编译后，使用 `bos_build.release.macos_source_notices.write_macos_source_notices` 把公开许可证及精确源码入口加入新的 app。这个操作必须在正式签名之前执行；不从用户配置或任意 `.env` 文件收集资料。
 

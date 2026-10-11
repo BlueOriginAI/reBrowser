@@ -76,16 +76,17 @@ index f0c0ff0871ee9..61e234d740980 100644
 -          << " so returning that";
 -  return settings_consent;
 -#endif  // BUILDFLAG(IS_ANDROID)
-+  // Enable crash reporting.
-+  return true;
++  // reBrowser does not upload crash memory to inherited services.
++  return !browseros::IsBrowserClawProduct();
  }
  
  #if BUILDFLAG(IS_LINUX) || BUILDFLAG(IS_CHROMEOS)
-@@ -223,3 +190,7 @@ bool ChromeCrashReporterClient::EnableBreakpadForProcess(
+@@ -223,3 +190,8 @@ bool ChromeCrashReporterClient::EnableBreakpadForProcess(
           process_type == switches::kGpuProcess ||
           process_type == switches::kUtilityProcess;
  }
 +
 +std::string ChromeCrashReporterClient::GetUploadUrl() {
-+  return browseros::kSentryMinidumpUrl;
++  return browseros::IsBrowserClawProduct() ? std::string()
++                                         : browseros::kSentryMinidumpUrl;
 +}

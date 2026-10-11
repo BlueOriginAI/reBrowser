@@ -40,7 +40,7 @@ index 0000000000000..6fe71062a9c96
 +    FILE_PATH_LITERAL("reBrowser-server"),
 +    FILE_PATH_LITERAL("config.json"),
 +    "/system/health",
-+    true,
++    false,
 +    {
 +        // Isolate Claw OTA state under .browseros/BrowserClawServer/.
 +        FILE_PATH_LITERAL("BrowserClawServer"),

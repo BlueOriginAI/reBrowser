@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000000000000000000000000000000000000..c2c5dd301d6f957a6581ad0d19b233ed7edaa2c9
 --- /dev/null
 +++ b/chrome/browser/browseros/metrics/browseros_metrics_extra_parts.cc
-@@ -0,0 +1,63 @@
+@@ -0,0 +1,66 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -33,6 +33,9 @@ index 0000000000000000000000000000000000000000..c2c5dd301d6f957a6581ad0d19b233ed
 +  ~BrowserOSMetricsExtraParts() override { ShutdownMetrics(); }
 +
 +  void PreProfileInit() override {
++    if (browseros::IsBrowserClawProduct()) {
++      return;
++    }
 +    CHECK(!metrics_service_);
 +    const browseros::Product product = browseros::GetProduct();
 +    metrics_service_ = std::make_unique<BrowserOSMetricsService>(
