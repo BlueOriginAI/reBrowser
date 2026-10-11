@@ -13,7 +13,8 @@
 - 使用 Bun 1.4.2 和冻结锁文件，重新构建 `apps/claw-app`、`apps/claw-onboard`。
 - 用 `bos_build.release.server_resources.ServerResourceBuilder` 从同一 SHA 的源码准备 Rust `reBrowser-server`，生成实际资源路径、版本和 checksum metadata。
 - 扩展公钥与 ID、CORS/native 配置必须一致。自有扩展签名私钥只在本机使用，不提交、打印或上传；构建临时密钥文件应为 `0600` 并及时移除。
-- 外部组件必须记录实际版本、来源、license 和 SHA256；不得把旧二进制宣称为当前源码构建。上游 Feedback 等外部组件不是 reBrowser 自营云服务，发行说明应明确其边界。
+- 首版只捆绑自有源码构建的主扩展，不分发来源与许可未核验的上游 Feedback CRX；反馈入口指向本仓库 GitHub Issues。兼容构建的 common prepared 清单可以保留本机已校验的旧 reporter，但产品 staging 和最终 app 必须排除它。
+- 其他外部组件必须记录实际版本、来源、license 和 SHA256；不得把旧二进制宣称为当前源码构建，也不得把上游服务宣称为 reBrowser 自营云服务。
 - 复用已验证的 Chromium 基线和缓存安全同步源码，运行 GN 与增量编译，不清理或重置用户 checkout。
 
 完成原生编译后，使用 `bos_build.release.macos_source_notices.write_macos_source_notices` 把公开许可证及精确源码入口加入新的 app。这个操作必须在正式签名之前执行；不从用户配置或任意 `.env` 文件收集资料。

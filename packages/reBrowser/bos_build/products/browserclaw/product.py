@@ -4,7 +4,6 @@
 from pathlib import Path
 
 from ...core.products import (
-    BROWSEROS_BUG_REPORTER_EXTENSION_ID,
     BROWSERCLAW_EXTENSION_ID,
     MacProductIdentity,
     ProductDescriptor,
@@ -22,10 +21,7 @@ BROWSERCLAW_PRODUCT = ProductDescriptor.define(
     windows_installer_guid="{FA2AFFF8-647B-477C-A5D2-905BA8DB9B82}",
     summary="The open source browser for web agents",
     description="reBrowser is an open-source browser for agent workflows based on BrowserOS.",
-    required_extensions=(
-        (BROWSERCLAW_EXTENSION_ID, "reBrowser app"),
-        (BROWSEROS_BUG_REPORTER_EXTENSION_ID, "reBrowser bug reporter"),
-    ),
+    required_extensions=((BROWSERCLAW_EXTENSION_ID, "reBrowser app"),),
     server_bundle_ids=("browserclaw-server",),
     artifact_prefix="reBrowser-agent",
     mac=MacProductIdentity(

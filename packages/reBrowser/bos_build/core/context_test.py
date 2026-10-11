@@ -183,10 +183,7 @@ class GetAppPathTest(unittest.TestCase):
                 (BROWSEROS_AGENT_EXTENSION_ID, "reBrowser agent"),
                 (BROWSEROS_BUG_REPORTER_EXTENSION_ID, "reBrowser bug reporter"),
             ),
-            "browserclaw": (
-                (BROWSERCLAW_EXTENSION_ID, "reBrowser app"),
-                (BROWSEROS_BUG_REPORTER_EXTENSION_ID, "reBrowser bug reporter"),
-            ),
+            "browserclaw": ((BROWSERCLAW_EXTENSION_ID, "reBrowser app"),),
         }
 
         for product, required in expected.items():

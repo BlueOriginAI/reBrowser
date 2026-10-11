@@ -20,13 +20,22 @@ def _added_source(relative_path: str) -> str:
 
 
 class FeedbackEntryPatchTest(unittest.TestCase):
-    def test_feedback_remains_installed_for_both_products_without_forced_pin(self) -> None:
+    def test_external_reporter_is_legacy_only_without_forced_pin(self) -> None:
+        self.assertRegex(
+            _added_source(CORE),
+            r"\{kBugReporterExtensionId, false, false,\s*"
+            r"BrowserOSExtensionProduct::kBrowserOS\}",
+        )
+
+    def test_current_product_feedback_opens_owned_issues(self) -> None:
         self.assertIn(
-            "{kBugReporterExtensionId, false, false, BrowserOSExtensionProduct::kAll}",
+            'if (IsBrowserClawProduct() && virtual_path == "/feedback") {\n'
+            '    return "https://github.com/BlueOriginAI/reBrowser/issues/new/choose";\n'
+            '  }',
             _added_source(CORE),
         )
 
-    def test_feedback_route_reuses_the_reporter_extension(self) -> None:
+    def test_legacy_feedback_route_reuses_the_reporter_extension(self) -> None:
         self.assertIn(
             '{"/feedback", kBugReporterExtensionId, "popup.html", ""}',
             _added_source(CORE),

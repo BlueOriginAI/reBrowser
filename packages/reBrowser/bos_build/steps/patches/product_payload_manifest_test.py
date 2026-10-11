@@ -83,7 +83,7 @@ class ProductPayloadManifestPatchTest(unittest.TestCase):
     def test_gn_sources_follow_product_matrix(self) -> None:
         build = _patched_source("chrome/browser/browseros/bundled_extensions/BUILD.gn")
         assignment = re.search(
-            r"_bundled_extensions_sources = \[(?P<body>.*?)\n\]",
+            r"_bundled_extensions_sources = \[(?P<body>[^\]]*)\]",
             build,
             re.DOTALL,
         )
@@ -105,8 +105,8 @@ class ProductPayloadManifestPatchTest(unittest.TestCase):
         )
 
         self.assertIn('import("//chrome/browser/browseros/buildflags.gni")', build)
-        self.assertEqual(base_sources, {manifest, bug_reporter})
-        self.assertEqual(browseros_sources, {agent})
+        self.assertEqual(base_sources, {manifest})
+        self.assertEqual(browseros_sources, {agent, bug_reporter})
         self.assertEqual(browserclaw_sources, {browserclaw})
         self.assertEqual(
             base_sources | browseros_sources,
@@ -114,7 +114,7 @@ class ProductPayloadManifestPatchTest(unittest.TestCase):
         )
         self.assertEqual(
             base_sources | browserclaw_sources,
-            {manifest, browserclaw, bug_reporter},
+            {manifest, browserclaw},
         )
         self.assertEqual(
             base_sources | browseros_sources | browserclaw_sources,

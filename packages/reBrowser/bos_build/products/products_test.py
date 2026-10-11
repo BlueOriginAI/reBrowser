@@ -83,10 +83,7 @@ EXPECTED_BROWSERCLAW = ProductDescriptor(
     summary="The open source browser for web agents",
     description="reBrowser is an open-source browser for agent workflows based on BrowserOS.",
     string_replacements=_replacements("reBrowser"),
-    required_extension_ids=(
-        (BROWSERCLAW_EXTENSION_ID, "reBrowser app"),
-        (BROWSEROS_BUG_REPORTER_EXTENSION_ID, "reBrowser bug reporter"),
-    ),
+    required_extension_ids=((BROWSERCLAW_EXTENSION_ID, "reBrowser app"),),
     server_bundle_ids=("browserclaw-server",),
     mac=MacProductIdentity(
         bundle_id="com.remocode.RemocodeBrowserNeo",

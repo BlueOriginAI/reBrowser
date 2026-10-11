@@ -631,12 +631,17 @@ class ManifestUpdateUrlTest(unittest.TestCase):
         self.dist_path = Path("apps/claw-app/dist/chrome-mv3")
         self.expected_url = "https://cdn.browseros.com/extensions/update-manifest.xml"
 
+    def test_fork_extension_without_upstream_update_url_passes(self):
+        _validate_manifest_update_url(
+            spec_by_name("browserclaw"), {}, self.dist_path
+        )
+
     def test_in_feed_extension_without_update_url_fails(self):
         with self.assertRaisesRegex(
-            RuntimeError, "browserclaw.*apps/claw-app/dist/chrome-mv3"
+            RuntimeError, "bugreporter.*apps/claw-app/dist/chrome-mv3"
         ):
             _validate_manifest_update_url(
-                spec_by_name("browserclaw"), {}, self.dist_path
+                spec_by_name("bugreporter"), {}, self.dist_path
             )
 
     def test_in_feed_extension_with_wrong_update_url_fails(self):

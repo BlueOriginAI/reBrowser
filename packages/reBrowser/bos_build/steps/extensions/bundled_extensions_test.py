@@ -43,15 +43,11 @@ class BundledExtensionsTest(unittest.TestCase):
         path = repo_root / "updates/extensions/bundled-manifest.xml"
         extensions = BundledExtensionsModule()._parse_manifest_xml(path.read_text())
         by_id = {extension.id: extension for extension in extensions}
-        required = {
-            extension_id: name
-            for product in ("browseros", "browserclaw")
-            for extension_id, name in get_product_descriptor(
-                product
-            ).required_extension_ids
-        }
-        for extension_id, name in required.items():
-            self.assertIn(extension_id, by_id, name)
+        legacy_ids = {BROWSEROS_AGENT_EXTENSION_ID, BROWSEROS_BUG_REPORTER_EXTENSION_ID}
+        self.assertTrue(legacy_ids.issubset(by_id))
+        # The historical feed is not signed with this fork's extension key.
+        self.assertIn("pjimfkbpehlcllblajnpfamdfjhhlgkc", by_id)
+        self.assertNotIn(BROWSERCLAW_EXTENSION_ID, by_id)
         for extension in extensions:
             self.assertRegex(
                 extension.codebase,
@@ -65,10 +61,7 @@ class BundledExtensionsTest(unittest.TestCase):
                 BROWSEROS_AGENT_EXTENSION_ID,
                 BROWSEROS_BUG_REPORTER_EXTENSION_ID,
             },
-            "browserclaw": {
-                BROWSERCLAW_EXTENSION_ID,
-                BROWSEROS_BUG_REPORTER_EXTENSION_ID,
-            },
+            "browserclaw": {BROWSERCLAW_EXTENSION_ID},
         }
         for product, extension_ids in expected.items():
             selected = BundledExtensionsModule()._select_product_extensions(
@@ -111,10 +104,13 @@ class BundledExtensionsTest(unittest.TestCase):
                 by_id = {extension.id: extension for extension in selected}
                 self.assertEqual(by_id[product_id].version, version)
                 self.assertEqual(by_id[product_id].codebase, url)
-                self.assertEqual(
-                    by_id[BROWSEROS_BUG_REPORTER_EXTENSION_ID].version,
-                    "52.0.0.0",
-                )
+                if product == "browseros":
+                    self.assertEqual(
+                        by_id[BROWSEROS_BUG_REPORTER_EXTENSION_ID].version,
+                        "52.0.0.0",
+                    )
+                else:
+                    self.assertNotIn(BROWSEROS_BUG_REPORTER_EXTENSION_ID, by_id)
 
     def test_published_manifest_can_be_read_from_exact_checkout(self) -> None:
         with tempfile.TemporaryDirectory() as temp:
@@ -205,12 +201,11 @@ class BundledExtensionsTest(unittest.TestCase):
                 self.assertEqual(
                     (output / f"{product_id}.crx").read_bytes(), b"product-crx"
                 )
-                self.assertEqual(
-                    (
-                        output / f"{BROWSEROS_BUG_REPORTER_EXTENSION_ID}.crx"
-                    ).read_bytes(),
-                    b"bug-crx",
-                )
+                reporter = output / f"{BROWSEROS_BUG_REPORTER_EXTENSION_ID}.crx"
+                if product == "browseros":
+                    self.assertEqual(reporter.read_bytes(), b"bug-crx")
+                else:
+                    self.assertFalse(reporter.exists())
                 generated = json.loads((output / "bundled_extensions.json").read_text())
                 self.assertEqual(
                     generated[product_id]["external_version"], product_version
@@ -278,7 +273,7 @@ class BundledExtensionsTest(unittest.TestCase):
             output = module._get_output_dir(contexts[-1])
             self.assertEqual(
                 {path.stem for path in output.glob("*.crx")},
-                {BROWSERCLAW_EXTENSION_ID, BROWSEROS_BUG_REPORTER_EXTENSION_ID},
+                {BROWSERCLAW_EXTENSION_ID},
             )
             self.assertNotIn(
                 BROWSEROS_AGENT_EXTENSION_ID,
