@@ -23,7 +23,7 @@ interface HelpItem {
 export const helpItems: HelpItem[] = [
   {
     name: 'Docs',
-    url: 'https://docs.browseros.com/browserclaw',
+    url: 'https://github.com/BlueOriginAI/reBrowser/blob/main/skills/rebrowser/SKILL.md',
     icon: BookOpen,
   },
   {

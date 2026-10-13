@@ -82,7 +82,7 @@ export const NewCodingAgentDialog: FC<NewCodingAgentDialogProps> = ({
           </DialogTitle>
           <DialogDescription>
             {t(
-              'BrowserOS uses your existing CLI login. This agent can run commands and access files anywhere on your computer without approval.',
+              'reBrowser uses your existing CLI login. This agent can run commands and access files anywhere on your computer without approval.',
             )}
           </DialogDescription>
         </DialogHeader>

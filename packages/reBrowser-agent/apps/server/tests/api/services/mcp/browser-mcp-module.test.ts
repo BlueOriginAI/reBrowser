@@ -248,7 +248,7 @@ describe('BrowserMcpModule', () => {
 
     expect(() =>
       runtime.createMcpServer({ leaseToken: 'stale-token' }),
-    ).toThrow('Invalid or expired BrowserOS tool lease')
+    ).toThrow('Invalid or expired reBrowser tool lease')
   })
 
   it('does not add a per-call lease-liveness guard', async () => {
@@ -269,7 +269,7 @@ describe('BrowserMcpModule', () => {
 
     expect(result.isError).toBeUndefined()
     expect(() => runtime.createMcpServer({ leaseToken: lease.token })).toThrow(
-      'Invalid or expired BrowserOS tool lease',
+      'Invalid or expired reBrowser tool lease',
     )
   })
 

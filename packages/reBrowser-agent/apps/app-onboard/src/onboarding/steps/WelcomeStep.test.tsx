@@ -22,7 +22,7 @@ describe('WelcomeStep', () => {
   it('renders the setup CTA with an explicit English locale runtime', () => {
     const html = renderWelcome()
     expect(html).toContain('Welcome to')
-    expect(html).toContain('RemocodeBrowser')
+    expect(html).toContain('reBrowser')
     expect(html).toContain('bring your browser over')
     expect(html).toContain('Get started')
     expect(html).toContain('Skip for now')

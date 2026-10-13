@@ -142,7 +142,7 @@ describe('provider localization', () => {
   it('translates known errors and keeps unknown server diagnostics as details', async () => {
     expect(
       await render(
-        <ProviderError message="BrowserOS agent server URL is not ready" />,
+        <ProviderError message="reBrowser agent server URL is not ready" />,
         'zh-CN',
       ),
     ).toContain('尚未就绪')
@@ -166,7 +166,7 @@ describe('provider localization', () => {
       success: false,
       message: 'legacy',
       messageKey:
-        'Could not reach the local BrowserOS server at {url}. Make sure BrowserOS is running and try again.',
+        'Could not reach the local reBrowser server at {url}. Make sure reBrowser is running and try again.',
       messageParams: { url: 'http://127.0.0.1:9200' },
       detail: 'ECONNREFUSED',
     }

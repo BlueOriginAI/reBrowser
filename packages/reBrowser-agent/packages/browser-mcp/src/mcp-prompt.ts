@@ -1,4 +1,4 @@
-export const BROWSER_MCP_INSTRUCTIONS = `BrowserOS browser automation.
+export const BROWSER_MCP_INSTRUCTIONS = `reBrowser browser automation.
 
 Observe -> Act -> Verify:
 - Start with tabs action="list" to find page ids; it returns every open page.

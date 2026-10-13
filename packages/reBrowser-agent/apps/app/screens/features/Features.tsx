@@ -11,28 +11,12 @@ import {
   SplitSquareHorizontal,
 } from 'lucide-react'
 import { type FC, useEffect, useState } from 'react'
-import DiscordLogo from '@/assets/discord-logo.svg'
 import GithubLogo from '@/assets/github-logo.svg'
-import SlackLogo from '@/assets/slack-logo.svg'
 import { PillIndicator } from '@/components/elements/pill-indicator'
 import { Button } from '@/components/ui/button'
-import {
-  AGENT_MODE_DEMO_URL,
-  AGENTIC_CODING_DEMO_URL,
-  BROWSER_OS_INTRO_VIDEO_URL,
-  COWORK_DEMO_URL,
-  MCP_SERVER_DEMO_URL,
-  SPLIT_VIEW_GIF_URL,
-} from '@/lib/constants/mediaUrls'
-import {
-  discordUrl,
-  docsUrl,
-  productRepositoryUrl,
-  slackUrl,
-} from '@/lib/constants/productUrls'
+import { docsUrl, productRepositoryUrl } from '@/lib/constants/productUrls'
 import { cn } from '@/lib/utils'
 import { BentoCard, type Feature } from './BentoCard'
-import { VideoFrame } from './VideoFrame'
 
 const features: Feature[] = [
   {
@@ -41,9 +25,9 @@ const features: Feature[] = [
     tag: 'AI AGENT',
     title: 'Built-in AI Agent',
     description:
-      'Describe any task and watch BrowserOS execute it—clicking, typing, and navigating for you.',
+      'Describe any task and watch reBrowser execute it—clicking, typing, and navigating for you.',
     detailedDescription:
-      'The BrowserOS Agent turns your words into browser actions. Describe what you need in plain English—fill out this form, extract data from that page, navigate through these steps—and the agent handles the rest. It clicks buttons, types text, navigates between pages, and completes multi-step browser tasks automatically. Everything runs locally on your machine with your own API keys, so your data stays private.',
+      'The reBrowser Agent turns your words into browser actions. Describe what you need in plain English—fill out this form, extract data from that page, navigate through these steps—and the agent handles the rest. It clicks buttons, types text, navigates between pages, and completes multi-step browser tasks automatically. Everything runs locally on your machine with your own API keys, so your data stays private.',
     highlights: [
       'Multi-tab execution — run agents in multiple tabs simultaneously',
       'Smart navigation — automatically finds and interacts with page elements',
@@ -51,28 +35,24 @@ const features: Feature[] = [
       'Data extraction — pulls structured data from any webpage',
       'Auto-save sessions — pick up where you left off from the Assistant panel',
     ],
-    videoDuration: '2:22',
     gridClass: 'md:col-span-2',
-    videoUrl: AGENT_MODE_DEMO_URL,
   },
   {
     id: 'mcp-server',
     Icon: Plug,
     tag: 'MCP',
-    title: 'BrowserOS as MCP Server',
+    title: 'reBrowser as MCP Server',
     description:
       'Connect Claude Code, Gemini CLI, or any MCP client to control your browser with 31 tools.',
     detailedDescription:
-      'BrowserOS includes a built-in MCP server that lets AI coding agents control your browser. Claude Code can open tabs, click elements, fill forms, take screenshots, and read page content—all through natural language commands. Unlike Chrome DevTools MCP which requires debug profiles and separate servers, BrowserOS works out of the box. Just copy the URL from settings and connect.',
+      'reBrowser includes a built-in MCP server that lets AI coding agents control your browser. Claude Code can open tabs, click elements, fill forms, take screenshots, and read page content—all through natural language commands. Unlike Chrome DevTools MCP which requires debug profiles and separate servers, reBrowser works out of the box. Just copy the URL from settings and connect.',
     highlights: [
       'One-line setup — run `claude mcp add` with your server URL to connect',
       '31 browser tools — tabs, clicks, typing, screenshots, bookmarks, history',
       'Works everywhere — Claude Code, Gemini CLI, Codex, Cursor, Zed',
       'Authenticated access — extract data from logged-in pages like LinkedIn',
     ],
-    videoDuration: '1:40',
     gridClass: 'md:col-span-1',
-    videoUrl: MCP_SERVER_DEMO_URL,
   },
   {
     id: 'cowork',
@@ -90,7 +70,6 @@ const features: Feature[] = [
       'Sandboxed security — agent can only access the folder you select',
     ],
     gridClass: 'md:col-span-2',
-    videoUrl: COWORK_DEMO_URL || undefined,
   },
   {
     id: 'split-view',
@@ -108,7 +87,6 @@ const features: Feature[] = [
       'Copy & screenshot — grab page content or capture screenshots for context',
     ],
     gridClass: 'md:col-span-2',
-    gifUrl: SPLIT_VIEW_GIF_URL,
   },
   {
     id: 'agentic-coding',
@@ -118,7 +96,7 @@ const features: Feature[] = [
     description:
       'Claude Code tests your web app, reads console errors, and fixes your code in one loop.',
     detailedDescription:
-      'The killer workflow for frontend developers. Claude Code connects to BrowserOS, opens your localhost app, clicks through the UI, reads console errors and network failures, then goes back to your codebase to fix the bugs—all in one continuous loop. No more switching between terminal and browser. No more copy-pasting error messages. Just describe the issue and let the agent debug it end-to-end.',
+      'The killer workflow for frontend developers. Claude Code connects to reBrowser, opens your localhost app, clicks through the UI, reads console errors and network failures, then goes back to your codebase to fix the bugs—all in one continuous loop. No more switching between terminal and browser. No more copy-pasting error messages. Just describe the issue and let the agent debug it end-to-end.',
     highlights: [
       'Test & fix loop — Claude navigates your app, finds bugs, and patches them',
       'Console access — read browser console and network errors from your terminal',
@@ -126,7 +104,6 @@ const features: Feature[] = [
       'Rapid prototyping — build UIs faster with AI that sees your work',
     ],
     gridClass: 'md:col-span-1',
-    videoUrl: AGENTIC_CODING_DEMO_URL || undefined,
   },
 ]
 
@@ -177,7 +154,7 @@ export const FeaturesPage: FC = () => {
                 >
                   {t('Why Switch to')}{' '}
                   <span className="text-[var(--accent-orange)]">
-                    {t('BrowserOS?')}
+                    {t('reBrowser?')}
                   </span>
                 </h1>
                 <p
@@ -189,34 +166,10 @@ export const FeaturesPage: FC = () => {
                       : 'translate-y-4 opacity-0',
                   )}
                 >
-                  {t(
-                    'Watch our launch video to understand the vision of BrowserOS and key features!',
-                  )}
+                  {t('Explore reBrowser features and connect your agents.')}
                 </p>
               </div>
             </div>
-
-            {/* Centered Large Video */}
-            <VideoFrame
-              title="browseros.com/demo"
-              className={cn(
-                'transition-all delay-500 duration-700',
-                mounted
-                  ? 'translate-y-0 opacity-100'
-                  : 'translate-y-4 opacity-0',
-              )}
-            >
-              <video
-                className="h-full w-full"
-                src={BROWSER_OS_INTRO_VIDEO_URL}
-                title={t('BrowserOS MCP Server Demonstration')}
-                autoPlay
-                muted
-                loop
-                playsInline
-                controls
-              />
-            </VideoFrame>
           </div>
         </div>
 
@@ -248,7 +201,7 @@ export const FeaturesPage: FC = () => {
           </h2>
           <p className="mx-auto max-w-2xl text-muted-foreground">
             {t(
-              'Skim the highlights below, then click any card to see a focused walkthrough with video and deeper details.',
+              'Skim the highlights below, then click any card for more details.',
             )}
           </p>
         </div>
@@ -269,9 +222,7 @@ export const FeaturesPage: FC = () => {
 
         <div className="mt-8 text-center">
           <p className="text-muted-foreground text-sm">
-            {t(
-              '💡 Tip: Click any card to open a focused walkthrough with video',
-            )}
+            {t('💡 Tip: Click any card to explore its features')}
           </p>
         </div>
       </section>
@@ -283,60 +234,12 @@ export const FeaturesPage: FC = () => {
             <h2 className="font-bold text-3xl">
               {t('Join our community and help us improve')}{' '}
               <span className="text-[var(--accent-orange)]">
-                {t('BrowserOS!')}
+                {t('reBrowser!')}
               </span>
             </h2>
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            {/* Discord */}
-            <a
-              href={discordUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="community-card group flex items-start gap-4 rounded-xl border border-border bg-card p-6 transition-all hover:-translate-y-1 hover:border-[var(--accent-orange)]/50 hover:bg-card/80 hover:shadow-[var(--accent-orange)]/5 hover:shadow-lg"
-            >
-              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg transition-all group-hover:scale-110">
-                <img
-                  src={DiscordLogo}
-                  className="h-full w-full"
-                  alt="discord-logo"
-                />
-              </div>
-              <div className="space-y-1">
-                <h3 className="font-semibold text-lg transition-colors group-hover:text-[var(--accent-orange)]">
-                  {t('Join Discord')}
-                </h3>
-                <p className="text-muted-foreground text-sm">
-                  {t('To suggest features / provide feedback')}
-                </p>
-              </div>
-            </a>
-
-            {/* Slack */}
-            <a
-              href={slackUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="community-card group flex items-start gap-4 rounded-xl border border-border bg-card p-6 transition-all hover:-translate-y-1 hover:border-[var(--accent-orange)]/50 hover:bg-card/80 hover:shadow-[var(--accent-orange)]/5 hover:shadow-lg"
-            >
-              <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center overflow-hidden rounded-lg transition-all group-hover:scale-110">
-                <img
-                  src={SlackLogo}
-                  className="h-full w-full"
-                  alt="slack-logo"
-                />
-              </div>
-              <div className="space-y-1">
-                <h3 className="font-semibold text-lg transition-colors group-hover:text-[var(--accent-orange)]">
-                  {t('Join Slack')}
-                </h3>
-                <p className="text-muted-foreground text-sm">
-                  {t('To suggest features / provide feedback')}
-                </p>
-              </div>
-            </a>
-
             {/* GitHub */}
             <a
               href={productRepositoryUrl}
@@ -391,7 +294,7 @@ export const FeaturesPage: FC = () => {
             size="lg"
             className="bg-[var(--accent-orange)] text-white shadow-[var(--accent-orange)]/25 shadow-lg hover:bg-[var(--accent-orange)]/90"
           >
-            {t('Start Using BrowserOS')}
+            {t('Start Using reBrowser')}
             <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>

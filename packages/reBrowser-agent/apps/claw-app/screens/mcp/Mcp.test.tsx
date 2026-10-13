@@ -11,7 +11,6 @@ import { MemoryRouter } from 'react-router'
 import { renderToStaticMarkup } from '@/lib/i18n/test-render'
 import * as _connectionsHooks from '@/modules/api/connections.hooks'
 import { CommandBlock } from './CommandBlock'
-import { SKILL_INSTALL_COMMAND, SKILLS_PACK } from './install-guide.data'
 
 const mcpBrowserosConnections = [
   {
@@ -115,9 +114,6 @@ afterEach(() => {
 
 const { Mcp } = await import('./Mcp')
 const { HeroCard } = await import('./HeroCard')
-const { COWORK_REQUIREMENT_LINE, EXTENSION_DOWNLOAD_URL } = await import(
-  './install-guide.data'
-)
 
 function renderApp(): string {
   const client = new QueryClient({
@@ -183,23 +179,11 @@ describe('Mcp (editorial)', () => {
     expect(html).not.toContain('OpenClaw')
   })
 
-  it('renders the Claude Desktop callout as an in-app guide trigger, not a repo link', () => {
+  it('does not offer the unverified upstream Claude Desktop extension', () => {
     const html = renderApp()
-    expect(html).toContain('Claude Desktop')
-    expect(html).toContain('Give Claude Desktop a real browser.')
-    expect(html).toContain('Show me how')
-    expect(html).toContain(COWORK_REQUIREMENT_LINE)
-    // The walkthrough replaced the link-out; nothing here should leave the app.
-    expect(html).not.toContain(
-      'https://github.com/browseros-ai/browserclaw-claude-desktop#install-the-extension',
-    )
-    expect(html).not.toContain('Also works with Cowork.')
-  })
-
-  it('keeps the install walkthrough closed until the callout is activated', () => {
-    const html = renderApp()
-    expect(html).not.toContain('Install BrowserOS neo')
-    expect(html).not.toContain(EXTENSION_DOWNLOAD_URL)
+    expect(html).not.toContain('Cowork')
+    expect(html).not.toContain('.mcpb')
+    expect(html).not.toContain('Give Claude Desktop a real browser.')
   })
 
   it('renders the row action voices in title case with no status dot', () => {
@@ -213,7 +197,7 @@ describe('Mcp (editorial)', () => {
 
   it('does NOT render the removed floating footer paragraph', () => {
     const html = renderApp()
-    expect(html).not.toContain('Hermes and OpenClaw run inside BrowserOS')
+    expect(html).not.toContain('Hermes and OpenClaw run inside reBrowser')
   })
 
   it('does NOT render the removed Built-in variant', () => {
@@ -225,7 +209,7 @@ describe('Mcp (editorial)', () => {
   it('does NOT render the removed marketing subtitle from the old HeroCard', () => {
     const html = renderApp()
     expect(html).not.toContain(
-      'Add BrowserOS as an MCP server in your AI agent',
+      'Add reBrowser as an MCP server in your AI agent',
     )
     expect(html).not.toContain('One endpoint, every harness. Use the buttons')
   })
@@ -239,16 +223,6 @@ describe('Mcp (editorial)', () => {
   it('keeps the manual setup dialog closed until the card is activated', () => {
     const html = renderApp()
     expect(html).not.toContain('Connect any other agent')
-    expect(html).not.toContain(SKILL_INSTALL_COMMAND)
-  })
-
-  it('scopes the skill install command to the one user-facing skill', () => {
-    // `npx skills add <pack>` with no flag pulls in five skills, four of
-    // them internal to this repo. Verified by running both forms.
-    expect(SKILL_INSTALL_COMMAND).toContain('--skill browseros-neo')
-    expect(SKILL_INSTALL_COMMAND).toBe(
-      `npx skills add ${SKILLS_PACK} --skill browseros-neo`,
-    )
   })
 
   it('holds the endpoint block open while the URL is still resolving', () => {

@@ -2,39 +2,31 @@
  * @license
  * Copyright 2026 BrowserOS
  * SPDX-License-Identifier: AGPL-3.0-or-later
- *
- * First-run onboarding hero: the recording stays paused behind its poster
- * until the reader starts it with the native video controls. A single focused
- * player reads as "watch this first".
  */
 
-import {
-  ONBOARDING_VIDEOS,
-  type OnboardingVideo,
-  posterFor,
-  videoUrlFor,
-} from './cockpit-videos'
-import { useOnboardingVideoTracking } from './cockpit-videos.hooks'
+import { useLocale } from '@browseros/i18n/react'
 
 export function VideoFeature() {
-  const video = ONBOARDING_VIDEOS[0]
-  if (!video) return null
-  return <FeatureVideo video={video} />
-}
+  const { t } = useLocale()
+  const steps = [
+    'Manage agents',
+    'Hand off your first task',
+    'Then come back here to watch it run.',
+  ]
 
-function FeatureVideo({ video }: { video: OnboardingVideo }) {
-  const tracking = useOnboardingVideoTracking(video)
-  // Playback stays user-driven; mounting onboarding must not start the video.
   return (
-    <div className="relative aspect-video w-full overflow-hidden rounded-3xl border border-border-2 bg-black shadow-sm ring-1 ring-foreground/5 md:aspect-auto md:h-full">
-      <video
-        src={videoUrlFor(video)}
-        poster={posterFor(video)}
-        playsInline
-        controls
-        className="h-full w-full object-cover"
-        {...tracking}
-      />
+    <div className="flex h-full flex-col justify-center gap-6 rounded-3xl border border-border-2 bg-card p-8 shadow-sm">
+      <p className="font-semibold text-2xl text-ink">reBrowser</p>
+      <ol className="space-y-4 text-ink-2 text-sm">
+        {steps.map((step, index) => (
+          <li key={step} className="flex items-center gap-3">
+            <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-accent/10 font-medium text-accent">
+              {index + 1}
+            </span>
+            {t(step)}
+          </li>
+        ))}
+      </ol>
     </div>
   )
 }

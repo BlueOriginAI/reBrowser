@@ -39,7 +39,7 @@ const en: Catalog = {
   'import.refreshProfiles': 'Refresh profiles',
   'import.failed': 'Something went wrong.',
   'import.failedFallback':
-    "RemocodeBrowser couldn't finish this import. Try again below, or refresh the profile list.",
+    "reBrowser couldn't finish this import. Try again below, or refresh the profile list.",
   'import.macPassword': 'macOS may ask for your Mac login password.',
   'import.fromProfile': 'From {{profile}}’s profile',
   'import.noCompleted': 'No completed items reported',
@@ -109,7 +109,7 @@ const zhCN: Catalog = {
   'import.refreshProfiles': '刷新配置文件',
   'import.failed': '出现了一些问题。',
   'import.failedFallback':
-    'RemocodeBrowser 无法完成此次导入。请在下方重试，或刷新配置文件列表。',
+    'reBrowser 无法完成此次导入。请在下方重试，或刷新配置文件列表。',
   'import.macPassword': 'macOS 可能会要求输入 Mac 登录密码。',
   'import.fromProfile': '来自 {{profile}} 的配置文件',
   'import.noCompleted': '未报告已完成的数据项',

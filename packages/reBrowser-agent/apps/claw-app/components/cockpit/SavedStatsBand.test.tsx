@@ -504,7 +504,7 @@ describe('SavedStatsBand', () => {
     }
   })
 
-  it('frames BrowserClaw against a screenshot-first agent', async () => {
+  it('frames BrowserOS against a screenshot-first agent', async () => {
     await render()
 
     expect(container.textContent).toContain(

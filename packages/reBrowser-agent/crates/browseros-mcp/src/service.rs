@@ -24,7 +24,7 @@ use std::{sync::Arc, time::Instant};
 use tokio_util::sync::CancellationToken;
 
 /// Operating guide served to every client in the MCP initialize response.
-pub const BROWSER_MCP_INSTRUCTIONS: &str = r#"BrowserOS MCP - you are driving the user's real, live browser.
+pub const BROWSER_MCP_INSTRUCTIONS: &str = r#"reBrowser MCP - you are driving the user's real, live browser.
 
 Shared environment. The user (and possibly other agents) are using this browser right now:
 - Open your own tab with tabs action="new" (returns its page id + first snapshot); touch an existing tab only when the user points you at it.
@@ -215,7 +215,7 @@ impl BrowserMcpService {
             } else {
                 (
                     ToolResult::error(
-                        "browser not connected (retrying); try again once BrowserOS reconnects",
+                        "browser not connected (retrying); try again once reBrowser reconnects",
                     ),
                     None,
                 )

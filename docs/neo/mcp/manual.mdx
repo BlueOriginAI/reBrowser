@@ -160,6 +160,16 @@ https://raw.githubusercontent.com/BlueOriginAI/reBrowser/main/skills/rebrowser/S
 
 If you get your AI tool talking to reBrowser and want to help others do the same, please [open a discussion](https://github.com/orgs/browseros-ai/discussions) with the setup steps.
 
+## Session lifetime and reconnecting
+
+For clients using a stateful MCP connection, the server-issued `Mcp-Session-Id` HTTP header identifies the **transport session**. Its inactivity timeout is finite: **24 hours**. MCP requests refresh that timeout; SSE heartbeats alone do not. Closing an SSE stream does not delete the transport session, so a client can reopen it with the same still-valid ID.
+
+The browser's **work session** is separate: it normally closes after 30 minutes of inactivity. When that natural close is known, the next request on a valid legacy transport starts a fresh work session without reporting a user Stop. It does not restart old tasks or automatically reclaim old tabs. An explicit Stop is still reported before a subsequent legacy request can start new work.
+
+A deleted, expired, unknown, or pre-restart transport ID still returns HTTP 404 (`Session not found`). The MCP client must discard that ID and **initialize a new connection**; reload or reconnect the MCP server in your AI tool if its client does not do this automatically. Transport sessions are in memory and do not survive a backend restart. Changing the tool argument `session` cannot fix this HTTP 404: that argument is a work-session handle for clients without a transport ID, not the HTTP header.
+
+Do not blindly replay a tool call after a timeout or lost response: the operation may already have run. Reconnect first, inspect the current state, and only then decide whether another operation is needed.
+
 ## Where to next
 
 <CardGroup cols={2}>

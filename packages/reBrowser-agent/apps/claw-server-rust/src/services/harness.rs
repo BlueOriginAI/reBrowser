@@ -382,7 +382,7 @@ impl HarnessService {
                     agent_id: agent,
                     config_path: tildify_home_path(config_path.as_deref(), &self.home_dir),
                     message: with_skill_retry_message(
-                        format!("BrowserOS registered as an MCP server in {harness}."),
+                        format!("reBrowser registered as an MCP server in {harness}."),
                         skill_warning,
                     ),
                 })
@@ -446,7 +446,7 @@ impl HarnessService {
                     agent_id: agent,
                     config_path: None,
                     message: with_skill_retry_message(
-                        format!("BrowserOS unregistered from {harness}."),
+                        format!("reBrowser unregistered from {harness}."),
                         skill_warning,
                     ),
                 })

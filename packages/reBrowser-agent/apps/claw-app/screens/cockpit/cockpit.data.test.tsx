@@ -47,7 +47,7 @@ function liveSession(browserTabs: SessionBrowserTab[]): SessionSummary {
     sessionId: 'session-1',
     slug: 'codex',
     label: 'Codex',
-    name: 'Research BrowserClaw',
+    name: 'Research reBrowser',
     startedAt: 100,
     durationMs: 0,
     dispatchCount: browserTabs.length,

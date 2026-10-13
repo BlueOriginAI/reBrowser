@@ -175,7 +175,7 @@ describe('filesystem_read', () => {
     }
   })
 
-  it('reads BrowserOS-generated output files', async () => {
+  it('reads reBrowser-generated output files', async () => {
     const outputDir = await getToolOutputDir()
     const outputPath = join(outputDir, 'snapshot.md')
     await writeFile(outputPath, 'generated snapshot')
@@ -192,10 +192,10 @@ describe('filesystem_read', () => {
 
     const result = await exec({ path: statePath })
     expect(result.isError).toBe(true)
-    expect(result.text).toContain('outside BrowserOS tool output')
+    expect(result.text).toContain('outside reBrowser tool output')
   })
 
-  it('reads BrowserOS-generated output files without a workspace', async () => {
+  it('reads reBrowser-generated output files without a workspace', async () => {
     const outputDir = await getToolOutputDir()
     const outputPath = join(outputDir, 'snapshot.md')
     await writeFile(outputPath, 'generated snapshot without workspace')
@@ -209,7 +209,7 @@ describe('filesystem_read', () => {
     expect(result.text).toContain('generated snapshot without workspace')
   })
 
-  it('rejects unregistered BrowserOS-generated output files without a workspace', async () => {
+  it('rejects unregistered reBrowser-generated output files without a workspace', async () => {
     const outputDir = await getToolOutputDir()
     const outputPath = join(outputDir, 'snapshot.md')
     await writeFile(outputPath, 'generated snapshot from another session')
@@ -228,7 +228,7 @@ describe('filesystem_read', () => {
 
     expect(result.isError).toBe(true)
     expect(result.text).toContain('No workspace selected')
-    expect(result.text).toContain('BrowserOS-generated tool output')
+    expect(result.text).toContain('reBrowser-generated tool output')
   })
 
   it('rejects BrowserOS state paths outside generated outputs without a workspace', async () => {
@@ -240,7 +240,7 @@ describe('filesystem_read', () => {
     const result = await noWorkspaceExec({ path: statePath })
 
     expect(result.isError).toBe(true)
-    expect(result.text).toContain('outside BrowserOS tool output')
+    expect(result.text).toContain('outside reBrowser tool output')
   })
 
   it('preserves browser trust markers when reading saved page content without a workspace', async () => {

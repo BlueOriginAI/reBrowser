@@ -23,7 +23,7 @@ describe('SetupStep', () => {
     const html = renderSetup(false)
     expect(html).toContain('Finishing setup')
     expect(html).toContain(
-      'Preparing BrowserOS. This should only take a moment.',
+      'Preparing reBrowser. This should only take a moment.',
     )
     expect(html).toContain('role="status"')
     expect(html).toContain('motion-safe:animate-spin')

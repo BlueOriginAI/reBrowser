@@ -5,7 +5,7 @@ import { writeTempToolOutputBinaryFile } from './output-file'
 export const pdf = defineTool({
   name: 'pdf',
   description:
-    'Print the page to a PDF and save it to a BrowserOS output file, returning the path. Use for archiving or reading a page as a document; prefer read for extracting text.',
+    'Print the page to a PDF and save it to a reBrowser output file, returning the path. Use for archiving or reading a page as a document; prefer read for extracting text.',
   input: z
     .object({
       page: z.number().int().describe('Page id from `tabs`.'),

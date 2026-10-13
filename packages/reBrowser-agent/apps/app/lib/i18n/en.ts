@@ -16,8 +16,7 @@ export const en: Catalog = {
   'settings.customizationDescription':
     'Personalize your toolbar and browser interface',
   'settings.language': 'Language',
-  'settings.languageDescription':
-    'Choose the display language for RemocodeBrowser.',
+  'settings.languageDescription': 'Choose the display language for reBrowser.',
   'settings.followSystem': 'Follow system',
   'settings.english': 'English',
   'settings.simplifiedChinese': '简体中文',
@@ -26,8 +25,8 @@ export const en: Catalog = {
   'settings.aiAgents': 'AI & Agents',
   'settings.chatProvider': 'Chat & Council Provider',
   'settings.other': 'Other',
-  'settings.customizeBrowser': 'Customize BrowserOS',
-  'settings.browserAsMcp': 'BrowserOS as MCP',
+  'settings.customizeBrowser': 'Customize reBrowser',
+  'settings.browserAsMcp': 'reBrowser as MCP',
   'settings.docs': 'Docs',
   'settings.features': 'Features',
   'settings.diagnostics': 'Diagnostics',
@@ -91,7 +90,7 @@ export const en: Catalog = {
   'chat.openAiSettings': 'Open AI settings',
   'chat.troubleshooting': 'View troubleshooting guide',
   'chat.connectionFailedText':
-    'Unable to connect to BrowserOS agent. Follow the instructions below.',
+    'Unable to connect to reBrowser agent. Follow the instructions below.',
   'chat.fullError': 'Full error',
   'chat.copied': 'Copied',
   'chat.tryAgain': 'Try again',
@@ -111,7 +110,7 @@ export const en: Catalog = {
   'home.apps': 'Apps',
   'home.toRun': 'to run',
   'home.newLine': 'new line',
-  'home.placeholder': 'Ask RemocodeBrowser anything…',
+  'home.placeholder': 'Ask reBrowser anything…',
   'home.headline': 'What should your agent work on next?',
   'home.description':
     'Pick any connected provider or agent, then start a task without leaving this tab.',
@@ -120,7 +119,7 @@ export const en: Catalog = {
   'home.loadingProviders': 'Loading providers...',
   'connections.title': 'Connected Apps',
   'connections.description':
-    'Connect RemocodeBrowser to apps to send email, schedule meetings, and more.',
+    'Connect reBrowser to apps to send email, schedule meetings, and more.',
   'connections.addBuiltIn': 'Add built-in app',
   'connections.addCustom': 'Add custom app',
   'connections.yourApps': 'Your Connected Apps',
@@ -146,8 +145,8 @@ export const en: Catalog = {
   'mcp.restartTimeout':
     'Port saved, but the server did not restart in time. Quit and relaunch the browser to apply it.',
   'mcp.restarting': 'Restarting…',
-  'mcp.title': 'BrowserOS MCP Server',
-  'mcp.description': 'Connect BrowserOS to MCP clients.',
+  'mcp.title': 'reBrowser MCP Server',
+  'mcp.description': 'Connect reBrowser to MCP clients.',
   'mcp.serverUrl': 'Server URL:',
   'mcp.loading': 'Loading...',
   'mcp.copyUrl': 'Copy URL',
@@ -187,13 +186,13 @@ export const en: Catalog = {
   'mcp.copyServerUrl': 'Copy server URL',
   'mcp.copySetup': 'Copy {{name}} setup',
   'mcp.runTerminal': 'Run in your terminal:',
-  'mcp.neoAlt': 'BrowserOS neo',
-  'mcp.neoTitle': 'For better MCP support, use BrowserOS neo',
+  'mcp.neoAlt': 'reBrowser',
+  'mcp.neoTitle': 'For better MCP support, use reBrowser',
   'mcp.neoDescription':
     'A browser built for AI agents — a bigger MCP toolset, your real logins, and session replay',
   'mcp.connectedAgents': 'Connected agents',
   'mcp.connectedAgentsDescription':
-    'Add BrowserOS as an MCP server in your AI agents — no copy-paste required.',
+    'Add reBrowser as an MCP server in your AI agents — no copy-paste required.',
   'mcp.connectedCount': '{{connected}} of {{detected}} connected',
   'mcp.noAgents': 'No supported agents found on this system.',
   'mcp.showManualSetup': 'Show manual setup',
@@ -208,7 +207,7 @@ export const en: Catalog = {
     'Pick what runs your chats, and connect anything else you use.',
   'ai.yourProviders': 'Your providers',
   'ai.providersUnavailable':
-    'Your providers could not be loaded because the BrowserOS server is not reachable. They are still saved on this device.',
+    'Your providers could not be loaded because the reBrowser server is not reachable. They are still saved on this device.',
   'ai.deleteProvider': 'Delete Provider',
   'ai.deleteProviderDescription':
     'Are you sure you want to delete "{{name}}"? This action cannot be undone.',

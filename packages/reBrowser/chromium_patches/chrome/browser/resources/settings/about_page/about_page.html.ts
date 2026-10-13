@@ -27,7 +27,7 @@ index b9ac4e634feddf9e14a6da7c36fcb49fa143c032..d002c9386e1425b38e9015d3ce4d544f
          </a>
        </span>
  </if>
-+      <div class="secondary">BrowserOS - $i18n{aboutBrowserOSVersion}</div>
++      <div class="secondary">reBrowser - $i18n{aboutBrowserOSVersion}</div>
        <div class="secondary">$i18n{aboutBrowserVersion}</div>
      </div>
  <if expr="not is_chromeos">

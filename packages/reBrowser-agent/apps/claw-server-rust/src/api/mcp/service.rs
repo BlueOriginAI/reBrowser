@@ -416,11 +416,24 @@ impl ClawMcpService {
             if let Some(session) = self.state.sessions.lookup(&session_id).await {
                 return Ok(started_session_from(session, &client));
             }
-            // The session this connection was working in is gone: stopped from the cockpit,
-            // or swept. Say so once, so the stop is honoured and the agent has something to
-            // tell the user, then let the next call start a new session on the same
-            // connection. Refusing every time leaves the agent with nowhere to go, since the
-            // handle it would otherwise drop is the transport session itself.
+            if matches!(
+                self.state.sessions.retirement_of(&session_id).await,
+                Some(RetirementCause::Closed)
+            ) {
+                // The lifecycle lock serializes legacy recovery. A fresh business session
+                // never revives old dispatches or inherits their conversation/tab claims.
+                let (started, replacement) =
+                    self.succeed_retired_session(&session_id, client).await?;
+                lifecycle.session_id = Some(replacement);
+                lifecycle.stop_reported = false;
+                tracing::debug!(
+                    reason = "closed",
+                    "continued an idle legacy MCP work session"
+                );
+                return Ok(started);
+            }
+            // Cancelled, or no retained cause: report once before allowing a new request
+            // to start new work. An expired tombstone is not evidence of a natural close.
             if !lifecycle.stop_reported {
                 lifecycle.stop_reported = true;
                 return Err(McpError::invalid_request(
@@ -1714,6 +1727,136 @@ mod tests {
             .await
             .map_err(|error| anyhow::anyhow!("{error:?}"))?;
         assert_eq!(again.session.id(), recovered.session.id());
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn legacy_idle_sweep_resumes_one_fresh_session_without_reporting_stop()
+    -> anyhow::Result<()> {
+        let call = crate::api::mcp::test_support::tool_call("tabs", json!({})).await?;
+        let service = ClawMcpService::new(call.state.clone());
+        let transport = SessionId::new("idle-transport");
+        let first = service
+            .ensure_session_started(transport.clone())
+            .await
+            .map_err(|error| anyhow::anyhow!("{error:?}"))?;
+        let old = first.session.id().clone();
+        let ownership = call.state.sessions.ownership();
+        tokio::time::pause();
+        tokio::time::advance(std::time::Duration::from_secs(1_801)).await;
+        // SQLite uses blocking workers; keep virtual time from auto-advancing
+        // through pool deadlines while teardown waits for their I/O.
+        tokio::time::resume();
+        call.state.sessions.sweep_idle().await?;
+        assert_eq!(
+            call.state.sessions.retirement_of(&old).await,
+            Some(RetirementCause::Closed)
+        );
+        let before = call.state.sessions.count().await;
+        let (left, right) = tokio::join!(
+            service.ensure_session_started(transport.clone()),
+            service.ensure_session_started(transport.clone())
+        );
+        let left = left.map_err(|error| anyhow::anyhow!("{error:?}"))?;
+        let right = right.map_err(|error| anyhow::anyhow!("{error:?}"))?;
+        assert!(Arc::ptr_eq(&left.session, &right.session));
+        assert_ne!(left.session.id(), &old);
+        assert_ne!(left.session.convo_id(), first.session.convo_id());
+        assert!(
+            ownership
+                .owned_pages(left.session.convo_id())
+                .await
+                .is_empty()
+        );
+        assert_eq!(left.session.active_dispatch_count().await, 0);
+        assert_eq!(call.state.sessions.count().await, before + 1);
+        assert_eq!(
+            call.state.sessions.replacement_of(&old).await.as_ref(),
+            Some(left.session.id())
+        );
+        // Teardown of the original id cannot remove the successor.
+        assert!(
+            !call
+                .state
+                .sessions
+                .remove(&old, "closed", Some("transport closed"))
+                .await?
+        );
+        assert!(call.state.sessions.contains(left.session.id()).await);
+        assert!(Arc::ptr_eq(
+            &service
+                .ensure_session_started(transport)
+                .await
+                .map_err(|error| anyhow::anyhow!("{error:?}"))?
+                .session,
+            &left.session
+        ));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn concurrent_legacy_requests_report_cancel_once_then_start_only_new_work()
+    -> anyhow::Result<()> {
+        let call = crate::api::mcp::test_support::tool_call("tabs", json!({})).await?;
+        let service = ClawMcpService::new(call.state.clone());
+        let transport = SessionId::new("cancelled-transport");
+        let first = service
+            .ensure_session_started(transport.clone())
+            .await
+            .map_err(|error| anyhow::anyhow!("{error:?}"))?;
+        call.state
+            .sessions
+            .cancel_by_session(first.session.id())
+            .await?;
+        let before = call.state.sessions.count().await;
+        let (left, right) = tokio::join!(
+            service.ensure_session_started(transport.clone()),
+            service.ensure_session_started(transport)
+        );
+        assert_eq!(usize::from(left.is_err()) + usize::from(right.is_err()), 1);
+        let replacement = match (left, right) {
+            (Ok(started), Err(error)) | (Err(error), Ok(started)) => {
+                assert!(format!("{error:?}").contains("was stopped"));
+                started
+            }
+            _ => panic!("cancel must be reported exactly once"),
+        };
+        assert_ne!(replacement.session.id(), first.session.id());
+        assert_ne!(replacement.session.convo_id(), first.session.convo_id());
+        assert_eq!(replacement.session.active_dispatch_count().await, 0);
+        assert!(!call.state.sessions.contains(first.session.id()).await);
+        assert_eq!(
+            call.state.sessions.retirement_of(first.session.id()).await,
+            Some(RetirementCause::Cancelled)
+        );
+        assert_eq!(call.state.sessions.count().await, before + 1);
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn legacy_expired_retirement_does_not_silently_resume() -> anyhow::Result<()> {
+        let call = crate::api::mcp::test_support::tool_call("tabs", json!({})).await?;
+        let service = ClawMcpService::new(call.state.clone());
+        let transport = SessionId::new("unknown-cause-transport");
+        let first = service
+            .ensure_session_started(transport.clone())
+            .await
+            .map_err(|error| anyhow::anyhow!("{error:?}"))?;
+        call.state
+            .sessions
+            .remove(first.session.id(), "closed", Some("idle timeout"))
+            .await?;
+        tokio::time::pause();
+        tokio::time::advance(std::time::Duration::from_secs(7_201)).await;
+        tokio::time::resume();
+        call.state.sessions.sweep_idle().await?;
+        assert_eq!(
+            call.state.sessions.retirement_of(first.session.id()).await,
+            None
+        );
+        let before = call.state.sessions.count().await;
+        assert!(service.ensure_session_started(transport).await.is_err());
+        assert_eq!(call.state.sessions.count().await, before);
         Ok(())
     }
 

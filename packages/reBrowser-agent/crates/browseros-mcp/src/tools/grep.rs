@@ -173,7 +173,7 @@ fn handler<'a>(
                         [
                             wrap_untrusted(&inline_text, &origin),
                             format!(
-                                "Grep output truncated for {} match(es). Full matches ({} chars) could not be saved to a BrowserOS output file: {save_error}",
+                                "Grep output truncated for {} match(es). Full matches ({} chars) could not be saved to a reBrowser output file: {save_error}",
                                 matches.len(),
                                 full_matches_text.len()
                             ),

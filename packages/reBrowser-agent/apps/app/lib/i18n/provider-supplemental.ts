@@ -79,8 +79,8 @@ export const providerChinese: Record<string, string> = {
   'Inspecting installed agent…': '正在检查已安装的智能体…',
   'Create agent': '创建智能体',
   'Save agent': '保存智能体',
-  'BrowserOS uses your existing CLI login. This agent can run commands and access files anywhere on your computer without approval.':
-    'BrowserOS 使用现有的 CLI 登录状态。此智能体无需批准即可运行命令并访问计算机上任意位置的文件。',
+  'reBrowser uses your existing CLI login. This agent can run commands and access files anywhere on your computer without approval.':
+    'reBrowser 使用现有的 CLI 登录状态。此智能体无需批准即可运行命令并访问计算机上任意位置的文件。',
   'Edit custom agent': '编辑自定义智能体',
   'Add a custom ACP agent': '添加自定义 ACP 智能体',
   'Connect any agent that speaks ACP over stdio. It can run commands and access files anywhere on your computer without approval.':
@@ -219,8 +219,8 @@ export const providerChinese: Record<string, string> = {
   'Loading agents…': '正在加载智能体…',
   Dismiss: '关闭提示',
   'Response details': '响应详情',
-  'BrowserOS agent server URL is not ready':
-    'BrowserOS 智能体服务器 URL 尚未就绪',
+  'reBrowser agent server URL is not ready':
+    'reBrowser 智能体服务器 URL 尚未就绪',
   'Agent probe failed': '智能体探测失败',
   'Server returned {status}': '服务器返回状态码 {{status}}',
   'Invalid response from server': '服务器响应无效',
@@ -234,8 +234,8 @@ export const providerChinese: Record<string, string> = {
   'Failed to create {name} provider': '创建 {{name}} 提供商失败',
   'Failed to start {name} authentication': '无法启动 {{name}} 身份验证',
   'Authenticating with {name}': '正在通过 {{name}} 验证身份',
-  'Could not reach the local BrowserOS server at {url}. Make sure BrowserOS is running and try again.':
-    '无法连接到 {{url}} 上的本地 BrowserOS 服务器。请确认 BrowserOS 正在运行，然后重试。',
+  'Could not reach the local reBrowser server at {url}. Make sure reBrowser is running and try again.':
+    '无法连接到 {{url}} 上的本地 reBrowser 服务器。请确认 reBrowser 正在运行，然后重试。',
   'Custom agent': '自定义智能体',
   'Custom ACP': '自定义 ACP',
   '{count} ms': '{{count}} 毫秒',

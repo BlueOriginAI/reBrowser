@@ -30,7 +30,7 @@ export function VisualRail() {
           src="/icon/128.png"
         />
         <div className="font-extrabold text-[17px] tracking-tight">
-          BrowserOS
+          reBrowser
         </div>
       </div>
       <div className="relative">

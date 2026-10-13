@@ -31,7 +31,7 @@ export const ShortcutsDialog = ({
             {t('Keyboard Shortcuts')}
           </DialogTitle>
           <DialogDescription>
-            {t('Use these shortcuts to navigate BrowserOS faster')}
+            {t('Use these shortcuts to navigate reBrowser faster')}
           </DialogDescription>
         </DialogHeader>
 

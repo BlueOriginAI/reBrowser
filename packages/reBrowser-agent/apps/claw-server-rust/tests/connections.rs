@@ -172,7 +172,7 @@ async fn run_connections_case() -> anyhow::Result<()> {
     assert_eq!(claude.config_path.as_deref(), Some("~/.claude.json"));
     assert_eq!(
         claude.message,
-        "BrowserOS registered as an MCP server in Claude Code."
+        "reBrowser registered as an MCP server in Claude Code."
     );
     let claude_skill = home.join("skills/rebrowser");
     assert_eq!(
@@ -361,7 +361,7 @@ async fn run_connections_case() -> anyhow::Result<()> {
 
     let disconnected = service.disconnect_browseros(Harness::Codex).await?;
     assert!(!disconnected.installed);
-    assert_eq!(disconnected.message, "BrowserOS unregistered from Codex.");
+    assert_eq!(disconnected.message, "reBrowser unregistered from Codex.");
     assert!(
         !fs::read_to_string(path_for(&paths, AgentId::Codex)?)?.contains(BROWSEROS_MCP_SERVER_NAME)
     );
@@ -419,7 +419,7 @@ async fn run_connections_case() -> anyhow::Result<()> {
     assert!(antigravity.installed);
     assert_eq!(
         antigravity.message,
-        "BrowserOS registered as an MCP server in Antigravity."
+        "reBrowser registered as an MCP server in Antigravity."
     );
     assert_eq!(
         fs::read_to_string(antigravity_skill.join("SKILL.md"))?,

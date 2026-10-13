@@ -33,7 +33,7 @@ const en: Catalog = {
   'import.refreshProfiles': 'Refresh profiles',
   'import.failed': 'Something went wrong.',
   'import.failedFallback':
-    "RemocodeBrowser couldn't finish this import. Try again below, or refresh the profile list.",
+    "reBrowser couldn't finish this import. Try again below, or refresh the profile list.",
   'import.macPassword': 'macOS may ask for your Mac login password.',
   'import.fromProfile': 'From {{profile}}’s profile',
   'import.noCompleted': 'No completed items reported',
@@ -67,7 +67,7 @@ const en: Catalog = {
   'setup.failed': 'Setup didn’t finish',
   'setup.retry': 'Retry',
   'setup.retryCopy': 'Please try again.',
-  'setup.preparingCopy': 'Preparing BrowserOS. This should only take a moment.',
+  'setup.preparingCopy': 'Preparing reBrowser. This should only take a moment.',
   'error.import_failed': 'The import could not be completed.',
   'error.nativeDetails': '{{details}}',
 }
@@ -99,7 +99,7 @@ const zhCN: Catalog = {
   'import.refreshProfiles': '刷新配置文件',
   'import.failed': '出现了一些问题。',
   'import.failedFallback':
-    'RemocodeBrowser 无法完成此次导入。请在下方重试，或刷新配置文件列表。',
+    'reBrowser 无法完成此次导入。请在下方重试，或刷新配置文件列表。',
   'import.macPassword': 'macOS 可能会要求输入 Mac 登录密码。',
   'import.fromProfile': '来自 {{profile}} 的配置文件',
   'import.noCompleted': '未报告已完成的数据项',
@@ -133,7 +133,7 @@ const zhCN: Catalog = {
   'setup.failed': '设置未完成',
   'setup.retry': '重试',
   'setup.retryCopy': '请再试一次。',
-  'setup.preparingCopy': '正在准备 BrowserOS，马上就好。',
+  'setup.preparingCopy': '正在准备 reBrowser，马上就好。',
   'error.import_failed': '无法完成导入。',
   'error.nativeDetails': '{{details}}',
 }

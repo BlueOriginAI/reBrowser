@@ -54,7 +54,7 @@ export const OnboardingAiPage: FC = () => {
         </h1>
         <p className="mb-8 text-muted-foreground">
           {t(
-            'BrowserOS runs on the provider you bring. Connect an LLM provider or a coding agent harness you already use. You can change this any time in settings.',
+            'reBrowser runs on the provider you bring. Connect an LLM provider or a coding agent harness you already use. You can change this any time in settings.',
           )}
         </p>
 

@@ -78,7 +78,7 @@ const SidebarLayoutContent: FC = () => {
             >
               <Menu className="size-4" />
             </Button>
-            <span className="font-semibold">RemocodeBrowser</span>
+            <span className="font-semibold">reBrowser</span>
           </header>
           {isChatPage ? (
             <main className="relative min-h-0 flex-1 overflow-hidden">

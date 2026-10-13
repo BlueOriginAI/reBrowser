@@ -85,7 +85,7 @@ function session(
     profileId: 'profile-shared',
     slug: 'codex',
     label: 'Codex',
-    name: 'Research BrowserClaw',
+    name: 'Research reBrowser',
     color: '#0254ec',
     startedAt: 100,
     state: 'active',

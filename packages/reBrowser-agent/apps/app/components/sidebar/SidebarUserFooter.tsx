@@ -53,7 +53,7 @@ export const SidebarUserFooter: FC<SidebarUserFooterProps> = ({
           expanded ? 'opacity-100' : 'opacity-0',
         )}
       >
-        {t('About BrowserOS')}
+        {t('About reBrowser')}
       </span>
     </a>
   )
@@ -93,9 +93,7 @@ export const SidebarUserFooter: FC<SidebarUserFooterProps> = ({
         ) : (
           <Tooltip>
             <TooltipTrigger asChild>{aboutLink}</TooltipTrigger>
-            <TooltipContent side="right">
-              {t('About RemocodeBrowser')}
-            </TooltipContent>
+            <TooltipContent side="right">{t('About reBrowser')}</TooltipContent>
           </Tooltip>
         )}
       </div>

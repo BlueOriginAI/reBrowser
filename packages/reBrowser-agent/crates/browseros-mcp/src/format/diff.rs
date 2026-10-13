@@ -131,11 +131,11 @@ pub async fn format_diff_result(
                 let save_error = err.to_string();
                 let text = if diff.url_changed {
                     format!(
-                        "URL changed; full current snapshot is {token_estimate} estimated tokens, over the {MAX_INLINE_DIFF_TOKENS}-token inline limit, but saving it to a BrowserOS output file failed: {save_error}"
+                        "URL changed; full current snapshot is {token_estimate} estimated tokens, over the {MAX_INLINE_DIFF_TOKENS}-token inline limit, but saving it to a reBrowser output file failed: {save_error}"
                     )
                 } else {
                     format!(
-                        "Diff is {token_estimate} estimated tokens, over the {MAX_INLINE_DIFF_TOKENS}-token inline limit, but saving it to a BrowserOS output file failed: {save_error}"
+                        "Diff is {token_estimate} estimated tokens, over the {MAX_INLINE_DIFF_TOKENS}-token inline limit, but saving it to a reBrowser output file failed: {save_error}"
                     )
                 };
                 add_fields(
@@ -271,7 +271,7 @@ async fn cap_inline_diff(
             FormattedDiff {
                 text: [
                     format!(
-                        "{nav_note}{noun} truncated at {max_chars} chars. Full {noun_lower} ({content_length} chars) could not be saved to a BrowserOS output file: {save_error}"
+                        "{nav_note}{noun} truncated at {max_chars} chars. Full {noun_lower} ({content_length} chars) could not be saved to a reBrowser output file: {save_error}"
                     ),
                     excerpt,
                 ]

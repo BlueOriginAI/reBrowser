@@ -101,7 +101,7 @@ index 30a45e07a5e9d7c986923b3254f01e0da6aa20cb..4b342702574ce41bd1e47eeeb65c1ce9
 +                          infobars::InfoBarDelegate::
 +                              BROWSEROS_AGENT_INSTALLING_INFOBAR_DELEGATE,
 +                          nullptr,
-+                          u"BrowserOS Agent is installing/updating. Please try "
++                          u"reBrowser Agent is installing/updating. Please try "
 +                          u"again shortly.",
 +                          /*auto_expire=*/true,
 +                          /*should_animate=*/true,
@@ -137,7 +137,7 @@ index 30a45e07a5e9d7c986923b3254f01e0da6aa20cb..4b342702574ce41bd1e47eeeb65c1ce9
 +                bwi))
 +            .SetActionId(kActionBrowserOSAgent)
 +            .SetText(u"Assistant")
-+            .SetTooltipText(u"Ask BrowserOS")
++            .SetTooltipText(u"Ask reBrowser")
 +            .SetImage(ui::ImageModel::FromResourceId(IDR_PRODUCT_LOGO_16))
 +            .SetProperty(
 +                actions::kActionItemPinnableKey,

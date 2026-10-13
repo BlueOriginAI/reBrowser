@@ -180,7 +180,7 @@ pub async fn request_context(mut req: Request, next: Next) -> Response {
             CanonicalError::new(
                 StatusCode::FORBIDDEN,
                 "forbidden",
-                "recording ingest is restricted to BrowserOS neo",
+                "recording ingest is restricted to reBrowser",
                 Some(&request_id),
             )
             .into_response()

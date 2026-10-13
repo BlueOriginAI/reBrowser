@@ -29,8 +29,8 @@ export const supplementalChinese: Catalog = {
     '无法记录你的回复，请重试。',
   'Feedback call invitation': '反馈交流邀请',
   "You're one of our most active users": '你是我们最活跃的用户之一',
-  "We'd like to hear what you use neo for and what we should fix.":
-    '我们想了解你如何使用 neo，以及哪些地方需要改进。',
+  "We'd like to hear what you use reBrowser for and what we should fix.":
+    '我们想了解你如何使用 reBrowser，以及哪些地方需要改进。',
   'Book a 15 minute chat': '预约 15 分钟交流',
   'No thanks': '暂不需要',
   Dismiss: '关闭',
@@ -44,9 +44,9 @@ export const supplementalChinese: Catalog = {
   tabs: '个标签页',
   'on screen': '当前显示',
   'Live on Product Hunt.': '已在 Product Hunt 上线。',
-  'A vote or comment helps keep BrowserOS free.':
-    '你的投票或评论有助于 BrowserOS 持续免费提供服务。',
-  'Support BrowserOS on Product Hunt': '在 Product Hunt 上支持 BrowserOS',
+  'A vote or comment helps keep reBrowser free.':
+    '你的投票或评论有助于 reBrowser 持续免费提供服务。',
+  'Support reBrowser on Product Hunt': '在 Product Hunt 上支持 reBrowser',
   'Support →': '支持 →',
   'No browser activity': '暂无浏览器活动',
   'Last frame': '上一帧',
@@ -113,8 +113,8 @@ export const supplementalChinese: Catalog = {
   WELCOME: '欢迎',
   'You watch. Your agent': '你来查看，智能体来',
   'works.': '执行。',
-  'Your agents are wired in. Watch a quick demo, then hand your first task to any of them.':
-    '智能体已连接。先观看简短演示，再交给它们第一个任务。',
+  'Your agents are wired in. Hand your first task to any of them, then watch it here.':
+    '智能体已连接。交给它们第一个任务，然后在这里查看执行过程。',
   'Hand off your first task': '交给智能体第一个任务',
   'Then come back here to watch it run.': '然后回到这里查看执行过程。',
   'Waiting for your first run. Come back the moment you press enter.':
@@ -123,8 +123,8 @@ export const supplementalChinese: Catalog = {
     '已复制。粘贴给你的智能体，然后在这里查看执行过程。',
   'Manage agents': '管理智能体',
   'Paste this prompt into your agent.': '将这条指令粘贴给你的智能体。',
-  'Using BrowserOS neo, search for the current monthly prices of streaming services such as Netflix, Disney plus, Hulu, Max and Apple TV':
-    '使用 BrowserOS neo，查询 Netflix、Disney plus、Hulu、Max 和 Apple TV 等流媒体服务当前的月费。',
+  'Using reBrowser, search for the current monthly prices of streaming services such as Netflix, Disney plus, Hulu, Max and Apple TV':
+    '使用 reBrowser，查询 Netflix、Disney plus、Hulu、Max 和 Apple TV 等流媒体服务当前的月费。',
   connected: '个已连接',
   'Read the docs': '阅读文档',
   'What are your agents working on right now?': '你的智能体现在正在做什么？',

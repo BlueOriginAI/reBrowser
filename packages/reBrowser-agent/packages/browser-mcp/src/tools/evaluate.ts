@@ -100,7 +100,7 @@ export const evaluate = defineTool({
         return textResult(
           [
             wrapUntrusted(excerpt, origin),
-            `Evaluate result truncated at ${inlineLimit} chars. Full result (${text.length} chars) could not be saved to a BrowserOS output file: ${saveError}`,
+            `Evaluate result truncated at ${inlineLimit} chars. Full result (${text.length} chars) could not be saved to a reBrowser output file: ${saveError}`,
           ].join('\n\n'),
           {
             page: args.page,

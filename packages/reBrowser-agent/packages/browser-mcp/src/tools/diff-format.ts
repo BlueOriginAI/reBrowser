@@ -110,8 +110,8 @@ export async function formatDiffResult(
     } catch (error) {
       const saveError = error instanceof Error ? error.message : String(error)
       const text = diff.urlChanged
-        ? `URL changed; full current snapshot is ${tokenEstimate} estimated tokens, over the ${MAX_INLINE_DIFF_TOKENS}-token inline limit, but saving it to a BrowserOS output file failed: ${saveError}`
-        : `Diff is ${tokenEstimate} estimated tokens, over the ${MAX_INLINE_DIFF_TOKENS}-token inline limit, but saving it to a BrowserOS output file failed: ${saveError}`
+        ? `URL changed; full current snapshot is ${tokenEstimate} estimated tokens, over the ${MAX_INLINE_DIFF_TOKENS}-token inline limit, but saving it to a reBrowser output file failed: ${saveError}`
+        : `Diff is ${tokenEstimate} estimated tokens, over the ${MAX_INLINE_DIFF_TOKENS}-token inline limit, but saving it to a reBrowser output file failed: ${saveError}`
       return {
         text: [
           text,
@@ -194,7 +194,7 @@ async function capInlineDiff(
     const saveError = error instanceof Error ? error.message : String(error)
     return {
       text: [
-        `${navNote}${noun} truncated at ${maxChars} chars. Full ${nounLower} (${wrappedDiff.length} chars) could not be saved to a BrowserOS output file: ${saveError}`,
+        `${navNote}${noun} truncated at ${maxChars} chars. Full ${nounLower} (${wrappedDiff.length} chars) could not be saved to a reBrowser output file: ${saveError}`,
         excerpt,
       ].join('\n'),
       structured: {

@@ -121,10 +121,10 @@ export function parseDiagnostics(value: unknown): DiagnosticsSnapshot | null {
 
 export function productName(product: DiagnosticsSnapshot['product']): string {
   return product === 'browseros-neo'
-    ? 'BrowserOS neo'
+    ? 'reBrowser'
     : product === 'browseros-feedback'
-      ? 'BrowserOS (Reporter fallback)'
-      : 'BrowserOS'
+      ? 'reBrowser (Reporter fallback)'
+      : 'reBrowser'
 }
 
 export function formatMemory(bytes: number | null): string {
@@ -139,7 +139,7 @@ export function diagnosticSections(snapshot: DiagnosticsSnapshot) {
     {
       title: 'Versions',
       rows: [
-        ['BrowserOS', versions.browseros],
+        ['reBrowser', versions.browseros],
         ['Chromium', versions.chromium],
         [
           snapshot.product === 'browseros-neo' ? 'MCP server' : 'Agent server',

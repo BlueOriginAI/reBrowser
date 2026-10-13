@@ -60,7 +60,7 @@ describe('describeWorkspaceChange', () => {
 
   it('describes a workspace connect in read-only chat mode', () => {
     expect(describeWorkspaceChange(undefined, '/ws', true)).toBe(
-      'The user connected a workspace during this conversation, but read-only chat mode cannot use workspace filesystem tools. filesystem_read can only read BrowserOS-generated output files returned in this session.',
+      'The user connected a workspace during this conversation, but read-only chat mode cannot use workspace filesystem tools. filesystem_read can only read reBrowser-generated output files returned in this session.',
     )
   })
 
@@ -72,7 +72,7 @@ describe('describeWorkspaceChange', () => {
 
   it('describes a workspace switch in read-only chat mode', () => {
     expect(describeWorkspaceChange('/old', '/new', true)).toBe(
-      'The user switched workspace during this conversation, but read-only chat mode cannot use workspace filesystem tools. filesystem_read can only read BrowserOS-generated output files returned in this session.',
+      'The user switched workspace during this conversation, but read-only chat mode cannot use workspace filesystem tools. filesystem_read can only read reBrowser-generated output files returned in this session.',
     )
   })
 })
@@ -80,7 +80,7 @@ describe('describeWorkspaceChange', () => {
 describe('describeModeChange', () => {
   it('describes switching to chat mode with a workspace connected', () => {
     expect(describeModeChange(true, true)).toContain(
-      'workspace filesystem tools other than reading BrowserOS output files are no longer available',
+      'workspace filesystem tools other than reading reBrowser output files are no longer available',
     )
   })
 

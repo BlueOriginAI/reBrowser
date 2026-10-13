@@ -74,15 +74,6 @@ export function ManualSetupDialog({
                   <CommandBlock command={endpointUrl} />
                 )}
 
-                {step.command !== undefined && (
-                  <CommandBlock
-                    command={step.command}
-                    onCopied={() =>
-                      track(AnalyticsEvent.ManualSetupCommandCopied)
-                    }
-                  />
-                )}
-
                 {step.note !== undefined && (
                   <p className="text-[12px] text-ink-3 leading-relaxed">
                     {step.note}

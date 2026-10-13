@@ -68,12 +68,12 @@ export async function testProvider(
     return {
       success: false,
       messageKey:
-        'Could not reach the local BrowserOS server at {url}. Make sure BrowserOS is running and try again.',
+        'Could not reach the local reBrowser server at {url}. Make sure reBrowser is running and try again.',
       messageParams: { url: agentServerUrl },
       detail,
       message:
-        `Could not reach the local BrowserOS server at ${agentServerUrl}. ` +
-        `Make sure BrowserOS is running and try again. (${detail})`,
+        `Could not reach the local reBrowser server at ${agentServerUrl}. ` +
+        `Make sure reBrowser is running and try again. (${detail})`,
       responseTime,
     }
   }

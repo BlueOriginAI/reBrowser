@@ -10,7 +10,7 @@ use serde::Deserialize;
 use serde_json::{Value, json};
 
 const DESCRIPTION: &str = "\
-Print the page to a PDF and save it to a BrowserOS output file, returning the path. \
+Print the page to a PDF and save it to a reBrowser output file, returning the path. \
 Use for archiving or reading a page as a document; prefer read for extracting text.";
 
 #[derive(Debug, Clone, Deserialize, JsonSchema)]

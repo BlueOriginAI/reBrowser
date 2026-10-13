@@ -36,7 +36,7 @@ export const JtbdPopup: FC<JtbdPopupProps> = ({
             <MessageSquareHeart className="h-5 w-5 shrink-0 text-primary" />
             <div>
               <p className="font-medium text-sm">
-                {t('Help us improve BrowserOS!')}
+                {t('Help us improve reBrowser!')}
               </p>
               <p className="mt-1 text-muted-foreground text-xs">
                 {t('Take a quick 3-minute survey.')}

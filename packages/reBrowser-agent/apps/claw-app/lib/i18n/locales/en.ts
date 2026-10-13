@@ -1,7 +1,7 @@
 import type { Catalog } from '@browseros/i18n/core'
 
 export const en: Catalog = {
-  'app.loading': 'Loading BrowserClaw…',
+  'app.loading': 'Loading reBrowser…',
   'common.back': 'Back',
   'common.cancel': 'Cancel',
   'common.close': 'Close',
@@ -57,10 +57,10 @@ export const en: Catalog = {
   'audit.tokenCount': '{{count}} tokens',
   'skills.title': 'Tasks',
   'skills.description':
-    'Skills BrowserOS neo linked into your coding agents. Re-run one by name.',
+    'Skills reBrowser linked into your coding agents. Re-run one by name.',
   'skills.new': 'New task',
   'skills.loadError':
-    'Could not load your tasks. Check that BrowserOS neo is running and try again.',
+    'Could not load your tasks. Check that reBrowser is running and try again.',
   'skills.column.task': 'Task',
   'skills.column.runs': 'Runs',
   'skills.column.tokensSaved': 'Tokens saved',
@@ -69,7 +69,7 @@ export const en: Catalog = {
   'skills.notMeasured': 'not measured',
   'skills.emptyTitle': 'No tasks yet',
   'skills.emptyDescription':
-    'When your coding agent saves a repeatable browser task with BrowserOS neo, it shows up here, linked into your agents and re-runnable by name. You can also write one yourself.',
+    'When your coding agent saves a repeatable browser task with reBrowser, it shows up here, linked into your agents and re-runnable by name. You can also write one yourself.',
   'skills.deleting': 'Deleting {{name}}…',
   'skills.deleted': 'Deleted {{name}}',
   'skills.deleteError': 'Could not delete the task',
@@ -117,19 +117,9 @@ export const en: Catalog = {
   'mcp.resolvingEndpoint': 'Resolving the endpoint',
   'mcp.commandCopied': 'Command copied',
   'mcp.copyCommand': 'Copy command',
-  'mcp.installTitle': 'Install BrowserOS neo',
-  'mcp.installRequirement':
-    'To use BrowserOS neo with Claude Cowork, you need to install this extension.',
-  'mcp.stepOf': 'Step {{current}} of {{total}}',
-  'mcp.screenshotLoadFailed':
-    'Screenshot could not be loaded — the steps above still apply.',
-  'mcp.downloadExtension': 'Download the extension',
-  'mcp.allReleases': 'all releases',
-  'mcp.back': 'Back',
-  'mcp.next': 'Next',
   'skillDetail.back': 'Tasks',
   'skillDetail.loadError':
-    'Could not load this task. Check that BrowserOS neo is running and try again.',
+    'Could not load this task. Check that reBrowser is running and try again.',
   'skillDetail.operatesOn': 'operates on {{site}}',
   'skillDetail.edit': 'Edit',
   'skillDetail.tokensSaved': 'Tokens saved',
@@ -156,7 +146,7 @@ export const en: Catalog = {
   'skillForm.saveFailed': 'Could not save the task',
   'skillForm.newTitle': 'New task',
   'skillForm.newDescription':
-    'A task is a skill BrowserOS neo links into your agents and you re-run by name.',
+    'A task is a skill reBrowser links into your agents and you re-run by name.',
   'skillForm.name': 'Name',
   'skillForm.namePlaceholder': 'inbox-sweep',
   'skillForm.nameHint':
@@ -175,44 +165,14 @@ export const en: Catalog = {
   'skillForm.editTitle': 'Edit {{name}}',
   'skillForm.editDescription':
     'Saving re-renders the SKILL.md and re-links it into your agents.',
-  'mcp.extension': 'Extension',
-  'mcp.claudeDesktopPitch': 'Give Claude Desktop a real browser.',
-  'Open Settings': 'Open Settings',
-  'In Claude Desktop, click your account at the bottom-left of the sidebar, then choose Settings.':
-    'In Claude Desktop, click your account at the bottom-left of the sidebar, then choose Settings.',
-  'Claude Desktop with the account menu open at the bottom-left and the Settings item highlighted':
-    'Claude Desktop with the account menu open at the bottom-left and the Settings item highlighted',
-  Extensions: 'Extensions',
-  'In the Settings sidebar, scroll to Desktop app and click Extensions. Then click Advanced settings on the right.':
-    'In the Settings sidebar, scroll to Desktop app and click Extensions. Then click Advanced settings on the right.',
-  'Claude Desktop Settings with Extensions selected under Desktop app and the Advanced settings button highlighted':
-    'Claude Desktop Settings with Extensions selected under Desktop app and the Advanced settings button highlighted',
-  Download: 'Download',
-  'Download the BrowserOS neo extension. It saves to your Downloads folder as browseros-neo-0.5.0.mcpb.':
-    'Download the BrowserOS neo extension. It saves to your Downloads folder as browseros-neo-0.5.0.mcpb.',
-  'Install Extension': 'Install Extension',
-  'On the Advanced settings page, scroll down to Extension Developer and click Install Extension.':
-    'On the Advanced settings page, scroll down to Extension Developer and click Install Extension.',
-  'The Extension Settings page in Claude Desktop with the Install Extension button highlighted under Extension Developer':
-    'The Extension Settings page in Claude Desktop with the Install Extension button highlighted under Extension Developer',
-  'Pick the file': 'Pick the file',
-  'In the file picker, select the browseros-neo-0.5.0.mcpb you just downloaded.':
-    'In the file picker, select the browseros-neo-0.5.0.mcpb you just downloaded.',
-  'A macOS file picker open over Claude Desktop Settings with the downloaded .mcpb extension file listed':
-    'A macOS file picker open over Claude Desktop Settings with the downloaded .mcpb extension file listed',
-  'Click Install': 'Click Install',
-  'Claude shows the BrowserOS neo extension details. Click Install to finish \u2014 Claude can now drive BrowserOS neo.':
-    'Claude shows the BrowserOS neo extension details. Click Install to finish \u2014 Claude can now drive BrowserOS neo.',
-  "Claude Desktop's BrowserOS neo extension details sheet with the Install button in the top right":
-    "Claude Desktop's BrowserOS neo extension details sheet with the Install button in the top right",
   'Add the MCP server': 'Add the MCP server',
-  'Point your agent at the endpoint URL from this page and add it as a streamable HTTP MCP server named browseros-neo. Where that setting lives depends on the agent, so check its own MCP documentation.':
-    'Point your agent at the endpoint URL from this page and add it as a streamable HTTP MCP server named browseros-neo. Where that setting lives depends on the agent, so check its own MCP documentation.',
+  'Point your agent at the endpoint URL from this page and add it as a streamable HTTP MCP server named reBrowser. Where that setting lives depends on the agent, so check its own MCP documentation.':
+    'Point your agent at the endpoint URL from this page and add it as a streamable HTTP MCP server named reBrowser. Where that setting lives depends on the agent, so check its own MCP documentation.',
   'Read the URL from the top of this page rather than assuming a port. It is a loopback address and the port is not the same across builds.':
     'Read the URL from the top of this page rather than assuming a port. It is a loopback address and the port is not the same across builds.',
   'Install the skill': 'Install the skill',
   'The MCP server gives your agent the tools. The skill tells it how to use them: to work in its own tabs instead of yours, to name its session so you can find it in the cockpit, and to reach for this browser rather than its own fetcher.':
     'The MCP server gives your agent the tools. The skill tells it how to use them: to work in its own tabs instead of yours, to name its session so you can find it in the cockpit, and to reach for this browser rather than its own fetcher.',
-  'Run this in your project, or add -g to install it for every project.':
-    'Run this in your project, or add -g to install it for every project.',
+  'Copy skills/rebrowser/SKILL.md from this repository into your agent’s skills directory, following its skill installation instructions.':
+    'Copy skills/rebrowser/SKILL.md from this repository into your agent’s skills directory, following its skill installation instructions.',
 }

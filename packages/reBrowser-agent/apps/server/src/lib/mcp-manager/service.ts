@@ -233,7 +233,7 @@ export async function uninstallFrom(
     return {
       success: false,
       message:
-        'Cannot remove a user-edited entry. Please remove BrowserOS from this agent manually and try again.',
+        'Cannot remove a user-edited entry. Please remove reBrowser from this agent manually and try again.',
     }
   }
   return { success: true }
@@ -272,7 +272,7 @@ export function humaniseInstallError(err: unknown): {
   if (err instanceof ForeignEntryError) {
     return {
       message:
-        "Cannot replace a user-edited entry. Please remove BrowserOS from this agent's config manually and try again.",
+        "Cannot replace a user-edited entry. Please remove reBrowser from this agent's config manually and try again.",
       status: 409,
     }
   }
@@ -285,7 +285,7 @@ export function humaniseInstallError(err: unknown): {
   }
   if (err instanceof UnsupportedTransportError) {
     return {
-      message: `This agent does not support BrowserOS's MCP transport. ${err.message}`,
+      message: `This agent does not support reBrowser's MCP transport. ${err.message}`,
       status: 400,
     }
   }

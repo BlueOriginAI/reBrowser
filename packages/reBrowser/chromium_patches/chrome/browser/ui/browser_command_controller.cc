@@ -103,7 +103,7 @@ index a457075948e34dcc2df8a1c127c146bf4dc92a02..5350b864832057b589090c7aaf457348
 +              infobars::InfoBarDelegate::
 +                  BROWSEROS_AGENT_INSTALLING_INFOBAR_DELEGATE,
 +              nullptr,
-+              u"BrowserOS Agent is installing/updating. Please try again "
++              u"reBrowser Agent is installing/updating. Please try again "
 +              u"shortly.",
 +              /*auto_expire=*/true,
 +              /*should_animate=*/true,

@@ -47,7 +47,7 @@ pub async fn get_tool_output_dir() -> std::io::Result<PathBuf> {
     let metadata = fs::symlink_metadata(&output_dir).await?;
     if !metadata.is_dir() || metadata.file_type().is_symlink() {
         return Err(std::io::Error::other(
-            "BrowserOS tool output directory must be a real directory.",
+            "reBrowser tool output directory must be a real directory.",
         ));
     }
     let real = fs::canonicalize(output_dir).await?;

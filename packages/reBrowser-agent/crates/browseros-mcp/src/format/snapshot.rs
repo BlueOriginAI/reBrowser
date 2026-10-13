@@ -61,7 +61,7 @@ pub async fn format_snapshot_result(
                 return FormattedSnapshot {
                     text: [
                         format!(
-                            "Large snapshot ({token_estimate} estimated tokens, {content_length} chars) could not be saved to a BrowserOS output file: {save_error}"
+                            "Large snapshot ({token_estimate} estimated tokens, {content_length} chars) could not be saved to a reBrowser output file: {save_error}"
                         ),
                         format!(
                             "Showing the first {MAX_INLINE_EXCERPT_TOKENS} estimated tokens instead:"

@@ -16,7 +16,7 @@ export function WelcomeStep({ onPrimary, onSkip }: WelcomeStepProps) {
     <StepWrap>
       <DisplayHeading>
         {t('welcome.title.before')}
-        <Em>RemocodeBrowser</Em>
+        <Em>reBrowser</Em>
       </DisplayHeading>
       <StepCopy>{t('welcome.copy')}</StepCopy>
       <div className="flex flex-wrap items-center gap-3">

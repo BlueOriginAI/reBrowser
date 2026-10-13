@@ -1,22 +1,22 @@
 /**
  * @public
  */
-export const docsUrl = 'https://docs.browseros.com/'
+export const docsUrl = 'https://github.com/BlueOriginAI/reBrowser#readme'
 
 /**
  * @public
  */
-export const productWebUrl = 'https://browseros.com'
+export const productWebUrl = 'https://github.com/BlueOriginAI/reBrowser'
 
 /**
  * @public
  */
-export const productRepositoryUrl = 'https://github.com/browseros-ai/BrowserOS'
+export const productRepositoryUrl = 'https://github.com/BlueOriginAI/reBrowser'
 
 /**
  * @public
  */
-export const githubOrgUrl = 'https://github.com/browseros-ai'
+export const githubOrgUrl = 'https://github.com/BlueOriginAI'
 
 /**
  * @public
@@ -27,7 +27,7 @@ export const privacyPolicyUrl = 'https://browseros.com/privacy'
  * @public
  */
 export const contributorsUrl =
-  'https://github.com/browseros-ai/BrowserOS/graphs/contributors'
+  'https://github.com/BlueOriginAI/reBrowser/graphs/contributors'
 
 /**
  * @public
@@ -47,7 +47,8 @@ export const productVideoUrl = 'https://youtu.be/J-lFhTP-7is'
 /**
  * @public
  */
-export const productRepositoryShortUrl = 'https://git.new/browseros'
+export const productRepositoryShortUrl =
+  'https://github.com/BlueOriginAI/reBrowser'
 
 /**
  * @public

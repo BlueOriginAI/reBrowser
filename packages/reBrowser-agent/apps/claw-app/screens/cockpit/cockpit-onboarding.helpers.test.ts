@@ -46,13 +46,13 @@ describe('cockpit onboarding copy', () => {
     expect(HERO_COPY.h1Prefix).toBe('You watch. Your agent')
     expect(HERO_COPY.h1Accent).toBe('works.')
     expect(HERO_COPY.subhead).toBe(
-      'Your agents are wired in. Watch a quick demo, then hand your first task to any of them.',
+      'Your agents are wired in. Hand your first task to any of them, then watch it here.',
     )
   })
 
   it('starter prompt is the streaming-price research task', () => {
     expect(STARTER_PROMPT).toBe(
-      'Using BrowserOS neo, search for the current monthly prices of streaming services such as Netflix, Disney plus, Hulu, Max and Apple TV',
+      'Using reBrowser, search for the current monthly prices of streaming services such as Netflix, Disney plus, Hulu, Max and Apple TV',
     )
   })
 
@@ -68,11 +68,13 @@ describe('cockpit onboarding copy', () => {
     expect(MANAGE_COPY.href).toBe('/mcp')
   })
 
-  it('docs footer link deep-links to the BrowserClaw section', () => {
+  it('docs footer link deep-links to the reBrowser section', () => {
     // Should NOT bare-root; readers arriving from the cockpit expect
     // BrowserClaw-specific docs (install / MCP / first-run), not the
     // BrowserOS index. Guard against accidental drift.
-    expect(FOOTER_COPY.docsHref).toBe('https://docs.browseros.com/browserclaw')
+    expect(FOOTER_COPY.docsHref).toBe(
+      'https://github.com/BlueOriginAI/reBrowser/blob/main/skills/rebrowser/SKILL.md',
+    )
     expect(FOOTER_COPY.docs).toBe('Read the docs')
   })
 })

@@ -13,18 +13,18 @@ export const surfacesEnglish: Record<string, string> = {
   'Retry run': 'Retry run',
   'View more': 'View more',
   'Keyboard Shortcuts': 'Keyboard Shortcuts',
-  'Use these shortcuts to navigate BrowserOS faster':
-    'Use these shortcuts to navigate BrowserOS faster',
+  'Use these shortcuts to navigate reBrowser faster':
+    'Use these shortcuts to navigate reBrowser faster',
   'More shortcuts coming soon': 'More shortcuts coming soon',
   'Add more info about you': 'Add more info about you',
-  'Help BrowserOS understand who you are':
-    'Help BrowserOS understand who you are',
+  'Help reBrowser understand who you are':
+    'Help reBrowser understand who you are',
   'What you expect from the browser': 'What you expect from the browser',
   'Share your preferences and needs': 'Share your preferences and needs',
   'Your commonly performed actions': 'Your commonly performed actions',
   'Describe your daily workflows': 'Describe your daily workflows',
   'Your Information': 'Your Information',
-  'Tell BrowserOS about yourself...': 'Tell BrowserOS about yourself...',
+  'Tell reBrowser about yourself...': 'Tell reBrowser about yourself...',
   'Your information is saved locally and never leaves your device. Markdown formatting is supported.':
     'Your information is saved locally and never leaves your device. Markdown formatting is supported.',
   'Need help getting started?': 'Need help getting started?',
@@ -75,14 +75,14 @@ export const surfacesEnglish: Record<string, string> = {
   Remove: 'Remove',
   'Set up your': 'Set up your',
   agent: 'agent',
-  'BrowserOS runs on the provider you bring. Connect an LLM provider or a coding agent harness you already use. You can change this any time in settings.':
-    'BrowserOS runs on the provider you bring. Connect an LLM provider or a coding agent harness you already use. You can change this any time in settings.',
+  'reBrowser runs on the provider you bring. Connect an LLM provider or a coding agent harness you already use. You can change this any time in settings.':
+    'reBrowser runs on the provider you bring. Connect an LLM provider or a coding agent harness you already use. You can change this any time in settings.',
   'Video:': 'Video:',
   mins: 'mins',
   'Open details': 'Open details',
   'AI AGENT': 'AI AGENT',
   'Built-in AI Agent': 'Built-in AI Agent',
-  'BrowserOS as MCP Server': 'BrowserOS as MCP Server',
+  'reBrowser as MCP Server': 'reBrowser as MCP Server',
   FILES: 'FILES',
   Cowork: 'Cowork',
   CORE: 'CORE',
@@ -91,21 +91,21 @@ export const surfacesEnglish: Record<string, string> = {
   'Agentic Coding': 'Agentic Coding',
   WELCOME: 'WELCOME',
   'Why Switch to': 'Why Switch to',
-  'BrowserOS?': 'BrowserOS?',
-  'Watch our launch video to understand the vision of BrowserOS and key features!':
-    'Watch our launch video to understand the vision of BrowserOS and key features!',
-  'BrowserOS MCP Server Demonstration': 'BrowserOS MCP Server Demonstration',
+  'reBrowser?': 'reBrowser?',
+  'Explore reBrowser features and connect your agents.':
+    'Explore reBrowser features and connect your agents.',
+  'reBrowser MCP Server Demonstration': 'reBrowser MCP Server Demonstration',
   'Scroll for Features': 'Scroll for Features',
   FEATURES: 'FEATURES',
   "Explore What's": "Explore What's",
   Possible: 'Possible',
-  'Skim the highlights below, then click any card to see a focused walkthrough with video and deeper details.':
-    'Skim the highlights below, then click any card to see a focused walkthrough with video and deeper details.',
-  '💡 Tip: Click any card to open a focused walkthrough with video':
-    '💡 Tip: Click any card to open a focused walkthrough with video',
+  'Skim the highlights below, then click any card for more details.':
+    'Skim the highlights below, then click any card for more details.',
+  '💡 Tip: Click any card to explore its features':
+    '💡 Tip: Click any card to explore its features',
   'Join our community and help us improve':
     'Join our community and help us improve',
-  'BrowserOS!': 'BrowserOS!',
+  'reBrowser!': 'reBrowser!',
   'Join Discord': 'Join Discord',
   'Join Slack': 'Join Slack',
   'To suggest features / provide feedback':
@@ -113,7 +113,7 @@ export const surfacesEnglish: Record<string, string> = {
   'Star our repository': 'Star our repository',
   Documentation: 'Documentation',
   'Learn more': 'Learn more',
-  'Start Using BrowserOS': 'Start Using BrowserOS',
+  'Start Using reBrowser': 'Start Using reBrowser',
   'Thinking...': 'Thinking...',
   'Type your response...': 'Type your response...',
   'Product Survey': 'Product Survey',
@@ -168,7 +168,7 @@ export const surfacesEnglish: Record<string, string> = {
   'Do it manually': 'Do it manually',
   'Incognito mode: this chat is not saved to history.':
     'Incognito mode: this chat is not saved to history.',
-  'Help us improve BrowserOS!': 'Help us improve BrowserOS!',
+  'Help us improve reBrowser!': 'Help us improve reBrowser!',
   'Take a quick 3-minute survey.': 'Take a quick 3-minute survey.',
   'Take Survey': 'Take Survey',
   'Maybe Later': 'Maybe Later',
@@ -211,9 +211,8 @@ export const surfacesEnglish: Record<string, string> = {
   'Your conversations will appear here.':
     'Your conversations will appear here.',
   'Show older': 'Show older',
-  'About BrowserOS': 'About BrowserOS',
   Shortcuts: 'Shortcuts',
-  'About RemocodeBrowser': 'About RemocodeBrowser',
+  'About reBrowser': 'About reBrowser',
   'Search apps...': 'Search apps...',
   'No apps found': 'No apps found',
   Connected: 'Connected',
@@ -242,7 +241,7 @@ export const surfacesEnglish: Record<string, string> = {
   Recent: 'Recent',
   'No folders found': 'No folders found',
   'Choose a different folder': 'Choose a different folder',
-  'BrowserOS agent + your LLM': 'BrowserOS agent + your LLM',
+  'reBrowser agent + your LLM': 'reBrowser agent + your LLM',
   '3p agents': '3p agents',
   'best effort': 'best effort',
   'Search providers or agents...': 'Search providers or agents...',
@@ -256,21 +255,21 @@ export const surfacesEnglish: Record<string, string> = {
   'Connect an LLM provider or a coding agent you already use.':
     'Connect an LLM provider or a coding agent you already use.',
   'Connect a provider': 'Connect a provider',
-  'Meet BrowserOS neo — the browser for AI agents':
-    'Meet BrowserOS neo — the browser for AI agents',
-  'A new product from the BrowserOS team — free, open source, and ready to download':
-    'A new product from the BrowserOS team — free, open source, and ready to download',
+  'Meet reBrowser — the browser for AI agents':
+    'Meet reBrowser — the browser for AI agents',
+  'A new product from the reBrowser team — free, open source, and ready to download':
+    'A new product from the reBrowser team — free, open source, and ready to download',
   'Check it out': 'Check it out',
   Dismiss: 'Dismiss',
   "We're live on Product Hunt 🎉": "We're live on Product Hunt 🎉",
-  'BrowserOS neo just launched. Take a look and share your feedback.':
-    'BrowserOS neo just launched. Take a look and share your feedback.',
+  'reBrowser just launched. Take a look and share your feedback.':
+    'reBrowser just launched. Take a look and share your feedback.',
   'Check out our Product Hunt launch': 'Check out our Product Hunt launch',
   'Check out our launch': 'Check out our launch',
-  'Describe any task and watch BrowserOS execute it—clicking, typing, and navigating for you.':
-    'Describe any task and watch BrowserOS execute it—clicking, typing, and navigating for you.',
-  'The BrowserOS Agent turns your words into browser actions. Describe what you need in plain English—fill out this form, extract data from that page, navigate through these steps—and the agent handles the rest. It clicks buttons, types text, navigates between pages, and completes multi-step browser tasks automatically. Everything runs locally on your machine with your own API keys, so your data stays private.':
-    'The BrowserOS Agent turns your words into browser actions. Describe what you need in plain English—fill out this form, extract data from that page, navigate through these steps—and the agent handles the rest. It clicks buttons, types text, navigates between pages, and completes multi-step browser tasks automatically. Everything runs locally on your machine with your own API keys, so your data stays private.',
+  'Describe any task and watch reBrowser execute it—clicking, typing, and navigating for you.':
+    'Describe any task and watch reBrowser execute it—clicking, typing, and navigating for you.',
+  'The reBrowser Agent turns your words into browser actions. Describe what you need in plain English—fill out this form, extract data from that page, navigate through these steps—and the agent handles the rest. It clicks buttons, types text, navigates between pages, and completes multi-step browser tasks automatically. Everything runs locally on your machine with your own API keys, so your data stays private.':
+    'The reBrowser Agent turns your words into browser actions. Describe what you need in plain English—fill out this form, extract data from that page, navigate through these steps—and the agent handles the rest. It clicks buttons, types text, navigates between pages, and completes multi-step browser tasks automatically. Everything runs locally on your machine with your own API keys, so your data stays private.',
   'Multi-tab execution — run agents in multiple tabs simultaneously':
     'Multi-tab execution — run agents in multiple tabs simultaneously',
   'Smart navigation — automatically finds and interacts with page elements':
@@ -283,8 +282,8 @@ export const surfacesEnglish: Record<string, string> = {
     'Auto-save sessions — pick up where you left off from the Assistant panel',
   'Connect Claude Code, Gemini CLI, or any MCP client to control your browser with 31 tools.':
     'Connect Claude Code, Gemini CLI, or any MCP client to control your browser with 31 tools.',
-  'BrowserOS includes a built-in MCP server that lets AI coding agents control your browser. Claude Code can open tabs, click elements, fill forms, take screenshots, and read page content—all through natural language commands. Unlike Chrome DevTools MCP which requires debug profiles and separate servers, BrowserOS works out of the box. Just copy the URL from settings and connect.':
-    'BrowserOS includes a built-in MCP server that lets AI coding agents control your browser. Claude Code can open tabs, click elements, fill forms, take screenshots, and read page content—all through natural language commands. Unlike Chrome DevTools MCP which requires debug profiles and separate servers, BrowserOS works out of the box. Just copy the URL from settings and connect.',
+  'reBrowser includes a built-in MCP server that lets AI coding agents control your browser. Claude Code can open tabs, click elements, fill forms, take screenshots, and read page content—all through natural language commands. Unlike Chrome DevTools MCP which requires debug profiles and separate servers, reBrowser works out of the box. Just copy the URL from settings and connect.':
+    'reBrowser includes a built-in MCP server that lets AI coding agents control your browser. Claude Code can open tabs, click elements, fill forms, take screenshots, and read page content—all through natural language commands. Unlike Chrome DevTools MCP which requires debug profiles and separate servers, reBrowser works out of the box. Just copy the URL from settings and connect.',
   'One-line setup — run `claude mcp add` with your server URL to connect':
     'One-line setup — run `claude mcp add` with your server URL to connect',
   '31 browser tools — tabs, clicks, typing, screenshots, bookmarks, history':
@@ -319,8 +318,8 @@ export const surfacesEnglish: Record<string, string> = {
     'Copy & screenshot — grab page content or capture screenshots for context',
   'Claude Code tests your web app, reads console errors, and fixes your code in one loop.':
     'Claude Code tests your web app, reads console errors, and fixes your code in one loop.',
-  'The killer workflow for frontend developers. Claude Code connects to BrowserOS, opens your localhost app, clicks through the UI, reads console errors and network failures, then goes back to your codebase to fix the bugs—all in one continuous loop. No more switching between terminal and browser. No more copy-pasting error messages. Just describe the issue and let the agent debug it end-to-end.':
-    'The killer workflow for frontend developers. Claude Code connects to BrowserOS, opens your localhost app, clicks through the UI, reads console errors and network failures, then goes back to your codebase to fix the bugs—all in one continuous loop. No more switching between terminal and browser. No more copy-pasting error messages. Just describe the issue and let the agent debug it end-to-end.',
+  'The killer workflow for frontend developers. Claude Code connects to reBrowser, opens your localhost app, clicks through the UI, reads console errors and network failures, then goes back to your codebase to fix the bugs—all in one continuous loop. No more switching between terminal and browser. No more copy-pasting error messages. Just describe the issue and let the agent debug it end-to-end.':
+    'The killer workflow for frontend developers. Claude Code connects to reBrowser, opens your localhost app, clicks through the UI, reads console errors and network failures, then goes back to your codebase to fix the bugs—all in one continuous loop. No more switching between terminal and browser. No more copy-pasting error messages. Just describe the issue and let the agent debug it end-to-end.',
   'Test & fix loop — Claude navigates your app, finds bugs, and patches them':
     'Test & fix loop — Claude navigates your app, finds bugs, and patches them',
   'Console access — read browser console and network errors from your terminal':
@@ -474,7 +473,7 @@ export const surfacesEnglish: Record<string, string> = {
     'What topics does this page talk about?',
   'Extract comments from this page': 'Extract comments from this page',
   'Read about our vision and upvote': 'Read about our vision and upvote',
-  'Support BrowserOS on Github': 'Support BrowserOS on Github',
+  'Support reBrowser on Github': 'Support reBrowser on Github',
   'Open amazon.com and order Sensodyne toothpaste':
     'Open amazon.com and order Sensodyne toothpaste',
   'Attachment is too large.': 'Attachment is too large.',
@@ -510,17 +509,17 @@ export const surfacesChinese: Record<string, string> = {
   'Retry run': '重试运行',
   'View more': '查看更多',
   'Keyboard Shortcuts': '键盘快捷键',
-  'Use these shortcuts to navigate BrowserOS faster':
-    '使用这些快捷键，更快捷地操作 BrowserOS',
+  'Use these shortcuts to navigate reBrowser faster':
+    '使用这些快捷键，更快捷地操作 reBrowser',
   'More shortcuts coming soon': '更多快捷键即将推出',
   'Add more info about you': '添加更多个人信息',
-  'Help BrowserOS understand who you are': '帮助 BrowserOS 了解您',
+  'Help reBrowser understand who you are': '帮助 reBrowser 了解您',
   'What you expect from the browser': '您对浏览器的期望',
   'Share your preferences and needs': '分享您的偏好和需求',
   'Your commonly performed actions': '您的常用操作',
   'Describe your daily workflows': '描述您的日常工作流程',
   'Your Information': '您的信息',
-  'Tell BrowserOS about yourself...': '向 BrowserOS 介绍您自己…',
+  'Tell reBrowser about yourself...': '向 reBrowser 介绍您自己…',
   'Your information is saved locally and never leaves your device. Markdown formatting is supported.':
     '您的信息仅保存在本地，不会离开此设备。支持 Markdown 格式。',
   'Need help getting started?': '需要入门帮助？',
@@ -569,14 +568,14 @@ export const surfacesChinese: Record<string, string> = {
   Remove: '移除',
   'Set up your': '设置您的',
   agent: '智能体',
-  'BrowserOS runs on the provider you bring. Connect an LLM provider or a coding agent harness you already use. You can change this any time in settings.':
-    'BrowserOS 使用您提供的服务运行。连接您已有的大模型提供商或编程智能体框架。您可以随时在设置中更改。',
+  'reBrowser runs on the provider you bring. Connect an LLM provider or a coding agent harness you already use. You can change this any time in settings.':
+    'reBrowser 使用您提供的服务运行。连接您已有的大模型提供商或编程智能体框架。您可以随时在设置中更改。',
   'Video:': '视频：',
   mins: '分钟',
   'Open details': '打开详情',
   'AI AGENT': 'AI 智能体',
   'Built-in AI Agent': '内置 AI 智能体',
-  'BrowserOS as MCP Server': '将 BrowserOS 用作 MCP 服务器',
+  'reBrowser as MCP Server': '将 reBrowser 用作 MCP 服务器',
   FILES: '文件',
   Cowork: '协同工作',
   CORE: '核心功能',
@@ -585,27 +584,27 @@ export const surfacesChinese: Record<string, string> = {
   'Agentic Coding': '智能体编程',
   WELCOME: '欢迎',
   'Why Switch to': '为什么选择',
-  'BrowserOS?': 'BrowserOS？',
-  'Watch our launch video to understand the vision of BrowserOS and key features!':
-    '观看发布视频，了解 BrowserOS 的愿景和核心功能！',
-  'BrowserOS MCP Server Demonstration': 'BrowserOS MCP 服务器演示',
+  'reBrowser?': 'reBrowser？',
+  'Explore reBrowser features and connect your agents.':
+    '了解 reBrowser 的功能并连接你的智能体。',
+  'reBrowser MCP Server Demonstration': 'reBrowser MCP 服务器演示',
   'Scroll for Features': '向下滚动查看功能',
   FEATURES: '功能',
   "Explore What's": '探索更多',
   Possible: '可能',
-  'Skim the highlights below, then click any card to see a focused walkthrough with video and deeper details.':
-    '浏览下方功能亮点，点击任意卡片查看视频演示和详细介绍。',
-  '💡 Tip: Click any card to open a focused walkthrough with video':
-    '💡 提示：点击任意卡片查看视频演示',
+  'Skim the highlights below, then click any card for more details.':
+    '浏览下方功能亮点，点击任意卡片了解详情。',
+  '💡 Tip: Click any card to explore its features':
+    '💡 提示：点击任意卡片了解其功能',
   'Join our community and help us improve': '加入社区，帮助我们改进',
-  'BrowserOS!': 'BrowserOS！',
+  'reBrowser!': 'reBrowser！',
   'Join Discord': '加入 Discord',
   'Join Slack': '加入 Slack',
   'To suggest features / provide feedback': '提出功能建议或反馈',
   'Star our repository': '为我们的仓库加星',
   Documentation: '文档',
   'Learn more': '了解更多',
-  'Start Using BrowserOS': '开始使用 BrowserOS',
+  'Start Using reBrowser': '开始使用 reBrowser',
   'Thinking...': '正在思考…',
   'Type your response...': '输入您的回复…',
   'Product Survey': '产品问卷',
@@ -659,7 +658,7 @@ export const surfacesChinese: Record<string, string> = {
   'Do it manually': '手动操作',
   'Incognito mode: this chat is not saved to history.':
     '无痕模式：此对话不会保存到历史记录。',
-  'Help us improve BrowserOS!': '帮助我们改进 BrowserOS！',
+  'Help us improve reBrowser!': '帮助我们改进 reBrowser！',
   'Take a quick 3-minute survey.': '填写一份约 3 分钟的简短问卷。',
   'Take Survey': '填写问卷',
   'Maybe Later': '稍后再说',
@@ -701,9 +700,8 @@ export const surfacesChinese: Record<string, string> = {
   'No conversations found.': '未找到对话。',
   'Your conversations will appear here.': '您的对话将显示在此处。',
   'Show older': '显示更早的对话',
-  'About BrowserOS': '关于 BrowserOS',
   Shortcuts: '快捷键',
-  'About RemocodeBrowser': '关于 RemocodeBrowser',
+  'About reBrowser': '关于 reBrowser',
   'Search apps...': '搜索应用…',
   'No apps found': '未找到应用',
   Connected: '已连接',
@@ -732,7 +730,7 @@ export const surfacesChinese: Record<string, string> = {
   Recent: '最近使用',
   'No folders found': '未找到文件夹',
   'Choose a different folder': '选择其他文件夹',
-  'BrowserOS agent + your LLM': 'BrowserOS 智能体 + 您的大模型',
+  'reBrowser agent + your LLM': 'reBrowser 智能体 + 您的大模型',
   '3p agents': '第三方智能体',
   'best effort': '尽力支持',
   'Search providers or agents...': '搜索提供商或智能体…',
@@ -745,21 +743,21 @@ export const surfacesChinese: Record<string, string> = {
   'Connect an LLM provider or a coding agent you already use.':
     '连接您已有的大模型提供商或编程智能体。',
   'Connect a provider': '连接提供商',
-  'Meet BrowserOS neo — the browser for AI agents':
-    '认识 BrowserOS neo——专为 AI 智能体打造的浏览器',
-  'A new product from the BrowserOS team — free, open source, and ready to download':
-    'BrowserOS 团队的新产品——免费、开源，即刻下载',
+  'Meet reBrowser — the browser for AI agents':
+    '认识 reBrowser——专为 AI 智能体打造的浏览器',
+  'A new product from the reBrowser team — free, open source, and ready to download':
+    'reBrowser 团队的新产品——免费、开源，即刻下载',
   'Check it out': '立即查看',
   Dismiss: '关闭',
   "We're live on Product Hunt 🎉": '我们已在 Product Hunt 发布 🎉',
-  'BrowserOS neo just launched. Take a look and share your feedback.':
-    'BrowserOS neo 已发布。欢迎体验并分享反馈。',
+  'reBrowser just launched. Take a look and share your feedback.':
+    'reBrowser 已发布。欢迎体验并分享反馈。',
   'Check out our Product Hunt launch': '查看我们的 Product Hunt 发布页面',
   'Check out our launch': '查看发布页面',
-  'Describe any task and watch BrowserOS execute it—clicking, typing, and navigating for you.':
-    '描述任意任务，BrowserOS 就会为您执行点击、输入和导航操作。',
-  'The BrowserOS Agent turns your words into browser actions. Describe what you need in plain English—fill out this form, extract data from that page, navigate through these steps—and the agent handles the rest. It clicks buttons, types text, navigates between pages, and completes multi-step browser tasks automatically. Everything runs locally on your machine with your own API keys, so your data stays private.':
-    'BrowserOS 智能体将您的指令转化为浏览器操作。用自然语言描述需求——填写表单、提取网页数据或依次访问页面——其余工作交给智能体。它会自动点击按钮、输入文字、切换页面，完成多步骤任务。所有操作均使用您自己的 API 密钥在本机运行，保障数据隐私。',
+  'Describe any task and watch reBrowser execute it—clicking, typing, and navigating for you.':
+    '描述任意任务，reBrowser 就会为您执行点击、输入和导航操作。',
+  'The reBrowser Agent turns your words into browser actions. Describe what you need in plain English—fill out this form, extract data from that page, navigate through these steps—and the agent handles the rest. It clicks buttons, types text, navigates between pages, and completes multi-step browser tasks automatically. Everything runs locally on your machine with your own API keys, so your data stays private.':
+    'reBrowser 智能体将您的指令转化为浏览器操作。用自然语言描述需求——填写表单、提取网页数据或依次访问页面——其余工作交给智能体。它会自动点击按钮、输入文字、切换页面，完成多步骤任务。所有操作均使用您自己的 API 密钥在本机运行，保障数据隐私。',
   'Multi-tab execution — run agents in multiple tabs simultaneously':
     '多标签页执行——在多个标签页中同时运行智能体',
   'Smart navigation — automatically finds and interacts with page elements':
@@ -772,8 +770,8 @@ export const surfacesChinese: Record<string, string> = {
     '自动保存会话——在助手面板中继续上次的工作',
   'Connect Claude Code, Gemini CLI, or any MCP client to control your browser with 31 tools.':
     '连接 Claude Code、Gemini CLI 或其他 MCP 客户端，使用 31 种工具控制浏览器。',
-  'BrowserOS includes a built-in MCP server that lets AI coding agents control your browser. Claude Code can open tabs, click elements, fill forms, take screenshots, and read page content—all through natural language commands. Unlike Chrome DevTools MCP which requires debug profiles and separate servers, BrowserOS works out of the box. Just copy the URL from settings and connect.':
-    'BrowserOS 内置 MCP 服务器，让 AI 编程智能体能够控制浏览器。Claude Code 可通过自然语言指令打开标签页、点击元素、填写表单、截取屏幕并读取网页。与需要调试配置和独立服务器的 Chrome DevTools MCP 不同，BrowserOS 开箱即用，只需复制设置中的地址即可连接。',
+  'reBrowser includes a built-in MCP server that lets AI coding agents control your browser. Claude Code can open tabs, click elements, fill forms, take screenshots, and read page content—all through natural language commands. Unlike Chrome DevTools MCP which requires debug profiles and separate servers, reBrowser works out of the box. Just copy the URL from settings and connect.':
+    'reBrowser 内置 MCP 服务器，让 AI 编程智能体能够控制浏览器。Claude Code 可通过自然语言指令打开标签页、点击元素、填写表单、截取屏幕并读取网页。与需要调试配置和独立服务器的 Chrome DevTools MCP 不同，reBrowser 开箱即用，只需复制设置中的地址即可连接。',
   'One-line setup — run `claude mcp add` with your server URL to connect':
     '一行配置——运行 `claude mcp add` 并填入服务器地址即可连接',
   '31 browser tools — tabs, clicks, typing, screenshots, bookmarks, history':
@@ -808,8 +806,8 @@ export const surfacesChinese: Record<string, string> = {
     '复制与截图——获取网页内容或截图作为上下文',
   'Claude Code tests your web app, reads console errors, and fixes your code in one loop.':
     'Claude Code 在同一个流程中测试网页应用、读取控制台错误并修复代码。',
-  'The killer workflow for frontend developers. Claude Code connects to BrowserOS, opens your localhost app, clicks through the UI, reads console errors and network failures, then goes back to your codebase to fix the bugs—all in one continuous loop. No more switching between terminal and browser. No more copy-pasting error messages. Just describe the issue and let the agent debug it end-to-end.':
-    '为前端开发者打造的高效工作流。Claude Code 连接 BrowserOS，打开本地应用、操作界面、读取控制台错误和网络故障，然后返回代码库修复问题——整个过程连续完成。无需反复切换终端与浏览器，也无需复制粘贴错误信息。只需描述问题，让智能体完成端到端调试。',
+  'The killer workflow for frontend developers. Claude Code connects to reBrowser, opens your localhost app, clicks through the UI, reads console errors and network failures, then goes back to your codebase to fix the bugs—all in one continuous loop. No more switching between terminal and browser. No more copy-pasting error messages. Just describe the issue and let the agent debug it end-to-end.':
+    '为前端开发者打造的高效工作流。Claude Code 连接 reBrowser，打开本地应用、操作界面、读取控制台错误和网络故障，然后返回代码库修复问题——整个过程连续完成。无需反复切换终端与浏览器，也无需复制粘贴错误信息。只需描述问题，让智能体完成端到端调试。',
   'Test & fix loop — Claude navigates your app, finds bugs, and patches them':
     '测试修复闭环——Claude 操作应用、发现问题并修复',
   'Console access — read browser console and network errors from your terminal':
@@ -958,7 +956,7 @@ export const surfacesChinese: Record<string, string> = {
   'What topics does this page talk about?': '此页面讨论了哪些主题？',
   'Extract comments from this page': '提取此页面的评论',
   'Read about our vision and upvote': '了解我们的愿景并点赞',
-  'Support BrowserOS on Github': '在 GitHub 上支持 BrowserOS',
+  'Support reBrowser on Github': '在 GitHub 上支持 reBrowser',
   'Open amazon.com and order Sensodyne toothpaste':
     '打开 amazon.com 并订购舒适达牙膏',
   'Attachment is too large.': '附件过大。',

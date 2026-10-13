@@ -40,7 +40,7 @@ export const HERO_COPY = {
   h1Prefix: 'You watch. Your agent',
   h1Accent: 'works.',
   subhead:
-    'Your agents are wired in. Watch a quick demo, then hand your first task to any of them.',
+    'Your agents are wired in. Hand your first task to any of them, then watch it here.',
 } as const
 
 export const PANEL_COPY = {
@@ -60,7 +60,7 @@ export const MANAGE_COPY = {
 export const STARTER_PROMPT_LABEL = 'Paste this prompt into your agent.'
 
 export const STARTER_PROMPT =
-  'Using BrowserOS neo, search for the current monthly prices of streaming services such as Netflix, Disney plus, Hulu, Max and Apple TV'
+  'Using reBrowser, search for the current monthly prices of streaming services such as Netflix, Disney plus, Hulu, Max and Apple TV'
 
 export const CONNECTED_COPY = {
   suffix: 'connected',
@@ -73,5 +73,6 @@ export const FOOTER_COPY = {
   // instead of BrowserOS's general index. Mintlify canonicalises
   // the URL without a trailing slash, so we use the no-slash form
   // to avoid triggering a redirect on every click.
-  docsHref: 'https://docs.browseros.com/browserclaw',
+  docsHref:
+    'https://github.com/BlueOriginAI/reBrowser/blob/main/skills/rebrowser/SKILL.md',
 } as const

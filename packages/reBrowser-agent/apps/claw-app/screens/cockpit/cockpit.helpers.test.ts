@@ -28,7 +28,7 @@ function liveSession(over: Partial<SessionSummary> = {}): SessionSummary {
     profileId: 'profile-shared',
     slug: 'codex',
     label: 'Codex',
-    name: 'Research BrowserClaw',
+    name: 'Research reBrowser',
     harness: 'Codex',
     color: '#0254ec',
     startedAt: 100,

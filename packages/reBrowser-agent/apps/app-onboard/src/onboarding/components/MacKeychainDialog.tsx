@@ -58,7 +58,7 @@ export function MacKeychainDialog({
               {t('keychain.title')}
             </Dialog.Title>
             <Dialog.Description className="text-[15px] text-ink-2 leading-[23px]">
-              {t('keychain.permission', { product: 'BrowserOS' })}
+              {t('keychain.permission', { product: 'reBrowser' })}
               <br />
               {t('keychain.instruction')}
             </Dialog.Description>

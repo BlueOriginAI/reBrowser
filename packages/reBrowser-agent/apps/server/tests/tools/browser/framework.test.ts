@@ -130,7 +130,7 @@ describe('browser tool framework post-actions', () => {
     expect(text).toContain('[END_UNTRUSTED_PAGE_CONTENT')
   })
 
-  it('writes large snapshot post-actions to a BrowserOS output file', async () => {
+  it('writes large snapshot post-actions to a reBrowser output file', async () => {
     await withBrowserosDir(async () => {
       const firstMarker = 'first-node'
       const lastMarker = 'last-node'
@@ -197,7 +197,7 @@ describe('browser tool framework post-actions', () => {
 
       expect(result.isError).toBeFalsy()
       expect(text).toContain('[Page 8 snapshot]')
-      expect(text).toContain('could not be saved to a BrowserOS output file')
+      expect(text).toContain('could not be saved to a reBrowser output file')
       expect(text).toContain('Showing the first')
       expect(text).toContain('[UNTRUSTED_PAGE_CONTENT')
       expect(text).toContain(firstMarker)
@@ -252,7 +252,7 @@ describe('browser tool framework post-actions', () => {
     expect(text).not.toContain('origin=https://example.com/stale')
   })
 
-  it('writes large diff post-actions to a BrowserOS output file', async () => {
+  it('writes large diff post-actions to a reBrowser output file', async () => {
     await withBrowserosDir(async () => {
       const firstMarker = 'first-diff-node'
       const lastMarker = 'last-diff-node'
@@ -331,7 +331,7 @@ describe('browser tool framework post-actions', () => {
 
       expect(result.isError).toBeFalsy()
       expect(text).toContain('[Page 4 diff]')
-      expect(text).toContain('saving it to a BrowserOS output file failed')
+      expect(text).toContain('saving it to a reBrowser output file failed')
       expect(text).toContain('Showing the first')
       expect(text).toContain('[UNTRUSTED_PAGE_CONTENT')
       expect(text).toContain(firstMarker)

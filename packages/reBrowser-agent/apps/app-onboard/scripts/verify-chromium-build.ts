@@ -11,7 +11,6 @@ const iconResourceFiles = [
   'icon/48.png',
   'icon/96.png',
   'icon/128.png',
-  'icon/keychain-prompt.png',
   'icon/hermes.png',
 ]
 const allowedFiles = new Set([...textResourceFiles, ...iconResourceFiles])

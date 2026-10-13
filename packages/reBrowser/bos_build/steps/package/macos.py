@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """DMG creation and packaging module for BrowserOS"""
 
-import shutil
+import tempfile
 from pathlib import Path
 from typing import Optional, List, Dict
 from ...core.step import Step, ValidationError, step
@@ -90,59 +90,37 @@ def create_dmg(
     volume_name: str = "BrowserOS",
     pkg_dmg_path: Optional[Path] = None,
 ) -> bool:
-    """Create a DMG package from an app bundle"""
-    log_info(f"\n📀 Creating DMG package: {dmg_path.name}")
+    """Create a DMG without synthesizing FinderInfo on signed executables.
 
-    # Verify app exists
-    if not app_path.exists():
+    pkg_dmg_path remains accepted for callers using the former packaging API.
+    """
+    log_info(f"\n📀 Creating DMG package: {dmg_path.name}")
+    if not app_path.is_dir():
         log_error(f"App not found at: {app_path}")
         return False
-
-    # Create DMG directory if needed
-    dmg_path.parent.mkdir(parents=True, exist_ok=True)
-
-    # Remove existing DMG if present
     if dmg_path.exists():
-        log_info(f"  Removing existing DMG: {dmg_path.name}")
-        dmg_path.unlink()
-
-    # Build command
-    cmd = []
-
-    if pkg_dmg_path and pkg_dmg_path.exists():
-        # Use Chromium's pkg-dmg tool if available
-        cmd = [str(pkg_dmg_path)]
-    else:
-        # Fallback to system pkg-dmg if available
-        pkg_dmg_system = shutil.which("pkg-dmg")
-        if pkg_dmg_system:
-            cmd = [pkg_dmg_system]
-        else:
-            log_error("No pkg-dmg tool found")
-            return False
-
-    cmd.extend(
-        [
-            "--sourcefile",
-            "--source",
-            str(app_path),
-            "--target",
-            str(dmg_path),
-            "--volname",
-            volume_name,
-            "--symlink",
-            "/Applications:/Applications",
-            "--format",
-            "UDBZ",
-        ]
-    )
-
-    # Add verbosity for Chromium's pkg-dmg
-    if pkg_dmg_path:
-        cmd.extend(["--verbosity", "2"])
-
+        log_error(f"Refusing to overwrite existing DMG: {dmg_path}")
+        return False
+    dmg_path.parent.mkdir(parents=True, exist_ok=True)
     try:
-        run_command(cmd)
+        with tempfile.TemporaryDirectory(prefix="rebrowser-dmg-") as temporary:
+            staging = Path(temporary)
+            staged_app = staging / app_path.name
+            run_command(["ditto", str(app_path), str(staged_app)])
+            (staging / "Applications").symlink_to("/Applications")
+            # Unsigned developer builds remain supported. Signed bundles must
+            # survive staging unchanged before the disk image is created.
+            if (app_path / "Contents/_CodeSignature/CodeResources").is_file():
+                for candidate in (app_path, staged_app):
+                    run_command([
+                        "codesign", "--verify", "--deep", "--strict",
+                        str(candidate),
+                    ])
+            run_command([
+                "hdiutil", "create", "-srcfolder", str(staging),
+                "-volname", volume_name, "-fs", "HFS+", "-format", "UDZO",
+                str(dmg_path),
+            ])
         log_success(f"DMG created: {dmg_path}")
         return True
     except Exception as e:

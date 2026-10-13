@@ -16,7 +16,7 @@ export function MacKeychainPreview() {
           </div>
           <div className="min-w-0 flex-1">
             <p className="m-0 font-bold text-[13px] leading-[17px]">
-              {t('keychain.request', { product: 'BrowserOS' })}
+              {t('keychain.request', { product: 'reBrowser' })}
             </p>
             <p className="my-3 text-xs leading-[17px]">
               {t('keychain.passwordPrompt')}

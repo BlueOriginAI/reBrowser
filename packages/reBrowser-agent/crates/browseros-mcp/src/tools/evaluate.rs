@@ -170,7 +170,7 @@ fn handler<'a>(
                         [
                             wrap_untrusted(&excerpt, &origin),
                             format!(
-                                "Evaluate result truncated at {inline_limit} bytes. Full result ({} bytes) could not be saved to a BrowserOS output file: {save_error}",
+                                "Evaluate result truncated at {inline_limit} bytes. Full result ({} bytes) could not be saved to a reBrowser output file: {save_error}",
                                 text.len()
                             ),
                         ]

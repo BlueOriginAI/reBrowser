@@ -3,7 +3,7 @@
  * Copyright 2026 BrowserOS
  * SPDX-License-Identifier: AGPL-3.0-or-later
  *
- * The BrowserOS neo cockpit chrome as it appears inside the demo. A
+ * The reBrowser cockpit chrome as it appears inside the demo. A
  * stylised recreation of the actual app: sidebar wordmark, header
  * strip, empty recent-activity table, one live-task row optional.
  * Wrapped in a minimal Chromium-style browser shell (traffic lights,
@@ -134,7 +134,7 @@ function BrowserChrome() {
               justifyContent: 'center',
             }}
           >
-            B
+            r
           </div>
           <span
             style={{
@@ -145,7 +145,7 @@ function BrowserChrome() {
               letterSpacing: -0.1,
             }}
           >
-            BrowserOS neo
+            reBrowser
           </span>
           <Glyph d="M5 5l6 6M11 5l-6 6" color={palette.ink3} size={13} />
         </div>
@@ -286,7 +286,7 @@ function Sidebar({
             justifyContent: 'center',
           }}
         >
-          B
+          r
         </div>
         <div
           style={{
@@ -296,7 +296,7 @@ function Sidebar({
             color: palette.ink,
           }}
         >
-          BrowserOS neo
+          reBrowser
         </div>
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
