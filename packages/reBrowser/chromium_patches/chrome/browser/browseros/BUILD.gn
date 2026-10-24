@@ -3,7 +3,7 @@ new file mode 100644
 index 0000000000000..9b2f877bec910
 --- /dev/null
 +++ b/chrome/browser/browseros/BUILD.gn
-@@ -0,0 +1,37 @@
+@@ -0,0 +1,38 @@
 +# Copyright 2024 The Chromium Authors
 +# Use of this source code is governed by a BSD-style license that can be
 +# found in the LICENSE file.
@@ -17,6 +17,7 @@ index 0000000000000..9b2f877bec910
 +
 +group("browseros") {
 +  deps = [
++    "//chrome/browser/browseros/account",
 +    "//chrome/browser/browseros/core",
 +    "//chrome/browser/browseros/core:product",
 +    "//chrome/browser/browseros/metrics",

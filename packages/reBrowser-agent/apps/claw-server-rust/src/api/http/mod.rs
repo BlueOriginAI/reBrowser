@@ -25,6 +25,7 @@ mod live;
 mod previews;
 mod recordings;
 mod replay;
+mod request_security;
 mod screenshots;
 mod sessions;
 mod settings;
@@ -33,6 +34,8 @@ mod system;
 
 /// UTF-8 request-body ceiling enforced before recording ingest and advertised by
 /// `/api/v1/system` so the relay can reject oversized queued batches before POSTing.
+pub const HTTP_REQUEST_POLICY_MARKER: &str = request_security::POLICY_MARKER;
+
 pub(super) const RECORDING_INGEST_MAX_BYTES: usize = 16 * 1024 * 1024;
 
 pub fn router(state: AppState) -> Router<AppState> {
@@ -171,16 +174,20 @@ pub async fn request_context(mut req: Request, next: Next) -> Response {
     req.extensions_mut().insert(request_id.clone());
     let method = req.method().clone();
     let path = req.uri().path().to_string();
-    let reject_recording_origin =
-        path == "/api/v1/recordings/events" && !trusted_recording_origin(req.headers());
+    let trust = request_security::authorize_request(&req);
+    let cors_origin = trust.as_ref().ok().and_then(|trust| trust.cors_origin);
+    let rejected = trust.is_err();
+    let is_mcp = path == "/mcp" || path.starts_with("/mcp/");
     let span = info_span!("http_request", request_id = %request_id.0, %method, %path);
     async move {
         let start = Instant::now();
-        let mut response = if reject_recording_origin {
+        let mut response = if rejected && is_mcp {
+            AppError::forbidden("unsupported request").into_response()
+        } else if rejected {
             CanonicalError::new(
                 StatusCode::FORBIDDEN,
                 "forbidden",
-                "recording ingest is restricted to reBrowser",
+                "request source is not trusted",
                 Some(&request_id),
             )
             .into_response()
@@ -199,20 +206,19 @@ pub async fn request_context(mut req: Request, next: Next) -> Response {
             }
         }
         let headers = response.headers_mut();
-        if !reject_recording_origin {
+        headers.append(header::VARY, HeaderValue::from_static("Origin"));
+        if let Some(origin) = cors_origin {
             headers.insert(
                 header::ACCESS_CONTROL_ALLOW_ORIGIN,
-                HeaderValue::from_static("*"),
+                HeaderValue::from_static(origin),
             );
             headers.insert(
                 header::ACCESS_CONTROL_ALLOW_METHODS,
-                HeaderValue::from_static("GET,POST,PUT,PATCH,DELETE,OPTIONS"),
+                HeaderValue::from_static(request_security::ALLOW_METHODS),
             );
             headers.insert(
                 header::ACCESS_CONTROL_ALLOW_HEADERS,
-                HeaderValue::from_static(
-                    "accept,content-type,authorization,mcp-session-id,mcp-protocol-version,last-event-id,x-recording-batch-id,x-recording-tab-id,x-recording-document-id,x-recording-has-gap",
-                ),
+                HeaderValue::from_static(request_security::ALLOW_HEADERS),
             );
         }
         if let Ok(value) = HeaderValue::from_str(&request_id.0) {
@@ -222,28 +228,6 @@ pub async fn request_context(mut req: Request, next: Next) -> Response {
     }
     .instrument(span)
     .await
-}
-
-/// Stable origin derived from claw-app's manifest signing key.
-const BROWSERCLAW_EXTENSION_ORIGIN: &str = "chrome-extension://naenhmeajakeeifaphccfdccdpnhkdmj";
-
-fn trusted_recording_origin(headers: &axum::http::HeaderMap) -> bool {
-    match headers
-        .get(header::ORIGIN)
-        .and_then(|value| value.to_str().ok())
-    {
-        None => true,
-        Some(BROWSERCLAW_EXTENSION_ORIGIN) => true,
-        Some("null") => {
-            // The native opaque recorder may send `Origin: null`; accept it only with
-            // `Sec-Fetch-Site: none`, not as general trust of null origins.
-            headers
-                .get("sec-fetch-site")
-                .and_then(|value| value.to_str().ok())
-                == Some("none")
-        }
-        Some(_) => false,
-    }
 }
 
 async fn route_fallback(request: Request) -> StatusCode {

@@ -33,6 +33,7 @@ const POSTHOG_KEY_MARKER: Option<&str> = option_env!("CLAW_POSTHOG_KEY_MARKER");
 async fn main() -> anyhow::Result<()> {
     std::hint::black_box(VERSION_MARKER);
     std::hint::black_box(managed_instance::POLICY_MARKER);
+    std::hint::black_box(claw_server_rust::api::http::HTTP_REQUEST_POLICY_MARKER);
     std::hint::black_box(POSTHOG_KEY_MARKER);
     let (config_path, stdio_mode) = match Cli::parse_action() {
         CliAction::Version => {

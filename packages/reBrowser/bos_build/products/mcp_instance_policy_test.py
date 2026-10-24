@@ -2,10 +2,12 @@
 
 import tempfile
 import unittest
+import plistlib
 from pathlib import Path
 
 from bos_build.products.mcp_instance_policy import (
     MCP_INSTANCE_POLICY_MARKER,
+    HTTP_REQUEST_POLICY_MARKER,
     SERVER_RESOURCES,
     validate_app_instance_policy,
     validate_mcp_instance_policy,
@@ -20,6 +22,9 @@ class McpInstancePolicyTest(unittest.TestCase):
             with self.assertRaisesRegex(ValueError, "primary-instance protection"):
                 validate_mcp_instance_policy(binary)
             binary.write_bytes(b"native backend:" + MCP_INSTANCE_POLICY_MARKER)
+            with self.assertRaisesRegex(ValueError, "HTTP source protection"):
+                validate_mcp_instance_policy(binary)
+            binary.write_bytes(b"native backend:" + MCP_INSTANCE_POLICY_MARKER + HTTP_REQUEST_POLICY_MARKER)
             validate_mcp_instance_policy(binary)
 
     def test_missing_backend_and_compatibility_launcher_are_not_release_payloads(self):
@@ -29,11 +34,22 @@ class McpInstancePolicyTest(unittest.TestCase):
                 validate_app_instance_policy(app, required=True)
             binary = app / SERVER_RESOURCES / "bin/reBrowser-server"
             binary.parent.mkdir(parents=True)
-            binary.write_bytes(MCP_INSTANCE_POLICY_MARKER)
+            binary.write_bytes(MCP_INSTANCE_POLICY_MARKER + HTTP_REQUEST_POLICY_MARKER)
             validate_app_instance_policy(app, required=True)
             binary.with_name("reBrowser-server-core").write_bytes(b"old backend")
             with self.assertRaisesRegex(ValueError, "compatibility launcher"):
                 validate_app_instance_policy(app, required=True)
+
+    def test_deferred_native_security_app_requires_explicit_local_packaging(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            app = Path(temporary) / "reBrowser.app"
+            binary = app / SERVER_RESOURCES / "bin/reBrowser-server"
+            binary.parent.mkdir(parents=True)
+            binary.write_bytes(MCP_INSTANCE_POLICY_MARKER + HTTP_REQUEST_POLICY_MARKER)
+            (app / "Contents/Info.plist").write_bytes(plistlib.dumps({"RemocodeNativeSecurityBuildPending": True}))
+            with self.assertRaisesRegex(ValueError, "local-maintenance only"):
+                validate_app_instance_policy(app, required=True)
+            validate_app_instance_policy(app, required=True, allow_deferred_native_security=True)
 
 
 if __name__ == "__main__":

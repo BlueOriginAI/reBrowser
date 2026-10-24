@@ -1,7 +1,79 @@
 diff --git a/chrome/app/resources/generated_resources_zh-CN.xtb b/chrome/app/resources/generated_resources_zh-CN.xtb
 --- a/chrome/app/resources/generated_resources_zh-CN.xtb
 +++ b/chrome/app/resources/generated_resources_zh-CN.xtb
-@@ -3714,6 +3714,7 @@
+@@ -31,6 +31,7 @@
+ <translation id="10146536653536065">安装“<ph name="EXTENSION_NAME" />”</translation>
+ <translation id="1015041505466489552">TrackPoint</translation>
+ <translation id="1015318665228971643">修改文件夹名称</translation>
++<translation id="101559001704598133">Remocode 账号独立于本地浏览器个人资料与 Google 服务。退出账号会保留本地个人资料和已导入的数据。</translation>
+ <translation id="1016566241875885511">其他信息（选填）</translation>
+ <translation id="1016876401615857435">若要在此设备上使用您的通行密钥，请先验证您的身份</translation>
+ <translation id="1017280919048282932">添加到字典中(&amp;A)</translation>
+@@ -49,6 +50,7 @@
+ <translation id="1029317248976101138">缩放</translation>
+ <translation id="1029526375103058355">点按即点击</translation>
+ <translation id="1029724557649700742">新功能推出后便可供使用，但具体功能可能会因设备而异。</translation>
++<translation id="1030193688886652979">Remocode 会话已过期，请重新登录。</translation>
+ <translation id="1031343556156414679">在 Windows Hello 中管理通行密钥</translation>
+ <translation id="1031362278801463162">正在加载预览</translation>
+ <translation id="1032605640136438169">请查阅新版条款</translation>
+@@ -346,6 +348,7 @@
+ <translation id="1235924639474699896">{COUNT,plural, =1{文字}other{# 段文字}}</translation>
+ <translation id="1237950098253310325">使用 Ctrl + 向上箭头或向下箭头对<ph name="BUTTON_NAME" />重新排序</translation>
+ <translation id="1238293488628890871">是否切换个人资料？</translation>
++<translation id="1238389291897291082">无法完成 Remocode 账号操作，请重试。</translation>
+ <translation id="1239841552505950173">启动应用</translation>
+ <translation id="1241066500170667906">为实验“<ph name="EXPERIMENT_NAME" />”选择实验状态</translation>
+ <translation id="124116460088058876">更多语言</translation>
+@@ -376,6 +379,7 @@
+ <translation id="1258491128795710625">新变化</translation>
+ <translation id="1260451001046713751">始终允许 <ph name="HOST" /> 显示弹出式窗口和进行重定向</translation>
+ <translation id="1261380933454402672">审慎</translation>
++<translation id="1262234917793647935">Remocode 同步尚未开放。登录不会同步书签、历史记录、密码或其他浏览数据。</translation>
+ <translation id="1262395978737369974">始终允许使用 JavaScript 优化功能</translation>
+ <translation id="1262564987698748643">网站可以请求替换键盘输入</translation>
+ <translation id="1263231323834454256">阅读清单</translation>
+@@ -1811,6 +1815,7 @@
+ <translation id="235028206512346451">如果您离开设备，设备屏幕就会自动锁定。当您位于设备前时，设备屏幕将会维持解锁状态更长时间。如果您没有设置屏幕锁定方式，您的设备将进入休眠状态，而不是锁定状态。</translation>
+ <translation id="2351923523007389195">已允许 - <ph name="PERMISSION_DETAILS" />。请开启<ph name="LINK_BEGIN" />系统位置信息使用权<ph name="LINK_END" />。</translation>
+ <translation id="2352662711729498748">&lt; 1MB</translation>
++<translation id="2352904391229587634">无法连接 Remocode，请检查网络后重试。</translation>
+ <translation id="2353168619378866466">打开分组</translation>
+ <translation id="2353297238722298836">已允许使用摄像头和麦克风</translation>
+ <translation id="2353910600995338714">已成功导出</translation>
+@@ -2283,6 +2288,7 @@
+ <translation id="2695943520968279338">探索扩展程序</translation>
+ <translation id="2696675923413008404">为了改进这项功能，系统可能会将此网站的内容（包括其网址）发送给 Google，并且人工审核员可能会查看这些内容</translation>
+ <translation id="2698147581454716013">这是一个套装设备，无法注册自助服务终端和数字标牌升级服务。</translation>
++<translation id="2698703198359181186">正在等待 Remocode 授权…</translation>
+ <translation id="269941332914175387">请重新启动浏览器，以加载个人资料数据并确保其始终处于加密状态</translation>
+ <translation id="2699911226086014512">PIN 码操作失败，错误代码为 <ph name="RETRIES" />。</translation>
+ <translation id="2701330563083355633">共享自 <ph name="DEVICE_NAME" /></translation>
+@@ -2350,6 +2356,7 @@
+ <translation id="2737719817922589807">书签和清单(&amp;B)</translation>
+ <translation id="2737916598897808047"><ph name="APP_NAME" />想与 <ph name="TARGET_NAME" /> 分享您屏幕上的内容。</translation>
+ <translation id="2738030019664645674">不允许网站使用您设备上安装的字体</translation>
++<translation id="2738925171612125231">Remocode 账号</translation>
+ <translation id="2739191690716947896">调试</translation>
+ <translation id="2739240477418971307">更改您的无障碍设置</translation>
+ <translation id="2739331588276254426">已通过“<ph name="HOST_DEVICE_NAME" />”连接到互联网</translation>
+@@ -2367,6 +2374,7 @@
+ <translation id="274362947316498129">有一款应用正在尝试使用<ph name="DEVICE_NAME" />。若要允许使用<ph name="DEVICE_NAME" />，请关闭它的隐私保护开关。</translation>
+ <translation id="2744221223678373668">已共享</translation>
+ <translation id="2745080116229976798">Microsoft 合格的部署</translation>
++<translation id="2745603298989391606">取消授权</translation>
+ <translation id="2749756011735116528">登录<ph name="PRODUCT_NAME" /></translation>
+ <translation id="2749836841884031656">SIM 卡</translation>
+ <translation id="2749881179542288782">检查拼写和语法</translation>
+@@ -2947,6 +2955,7 @@
+ <translation id="31774765611822736">在左侧新增标签页</translation>
+ <translation id="3177909033752230686">网页语言：</translation>
+ <translation id="3177914167275935955">您的设备随附了一份 Chrome 教育版升级许可，但您的用户名并未与 Google for Education 账号关联。请先在辅助设备上前往 g.co/workspace/edusignup 创建一个 Google for Education 账号。</translation>
++<translation id="317876897842269331">本地个人资料与 Google 服务</translation>
+ <translation id="3179982752812949580">文本字体</translation>
+ <translation id="31806439105337256">垂直显示标签页</translation>
+ <translation id="3180990259147710757">将下巴向左移动</translation>
+@@ -3714,6 +3723,7 @@
  <translation id="3738924763801731196"><ph name="OID" />：</translation>
  <translation id="3739254215541673094">要打开 <ph name="APPLICATION" /> 吗？</translation>
  <translation id="3739349485749941749">网站可以请求查找和使用您的设备可访问的打印机</translation>
@@ -9,7 +81,55 @@ diff --git a/chrome/app/resources/generated_resources_zh-CN.xtb b/chrome/app/res
  <translation id="3740945083753997630">缩小显示大小和文字大小</translation>
  <translation id="3741056951918180319">您可以在任意网站上点击该扩展程序，即可随时使用它</translation>
  <translation id="374124333420280219">应用详细信息：</translation>
-@@ -6928,6 +6929,7 @@
+@@ -3973,6 +3983,7 @@
+ <translation id="3909791450649380159">剪切(&amp;T)</translation>
+ <translation id="39103738135459590">激活码</translation>
+ <translation id="3911824782900911339">打开新的标签页</translation>
++<translation id="391241667459647668">需要重新登录 Remocode</translation>
+ <translation id="3913689539406883376">在拔下计算机电源线时开启</translation>
+ <translation id="3914173277599553213">必需</translation>
+ <translation id="3914568430265141791">打开文件夹“<ph name="FOLDER_TITLE" />”</translation>
+@@ -4039,6 +4050,7 @@
+ <translation id="3954354850384043518">正在下载</translation>
+ <translation id="3954468641195530330">不允许应用使用您的麦克风</translation>
+ <translation id="3954469006674843813"><ph name="WIDTH" />x<ph name="HEIGHT" />（<ph name="REFRESH_RATE" /> 赫兹）</translation>
++<translation id="3954839810348674100">管理 Remocode 账号</translation>
+ <translation id="3954953195017194676">您最近未记录 WebRTC 事件日志。</translation>
+ <translation id="3955321697524543127">不允许网站连接到 USB 设备</translation>
+ <translation id="3957663711862465084">USB 设置</translation>
+@@ -5000,6 +5012,7 @@
+ <translation id="4694024090038830733">打印机配置由管理员处理。</translation>
+ <translation id="4694604912444486114">猴子</translation>
+ <translation id="4694820450536519583">权限</translation>
++<translation id="4694832403793454591">正在检查 Remocode 账号…</translation>
+ <translation id="4695318956047767909">深色主题，屏保</translation>
+ <translation id="4697071790493980729">找不到任何结果</translation>
+ <translation id="4697231114332146850">使用 7、8、9、4、6、1、2、3 键可移动光标</translation>
+@@ -5104,6 +5117,7 @@
+ <translation id="4778653490315793244">尚无可显示的内容</translation>
+ <translation id="4779083564647765204">缩放</translation>
+ <translation id="4779136857077979611">饭团</translation>
++<translation id="4779403135537222702">重试</translation>
+ <translation id="4779766576531456629">重命名 eSIM 卡移动网络</translation>
+ <translation id="4780321648949301421">页面存储为...</translation>
+ <translation id="4780558987886269159">用于工作</translation>
+@@ -5534,6 +5548,7 @@
+ <translation id="5095848221827496531">取消选择</translation>
+ <translation id="5096775069898886423">在您访问不支持安全连接的网站前，系统会发出警告</translation>
+ <translation id="5097002363526479830">无法连接到网络“<ph name="NAME" />”：<ph name="DETAILS" /></translation>
++<translation id="5097276334233313454">您与 Remocode</translation>
+ <translation id="5097306410549350357">详细了解如何使用位置信息</translation>
+ <translation id="5097349930204431044">您访问的网站能判断您的喜好，然后在您继续浏览时向您展示建议的广告</translation>
+ <translation id="5097649414558628673">工具：<ph name="PRINT_NAME" /></translation>
+@@ -6218,6 +6233,7 @@
+ <translation id="5624120631404540903">管理密码</translation>
+ <translation id="5624959475330585145">在使用不安全的连接前询问</translation>
+ <translation id="5625225435499354052">在 Google Pay 中修改</translation>
++<translation id="5625524600353208347">重新登录</translation>
+ <translation id="5627832140542566187">显示屏方向</translation>
+ <translation id="5628434207686266338">设置设备密码</translation>
+ <translation id="562935524653278697">您的管理员已停止同步您的书签、历史记录、密码及其他设置。</translation>
+@@ -6928,6 +6944,7 @@
  <translation id="6185151644843671709">已保存通行密钥并创建 PIN 码</translation>
  <translation id="6185353868193925315">{PASSWORD_COUNT,plural, =1{有 1 个密码和其他内容只保存到此设备上。若要在其他设备上使用它们，请将它们保存到您的 Google 账号中。此操作还会清理所有重复项。}other{有 {PASSWORD_COUNT} 个密码和其他内容只保存到此设备上。若要在其他设备上使用它们，请将它们保存到您的 Google 账号中。此操作还会清理所有重复项。}}</translation>
  <translation id="6186177419203903310">此操作将为系统中的所有新 USB 外围设备启用通知功能。确定要继续吗？</translation>
@@ -17,3 +137,123 @@ diff --git a/chrome/app/resources/generated_resources_zh-CN.xtb b/chrome/app/res
  <translation id="6190953336330058278">Phone Hub 应用</translation>
  <translation id="6192333916571137726">下载文件</translation>
  <translation id="6192413564913825901">移至“所有书签”文件夹</translation>
+@@ -7096,6 +7113,7 @@
+ <translation id="6309510305002439352">麦克风已关闭</translation>
+ <translation id="6310141306111263820">无法安装 eSIM 卡配置文件。如需帮助，请与您的运营商联系。</translation>
+ <translation id="6310767550430673871">{ACCOUNT_EXTENSIONS_COUNT,plural, =1{移除 1 个扩展程序以及它保存在此设备上的数据}other{移除 {ACCOUNT_EXTENSIONS_COUNT} 个扩展程序以及它们保存在此设备上的数据}}</translation>
++<translation id="6310993932599859057">登录 Remocode</translation>
+ <translation id="6313950457058510656">关闭“即时网络共享”</translation>
+ <translation id="6315170314923504164">语音</translation>
+ <translation id="6315493146179903667">前置全部窗口</translation>
+@@ -7295,6 +7313,7 @@
+ <translation id="6467377768028664108">您的 <ph name="DEVICE_TYPE" /> 将能够：</translation>
+ <translation id="6468485451923838994">字体</translation>
+ <translation id="6468773105221177474"><ph name="FILE_COUNT" /> 个文件</translation>
++<translation id="6469254972947214542">已在此设备退出，但尚未确认云端授权已撤销；请前往 Remocode 账号检查并撤销授权。</translation>
+ <translation id="6469557521904094793">开启移动网络</translation>
+ <translation id="6469702164109431067">密码和通行密钥</translation>
+ <translation id="6470120577693311302">闪烁通知</translation>
+@@ -7320,6 +7339,7 @@
+ <translation id="6488266788670893993"><ph name="BRAND" />无法检查您的密码是否遭遇了数据泄露。请尝试检查您的互联网连接。</translation>
+ <translation id="6488384360522318064">选择语言</translation>
+ <translation id="648927581764831596">没有可用设备</translation>
++<translation id="6489705263533992465">Remocode 授权已超时，请重试。</translation>
+ <translation id="6490471652906364588">USB-C 设备（右侧端口）</translation>
+ <translation id="649396225532207613">此文件可能会危害您的个人和社交网络账号</translation>
+ <translation id="6493991254603208962">调低亮度</translation>
+@@ -8109,6 +8129,7 @@
+ <translation id="7056418393177503237">{0,plural, =1{无痕模式}other{# 个已打开的无痕式窗口}}</translation>
+ <translation id="7056526158851679338">检查设备(&amp;I)</translation>
+ <translation id="7057567173736333354">描述想生成的图片</translation>
++<translation id="7057783627608636779">Remocode 无法完成授权，请尝试重新登录。</translation>
+ <translation id="70577934383983846">在您的所有设备上使用此密码</translation>
+ <translation id="7058024590501568315">隐藏的网络</translation>
+ <translation id="7058325593717863084">发送关于标签栏的反馈</translation>
+@@ -8596,6 +8617,7 @@
+ <translation id="7419426517282923105">{NUM_ATTEMPTS,plural, =1{PIN 码错误，您还可尝试 1 次。}other{PIN 码错误，您还可尝试 # 次。}}</translation>
+ <translation id="7419565702166471774">一律使用安全连接</translation>
+ <translation id="7421293530411019405">要退出标签页分组吗？</translation>
++<translation id="7421521226664051157">已登录 Remocode</translation>
+ <translation id="7421925624202799674">显示网页源代码(&amp;V)</translation>
+ <translation id="7422192691352527311">偏好设置...</translation>
+ <translation id="7423381908337122792">任何有权访问您的 Gemini Spark 智能体的用户都能控制您的 Chrome 浏览器。</translation>
+@@ -9194,6 +9216,7 @@
+ <translation id="7880823633812189969">系统会在您重启设备时删除本地数据</translation>
+ <translation id="7881066108824108340">DNS</translation>
+ <translation id="7881483672146086348">查看账号</translation>
++<translation id="788366135920768180">本地登录端口已被占用，请关闭其他登录窗口后重试。</translation>
+ <translation id="788453346724465748">正在加载账号信息…</translation>
+ <translation id="7886279613512920452">{COUNT,plural, =1{1 项内容}other{# 项内容}}</translation>
+ <translation id="7886605625338676841">eSIM 卡</translation>
+@@ -9352,6 +9375,7 @@
+ <translation id="7988805580376093356">请从 USB（而非您的操作系统）中运行 <ph name="DEVICE_OS" />。</translation>
+ <translation id="7988876720343145286">更多 Android 设置和权限</translation>
+ <translation id="7990863024647916394"><ph name="DISPLAY_NAME" />语音 <ph name="COUNT" /></translation>
++<translation id="7991169218836188139">安全账号存储不可用，请检查系统钥匙串后重试。</translation>
+ <translation id="7991296728590311172">开关控制设置</translation>
+ <translation id="7992080146463834191">总结内容、简化复杂语言或提问。</translation>
+ <translation id="7992203134935383159">语音合成</translation>
+@@ -9369,6 +9393,7 @@
+ <translation id="8002274832045662704">高级打印机配置</translation>
+ <translation id="8002597610026749658">Chrome 可以为此处显示的语言创建字幕</translation>
+ <translation id="8002670234429879764">“<ph name="PRINTER_NAME" />”已断开连接</translation>
++<translation id="800391499053994670">未登录 Remocode</translation>
+ <translation id="8004092996156083991">如果您的密码已泄露，我们会通知您。</translation>
+ <translation id="8004507136466386272">文字</translation>
+ <translation id="8004582292198964060">浏览器</translation>
+@@ -9795,6 +9820,7 @@
+ <translation id="8315018673856831477">省内存模式选项</translation>
+ <translation id="8315514906653279104">正在开启…</translation>
+ <translation id="8317291727028594010">不允许访问此设备上的其他应用和服务</translation>
++<translation id="831736884123042533">Remocode 账号暂不可用</translation>
+ <translation id="8317671367883557781">添加网络连接</translation>
+ <translation id="8317965619823678157">复制密码</translation>
+ <translation id="8318266828739827371">使用分屏视图查看屏幕上放大的区域。使用搜索键 + Ctrl + D 可开启和关闭固定放大镜。</translation>
+@@ -10299,6 +10325,7 @@
+ <translation id="8689957514193802371">让 Chromium 自动更改 <ph name="WEBSITE" /> 的密码</translation>
+ <translation id="8689998525144040851">100</translation>
+ <translation id="8690129572193755009">网站可以请求处理协议</translation>
++<translation id="8690179290081889485">退出 Remocode</translation>
+ <translation id="869144235543261764">此标签页正在“画中画”模式中播放视频</translation>
+ <translation id="869167754614449887">“<ph name="FILE_NAME" />”已从下载记录中删除</translation>
+ <translation id="8691990641861252959">在您访问开放互联网上不安全的连接时发出警告</translation>
+@@ -11127,4 +11154,38 @@
+ <translation id="998347228911661591">同步标签页分组</translation>
+ <translation id="998747458861718449">检查(&amp;N)</translation>
+ <translation id="998852291477823323">配置的政策不允许执行此操作。</translation>
++  <translation id="3892397163643142999">Remocode 同步</translation>
++  <translation id="8043861767361536773">本地个人资料</translation>
++  <translation id="7215382575820127228">reBrowser VIP 专属，按类别同步浏览数据。</translation>
++  <translation id="7476208210098091496">登录 Remocode 后查看同步权益</translation>
++  <translation id="4261322668300520659">登录 Remocode</translation>
++  <translation id="7508050191747434121">正在查询同步权益…</translation>
++  <translation id="8366931238437929274">当前账户没有有效的 reBrowser 同步 VIP</translation>
++  <translation id="5865556380736868076">reBrowser 同步 VIP 已生效</translation>
++  <translation id="4915563195662530444">同步服务暂未开放或不可用</translation>
++  <translation id="1985546833410951065">无法验证同步权益，请重试</translation>
++  <translation id="5235495018015955826">VIP 购买暂未开放</translation>
++  <translation id="4751438041375992797">Agent 浏览记录</translation>
++  <translation id="8718704426068383667">浏览历史</translation>
++  <translation id="2921234533632194541">书签</translation>
++  <translation id="6819065167698549960">开发中，暂不可用</translation>
++  <translation id="1404305492555894019">历史与 Agent 仅同步本次启用后的新增记录；书签先拉取合并，保留本地内容。URL 移除身份信息、查询参数及片段。不上传密码、Cookie、正文、截图、录像或提示词。</translation>
++  <translation id="4595365653389176781">已暂停；本地数据保留</translation>
++  <translation id="3452204091495821625">正在同步</translation>
++  <translation id="5692605356069471902">同步失败，请重试</translation>
++  <translation id="6605195994596126507">存在并发冲突，已保留本地数据；未覆盖云端</translation>
++  <translation id="5377378097793682472">最近同步成功</translation>
++  <translation id="2153464154395765184">尚未成功同步</translation>
++  <translation id="2402350341793564844">开通 reBrowser 同步</translation>
++  <translation id="7108857132399742570">管理订阅</translation>
++  <translation id="123797642440653207">刷新状态</translation>
++  <translation id="3990965649480056819">删除云端同步数据</translation>
++  <translation id="8711978505054501334">此操作永久删除云端同步数据，不删除本地数据。确认删除？</translation>
++  <translation id="596079134548670038">取消</translation>
++  <translation id="5606211903914624417">确认删除云端数据</translation>
++  <translation id="1781696791371571257">云端删除未完成，请重试。</translation>
++  <translation id="1797463971778821934">云端删除处理中；尚未确认物理清理完成。</translation>
++  <translation id="1157683798440792908">删除云端数据需要最近五分钟内重新登录，请重新验证身份。</translation>
++  <translation id="8598745007838329303">允许同步所选类别？仅启用后的新增历史会上传；关闭会停止后续同步但不会删除本地或云端数据。</translation>
++  <translation id="8634317580201627286">允许同步</translation>
+ </translationbundle>
+\ No newline at end of file

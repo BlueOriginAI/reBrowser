@@ -77,6 +77,54 @@ features:
       - components/vector_icons/BUILD.gn
       - components/vector_icons/chat_orange.icon
 
+  remocode-account-native:
+    description: "feat: profile-isolated Remocode OAuth broker and encrypted credentials"
+    files:
+      # Shared ui/settings/test/master GN files retain their existing owners.
+      - chrome/browser/browseros/account/
+      - chrome/browser/profiles/BUILD.gn
+      - chrome/browser/profiles/chrome_browser_main_extra_parts_profiles.cc
+      - chrome/browser/ui/webui/settings/remocode_account_handler.cc
+      - chrome/browser/ui/webui/settings/remocode_account_handler.h
+
+  remocode-account-settings:
+    description: "feat: independent native Remocode account settings frontend"
+    files:
+      # Shared localized strings remain owned by branding/chrome-importer.
+      - chrome/browser/resources/settings/BUILD.gn
+      - chrome/browser/resources/settings/people_page/people_page.ts
+      - chrome/browser/resources/settings/people_page/people_page.html
+      - chrome/browser/resources/settings/people_page/remocode_account_browser_proxy.ts
+      - chrome/browser/resources/settings/people_page/remocode_account_card.ts
+      - chrome/browser/resources/settings/people_page/remocode_account_card.html
+
+  remocode-account-menu:
+    description: "feat: real Remocode identity in toolbar and native account menu"
+    files:
+      - chrome/browser/ui/views/profiles/avatar_toolbar_button.cc
+      - chrome/browser/ui/views/profiles/avatar_toolbar_button.h
+      - chrome/browser/ui/views/profiles/profile_menu_view.cc
+      - chrome/browser/ui/views/profiles/profile_menu_view.h
+      - chrome/browser/ui/views/profiles/profile_menu_view_base.cc
+      - chrome/browser/ui/views/profiles/profile_menu_view_base.h
+      - chrome/browser/ui/views/profiles/profile_menu_view_browsertest.cc
+
+  remocode-sync-native:
+    description: "feat: profile-isolated VIP sync transport and local data adapters"
+    files:
+      - chrome/browser/browseros/sync/
+      - chrome/browser/ui/webui/settings/remocode_sync_handler.cc
+      - chrome/browser/ui/webui/settings/remocode_sync_handler.h
+
+  remocode-sync-settings:
+    description: "feat: independent Remocode category sync settings"
+    files:
+      - chrome/browser/resources/settings/people_page/people_page_index.ts
+      - chrome/browser/resources/settings/people_page/people_page_index.html
+      - chrome/browser/resources/settings/people_page/remocode_sync_browser_proxy.ts
+      - chrome/browser/resources/settings/people_page/remocode_sync_page.ts
+      - chrome/browser/resources/settings/people_page/remocode_sync_page.html
+
   browserclaw-product-dir:
     description: "feat: per-product user-data dir via browseros_product buildflag"
     files:

@@ -1,0 +1,66 @@
+diff --git a/chrome/browser/resources/settings/people_page/people_page.html b/chrome/browser/resources/settings/people_page/people_page.html
+--- a/chrome/browser/resources/settings/people_page/people_page.html
++++ b/chrome/browser/resources/settings/people_page/people_page.html
+@@ -65,7 +65,13 @@
+         }
+       }
+     </style>
++<if expr="not is_chromeos">
++    <settings-section page-title="[[getRemocodeServicesText_(
++        'remocodeLocalProfileTitle')]]">
++</if>
++<if expr="is_chromeos">
+     <settings-section page-title="$i18n{peoplePageTitle}">
++</if>
+       <div>
+ 
+ <if expr="not is_chromeos">
+@@ -84,28 +90,7 @@
+           </settings-sync-account-control>
+         </template>
+ 
+-        <template is="dom-if" if="[[shouldLinkToProfileRow_(
+-            syncStatus.syncSystemEnabled, signinAllowed_,
+-            syncStatus.signedInState)]]" restamp>
+-          <div id="profile-row" class="cr-row first two-line"
+-              actionable$="[[isProfileActionable_]]"
+-              on-click="onProfileClick_">
+-            <template is="dom-if" if="[[syncStatus]]">
+-              <div id="profile-icon"
+-                  style="background-image: [[getIconImageSet_(
+-                      profileIconUrl_)]]">
+-              </div>
+-              <div class="flex cr-row-gap cr-padded-text text-elide">
+-                <span id="profile-name">[[profileName_]]</span>
+-              </div>
+-              <cr-icon-button class="subpage-arrow"
+-                  aria-label="$i18n{editPerson}"
+-                  aria-describedby="profile-name"
+-                  aria-roledescription="$i18n{subpageArrowRoleDescription}">
+-              </cr-icon-button>
+-            </template>
+-          </div>
+-        </template>
++        <settings-remocode-account-card></settings-remocode-account-card>
+ </if>
+ 
+ <if expr="is_chromeos">
+@@ -154,7 +139,8 @@
+         </cr-link-row>
+ 
+         <cr-link-row id="sync-setup"
+-            label="$i18n{syncAndNonPersonalizedServices}"
++            label="[[getRemocodeServicesText_(
++                'syncAndNonPersonalizedServices')]]"
+             sub-label="[[getSyncAndNonPersonalizedServicesSubtext_(syncStatus)]]"
+             on-click="onSyncClick_"
+             role-description="$i18n{subpageArrowRoleDescription}"
+@@ -162,7 +148,7 @@
+         </cr-link-row>
+ 
+         <cr-link-row id="google-services"
+-            label="$i18n{googleServicesPageTitle}"
++            label="[[getRemocodeServicesText_('googleServicesPageTitle')]]"
+             on-click="onGoogleServicesClick_"
+             role-description="$i18n{subpageArrowRoleDescription}"
+             hidden="[[!shouldHideSyncSetupLinkRow_(syncStatus)]]">

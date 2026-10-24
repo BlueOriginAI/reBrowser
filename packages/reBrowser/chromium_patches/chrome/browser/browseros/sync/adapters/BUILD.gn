@@ -1,0 +1,63 @@
+diff --git a/chrome/browser/browseros/sync/adapters/BUILD.gn b/chrome/browser/browseros/sync/adapters/BUILD.gn
+new file mode 100644
+--- /dev/null
++++ b/chrome/browser/browseros/sync/adapters/BUILD.gn
+@@ -0,0 +1,58 @@
++# Copyright 2026 The Chromium Authors
++# Use of this source code is governed by a BSD-style license that can be
++# found in the LICENSE file.
++
++# Deliberately separate from sync/BUILD.gn: no network/account/UI dependencies.
++source_set("local_adapters") {
++  sources = [
++    "local_sync_adapters.cc",
++    "local_sync_adapters.h",
++    "sync_adapter_util.cc",
++    "sync_adapter_util.h",
++  ]
++  public = [ "local_sync_adapters.h" ]
++  public_deps = [ "//base" ]
++  deps = [
++    "//chrome/browser/bookmarks",
++    "//chrome/browser/history",
++    "//chrome/browser/profiles",
++    "//components/bookmarks/browser",
++    "//components/bookmarks/common",
++    "//components/history/core/browser",
++    "//components/keyed_service/core",
++    "//components/prefs",
++    "//components/pref_registry",
++    "//components/user_prefs",
++    "//net",
++    "//ui/base",
++    "//url",
++  ]
++  friend = [ ":unit_tests" ]
++}
++
++# Add this source_set to the embedding Chromium unit_tests deps to execute it.
++# No browser build or test run is implicit in applying the patch.
++source_set("unit_tests") {
++  testonly = true
++  sources = [ "local_sync_adapters_unittest.cc" ]
++  deps = [
++    ":local_adapters",
++    "//base",
++    "//base/test:test_support",
++    "//chrome/browser/bookmarks",
++    "//chrome/browser/history",
++    "//chrome/test:test_support",
++    "//components/bookmarks/browser",
++    "//components/bookmarks/common",
++    "//components/bookmarks/test",
++    "//components/history/core/browser",
++    "//components/history/core/test",
++    "//components/prefs",
++    "//components/pref_registry",
++    "//components/sync_preferences:test_support",
++    "//components/user_prefs",
++    "//content/test:test_support",
++    "//testing/gtest",
++    "//url",
++  ]
++}

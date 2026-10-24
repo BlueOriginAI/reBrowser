@@ -169,12 +169,20 @@ describe('BrowserClaw Rust compiler', () => {
     const encodedKey = Buffer.from(posthogKey).toString('hex')
     await writeFile(
       binaryPath,
-      `binary:browseros-claw-posthog-key=${encodedKey};browseros-claw-server-version=1.2.3;rebrowser-mcp-instance-policy=1;`,
+      `binary:browseros-claw-posthog-key=${encodedKey};browseros-claw-server-version=1.2.3;rebrowser-mcp-instance-policy=1;rebrowser-http-origin-policy=1;`,
     )
 
     await expect(
       validateCompiledBinary(binaryPath, '1.2.3', posthogKey),
     ).resolves.toBeUndefined()
+
+    await writeFile(
+      binaryPath,
+      `binary:browseros-claw-posthog-key=${encodedKey};browseros-claw-server-version=1.2.3;rebrowser-mcp-instance-policy=1;`,
+    )
+    await expect(
+      validateCompiledBinary(binaryPath, '1.2.3', posthogKey),
+    ).rejects.toThrow('HTTP source protection')
 
     await writeFile(
       binaryPath,

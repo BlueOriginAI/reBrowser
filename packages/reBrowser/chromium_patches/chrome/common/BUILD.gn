@@ -1,8 +1,15 @@
 diff --git a/chrome/common/BUILD.gn b/chrome/common/BUILD.gn
-index 202db8b06e3e12d2fc363cf50910b3979ac38f8a..4b4c5b861670a929e9015acc350d7157fe38b2c7 100644
 --- a/chrome/common/BUILD.gn
 +++ b/chrome/common/BUILD.gn
-@@ -455,6 +455,7 @@ static_library("non_code_constants") {
+@@ -18,6 +18,7 @@
+ import("//pdf/features.gni")
+ import("//printing/buildflags/buildflags.gni")
+ import("//testing/libfuzzer/fuzzer_test.gni")
++import("//testing/test.gni")
+ import("//third_party/widevine/cdm/widevine.gni")
+ import("//tools/grit/grit_rule.gni")
+ 
+@@ -455,6 +456,7 @@
      ":buildflags",
      ":version_header",
      "//base",
@@ -10,7 +17,7 @@ index 202db8b06e3e12d2fc363cf50910b3979ac38f8a..4b4c5b861670a929e9015acc350d7157
      "//content/public/common:buildflags",
    ]
  
-@@ -596,7 +597,10 @@ static_library("constants") {
+@@ -596,10 +598,14 @@
    }
    if (is_linux || is_chromeos) {
      sources += [ "chrome_paths_linux.cc" ]
@@ -22,3 +29,30 @@ index 202db8b06e3e12d2fc363cf50910b3979ac38f8a..4b4c5b861670a929e9015acc350d7157
    }
    if (is_mac) {
      sources += [ "chrome_paths_mac.mm" ]
++    deps += [ "//chrome/browser/browseros:buildflags" ]
+   }
+   if (is_win) {
+     sources += [ "chrome_paths_win.cc" ]
+@@ -814,6 +820,22 @@
+   sources = [ "supervised_user_commands.mojom" ]
+ }
+ 
++if (is_mac) {
++  test("remocode_cache_paths_unittests") {
++    sources = [
++      "chrome_paths_test_main.cc",
++      "chrome_paths_unittest.cc",
++    ]
++    deps = [
++      ":constants",
++      "//base",
++      "//base/test:test_support",
++      "//chrome/browser/browseros:buildflags",
++      "//testing/gtest",
++    ]
++  }
++}
++
+ mojom("offline_page_auto_fetcher_mojom") {
+   sources = [ "offline_page_auto_fetcher.mojom" ]
+   public_deps = [ "//url/mojom:url_mojom_gurl" ]

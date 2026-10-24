@@ -91,6 +91,8 @@ def create_dmg(
     dmg_path: Path,
     volume_name: str = "BrowserOS",
     pkg_dmg_path: Optional[Path] = None,
+    *,
+    allow_deferred_native_security: bool = False,
 ) -> bool:
     """Create a DMG without synthesizing FinderInfo on signed executables.
 
@@ -101,7 +103,7 @@ def create_dmg(
         log_error(f"App not found at: {app_path}")
         return False
     try:
-        validate_app_instance_policy(app_path)
+        validate_app_instance_policy(app_path, allow_deferred_native_security=allow_deferred_native_security)
     except ValueError as error:
         log_error(str(error))
         return False

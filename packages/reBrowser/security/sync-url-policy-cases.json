@@ -1,0 +1,113 @@
+{
+  "policyVersion": 2,
+  "cases": [
+    {
+      "path": "/oauth/callback/CODE",
+      "blocked": true
+    },
+    {
+      "path": "/OAuth/Callback/CODE",
+      "blocked": true
+    },
+    {
+      "path": "/%6Fauth/%63allback/CODE",
+      "blocked": true
+    },
+    {
+      "path": "/%72eset-password/TOKEN",
+      "blocked": true
+    },
+    {
+      "path": "/%256Fauth/callback/CODE",
+      "blocked": true
+    },
+    {
+      "path": "/o%61uth%2Fcallback/CODE",
+      "blocked": true
+    },
+    {
+      "path": "/safe%5Ccallback/CODE",
+      "blocked": true
+    },
+    {
+      "path": "/safe%3Ftoken=CODE",
+      "blocked": true
+    },
+    {
+      "path": "/safe%23token",
+      "blocked": true
+    },
+    {
+      "path": "/auth;session=CODE",
+      "blocked": true
+    },
+    {
+      "path": "/auth%3Bsession=CODE",
+      "blocked": true
+    },
+    {
+      "path": "/magic-link/TOKEN",
+      "blocked": true
+    },
+    {
+      "path": "/verify-email/TOKEN",
+      "blocked": true
+    },
+    {
+      "path": "/sso/assertion/TOKEN",
+      "blocked": true
+    },
+    {
+      "path": "/saml/assertion/TOKEN",
+      "blocked": true
+    },
+    {
+      "path": "/authorization/CODE",
+      "blocked": true
+    },
+    {
+      "path": "/safe/%00",
+      "blocked": true
+    },
+    {
+      "path": "/safe/%0a",
+      "blocked": true
+    },
+    {
+      "path": "/safe/%ZZ",
+      "blocked": true
+    },
+    {
+      "path": "/safe/%C0%AFoauth",
+      "blocked": true
+    },
+    {
+      "path": "/safe/%ED%A0%80",
+      "blocked": true
+    },
+    {
+      "path": "/",
+      "blocked": false
+    },
+    {
+      "path": "/docs/getting-started",
+      "blocked": false
+    },
+    {
+      "path": "/reports/annual%20report.pdf",
+      "blocked": false
+    },
+    {
+      "path": "/%E4%B8%AD%E6%96%87/%E9%A1%B5%E9%9D%A2",
+      "blocked": false
+    },
+    {
+      "path": "/discount/50%25",
+      "blocked": false
+    },
+    {
+      "path": "/authentication-guide",
+      "blocked": false
+    }
+  ]
+}

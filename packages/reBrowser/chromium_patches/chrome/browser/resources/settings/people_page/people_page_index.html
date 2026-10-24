@@ -1,0 +1,21 @@
+diff --git a/chrome/browser/resources/settings/people_page/people_page_index.html b/chrome/browser/resources/settings/people_page/people_page_index.html
+--- a/chrome/browser/resources/settings/people_page/people_page_index.html
++++ b/chrome/browser/resources/settings/people_page/people_page_index.html
+@@ -11,14 +11,9 @@
+       route-path$="[[routes_.PEOPLE.path]]">
+   </settings-people-page>
+ 
+-  <settings-sync-page slot="view" id="sync"
+-      data-parent-view-id="parent" prefs="{{prefs}}"
+-      route-path$="[[routes_.SYNC.path]]">
+-  </settings-sync-page>
+-
+-  <settings-sync-controls-page slot="view" id="syncControls"
+-      data-parent-view-id="parent" route-path$="[[routes_.SYNC_ADVANCED.path]]">
+-  </settings-sync-controls-page>
++  <settings-remocode-sync-page slot="view" id="sync"
++      data-parent-view-id="parent" route-path$="[[routes_.SYNC.path]]">
++  </settings-remocode-sync-page>
+ 
+ <if expr="not is_chromeos">
+    <settings-manage-profile slot="view" id="manageProfile"
