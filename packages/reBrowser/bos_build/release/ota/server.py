@@ -36,6 +36,7 @@ from .sign_binary import (
 from ..feeds.render import parse_server_appcast_content, render_server_appcast
 from ..feeds.spec import CDN_BASE_URL, server_feed
 from ...products.server_binaries import ServerBundle, server_ota_bundles_for_product
+from ...products.mcp_instance_policy import validate_mcp_instance_policy
 from ...lib.r2 import get_r2_client, download_file_from_r2
 from ...steps.storage.download import extract_artifact_zip
 from ..resource_pins import (
@@ -283,6 +284,9 @@ class ServerOTAModule(Step):
 
             staging_resources = temp_dir / platform["name"] / "resources"
             shutil.copytree(source_resources, staging_resources)
+
+            if self.product_id == "browserclaw" and platform["os"] == "macos":
+                validate_mcp_instance_policy(staging_resources / "bin/reBrowser-server")
 
             if not self._sign_bundle(staging_resources, platform, ctx):
                 raise RuntimeError(f"Signing failed for {platform['name']}")

@@ -7,6 +7,7 @@ from typing import Optional, List, Dict
 from ...core.step import Step, ValidationError, step
 from ...core.context import Context
 from ...lib.notarization import notarytool_wait_args
+from ...products.mcp_instance_policy import validate_app_instance_policy
 from ...lib.utils import (
     run_command,
     log_info,
@@ -30,6 +31,7 @@ class MacOSPackageModule(Step):
         app_path = ctx.get_app_path()
         if not app_path.exists():
             raise ValidationError(f"App not found: {app_path}")
+        validate_app_instance_policy(app_path, required=ctx.product.id == "browserclaw")
 
     def execute(self, ctx: Context) -> None:
         log_info("\n📀 Creating DMG package...")
@@ -97,6 +99,11 @@ def create_dmg(
     log_info(f"\n📀 Creating DMG package: {dmg_path.name}")
     if not app_path.is_dir():
         log_error(f"App not found at: {app_path}")
+        return False
+    try:
+        validate_app_instance_policy(app_path)
+    except ValueError as error:
+        log_error(str(error))
         return False
     if dmg_path.exists():
         log_error(f"Refusing to overwrite existing DMG: {dmg_path}")

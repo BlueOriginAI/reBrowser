@@ -14,6 +14,7 @@ from bos_build.release.server_resources import (
     target_ids_for_lane,
     validate_server_resources,
 )
+from bos_build.products.mcp_instance_policy import MCP_INSTANCE_POLICY_MARKER
 
 
 SOURCE_SHA = "2" * 40
@@ -115,7 +116,7 @@ class ServerResourceBuilderTest(unittest.TestCase):
             triple = command[command.index("--target") + 1]
             binary = target_root / triple / "release/browseros-claw-server-rs"
             binary.parent.mkdir(parents=True)
-            binary.write_bytes(b"rust-server")
+            binary.write_bytes(b"rust-server" + MCP_INSTANCE_POLICY_MARKER)
 
         destination = (
             self.browseros
@@ -140,7 +141,7 @@ class ServerResourceBuilderTest(unittest.TestCase):
         )
 
         runtime = destination / "resources/bin/reBrowser-server"
-        self.assertEqual(runtime.read_bytes(), b"rust-server")
+        self.assertEqual(runtime.read_bytes(), b"rust-server" + MCP_INSTANCE_POLICY_MARKER)
         self.assertFalse((destination / "resources/bin/browseros-claw-server-rs").exists())
         self.assertEqual(
             (destination / "resources/skills/browserclaw/SKILL.md").read_text(),

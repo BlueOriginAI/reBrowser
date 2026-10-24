@@ -14,6 +14,7 @@ from typing import AbstractSet, Callable, Mapping, Optional
 
 from ..products.resource_sources import source_resources_for_product
 from ..products.server_binaries import ServerBundle, server_bundles_for_product
+from ..products.mcp_instance_policy import validate_mcp_instance_policy
 from .components import normalize_component_version, read_component_version
 
 
@@ -247,6 +248,8 @@ def validate_server_resources(
         if not runtime.stat().st_mode & 0o100:
             raise ValueError(f"Server runtime is not executable: {runtime_path}")
     if product == "browserclaw":
+        if target_spec.os == "macos":
+            validate_mcp_instance_policy(destination / runtime_path)
         if "resources/skills/browserclaw/SKILL.md" not in declared:
             raise ValueError("BrowserOS neo server artifact is missing its skill")
         if any("browseros-claw-server-rs" in path for path in declared):
