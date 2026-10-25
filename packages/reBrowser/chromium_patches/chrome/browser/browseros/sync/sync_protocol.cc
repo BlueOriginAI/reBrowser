@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/sync/sync_protocol.cc b/chrome/browser/bro
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/sync_protocol.cc
-@@ -0,0 +1,181 @@
+@@ -0,0 +1,184 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#include "chrome/browser/browseros/sync/sync_protocol.h"
@@ -18,6 +18,9 @@ new file mode 100644
 +#include "url/gurl.h"
 +namespace browseros::sync {
 +namespace {
++// Kept in the shipping framework so packaging cannot reintroduce old native code.
++[[gnu::used]] constexpr char kSyncURLPolicyMarker[] =
++    "rebrowser-sync-url-policy=2;";
 +bool UUID(const std::string* id) {
 +  return id && base::Uuid::ParseLowercase(*id).is_valid();
 +}
