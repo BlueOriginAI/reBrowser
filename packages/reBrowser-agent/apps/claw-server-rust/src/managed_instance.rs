@@ -41,14 +41,23 @@ fn same_config(config: &Path, primary: &Path) -> bool {
 #[cfg(test)]
 mod tests {
     use super::same_config;
-    use std::{fs, io, path::PathBuf};
+    use std::{
+        fs, io,
+        path::PathBuf,
+        sync::atomic::{AtomicUsize, Ordering},
+    };
+
+    // Parallel test threads can read the same clock tick; the counter keeps
+    // each fixture's Drop cleanup from deleting a sibling's directory.
+    static FIXTURE_SEQUENCE: AtomicUsize = AtomicUsize::new(0);
 
     struct Fixture(PathBuf);
     impl Fixture {
         fn new() -> io::Result<Self> {
             let root = std::env::temp_dir().join(format!(
-                "rebrowser-instance-policy-{}-{}",
+                "rebrowser-instance-policy-{}-{}-{}",
                 std::process::id(),
+                FIXTURE_SEQUENCE.fetch_add(1, Ordering::Relaxed),
                 std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .map_err(io::Error::other)?
