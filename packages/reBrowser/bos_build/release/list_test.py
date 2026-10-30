@@ -50,26 +50,15 @@ class ApplyListLimitTest(unittest.TestCase):
 
 
 class CollectProductRowsTest(unittest.TestCase):
-    def test_legacy_versions_attach_to_default_product_only(self):
+    def test_lists_versions_for_the_requested_product(self):
         env = _env()
-        with (
-            mock.patch.object(
-                list_module, "list_all_versions", return_value=["0.31.0"]
-            ),
-            mock.patch.object(
-                list_module, "list_legacy_versions", return_value=["0.29.0"]
-            ) as legacy,
-        ):
-            browseros_rows = collect_product_rows(
-                get_product_descriptor("browseros"), env
-            )
-            claw_rows = collect_product_rows(
-                get_product_descriptor("browserclaw"), env
-            )
+        with mock.patch.object(
+            list_module, "list_all_versions", return_value=["0.31.0", "0.30.0"]
+        ) as versions:
+            rows = collect_product_rows(get_product_descriptor("browseros"), env)
 
-        self.assertIn(("0.29.0", True), browseros_rows)
-        self.assertEqual(claw_rows, [("0.31.0", False)])
-        legacy.assert_called_once()
+        self.assertEqual(rows, [("0.31.0", False), ("0.30.0", False)])
+        versions.assert_called_once_with("browseros", env)
 
 
 class PrintProductSectionTest(unittest.TestCase):

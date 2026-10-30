@@ -11,7 +11,7 @@ from ...core.step import Step, ValidationError
 from ...lib.paths import get_package_root
 from ...lib.r2 import BOTO3_AVAILABLE, get_r2_client
 from ...lib.utils import log_info, log_success, log_warning
-from ..feeds.spec import CDN_BASE_URL
+from ...lib.github_releases import extension_asset_url
 from ..feeds.render import extract_manifest_versions
 from .build import (
     build_extension_crx,
@@ -410,7 +410,9 @@ class ExtensionReleaseModule(Step):
 
         for spec in self._specs():
             log_info(f"\n=== Releasing extension: {spec.name} v{self.version} ===")
-            r2_key = spec.crx_key(self.version)
+            crx_url = extension_asset_url(
+                self.version, spec.crx_filename(self.version)
+            )
             crx_path = work_root / "dist" / spec.crx_filename(self.version)
             if materialize_bound_extension_crx(
                 client,
@@ -420,7 +422,7 @@ class ExtensionReleaseModule(Step):
                 self.source_sha,
                 crx_path,
             ):
-                log_success(f"CRX live at {CDN_BASE_URL}/{r2_key}")
+                log_success(f"CRX live at {crx_url}")
                 continue
             build_extension_crx(
                 spec=spec,
@@ -445,7 +447,7 @@ class ExtensionReleaseModule(Step):
                 self.source_sha,
                 crx_path,
             )
-            log_success(f"CRX live at {CDN_BASE_URL}/{r2_key}")
+            log_success(f"CRX live at {crx_url}")
 
 
 def build_pipeline(

@@ -2,7 +2,7 @@
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
     <title>reBrowser</title>
-    <link>https://cdn.browseros.com/appcast.xml</link>
+    <link>https://github.com/BlueOriginAI/reBrowser/releases/download/feed-browseros/appcast.xml</link>
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
 
@@ -15,7 +15,7 @@
       <pubDate>Tue, 15 Sep 2026 19:20:24 +0000</pubDate>
       <link>https://www.browseros.com/</link>
       <enclosure
-        url="http://cdn.browseros.com/releases/browseros/0.50.5/macos/BrowserOS_v0.50.5_universal.dmg"
+        url="https://github.com/BlueOriginAI/reBrowser/releases/download/v0.50.5/BrowserOS_v0.50.5_universal.dmg"
         sparkle:edSignature="pbPJPtz1R8RVPDOE9xxctBKADvegfqiD5qZ4pGfKV6mA8U1q2Qt/B3aHdB2gg3JcjoCsQEWdY8ltQmrxzbyYCw=="
         length="371583771"
         type="application/octet-stream" />

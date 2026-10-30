@@ -194,11 +194,6 @@ class EnvConfig:
         return os.environ.get("R2_BUCKET", "browseros")
 
     @property
-    def r2_cdn_base_url(self) -> str:
-        """CDN base URL for R2 artifacts (default: http://cdn.browseros.com)"""
-        return os.environ.get("R2_CDN_BASE_URL", "http://cdn.browseros.com")
-
-    @property
     def r2_endpoint_url(self) -> Optional[str]:
         """R2 S3-compatible endpoint URL (computed from account ID)"""
         account_id = self.r2_account_id
@@ -260,7 +255,6 @@ class EnvConfig:
             "access_key_id": self.r2_access_key_id or "",
             "secret_access_key": self.r2_secret_access_key or "",
             "bucket": self.r2_bucket,
-            "cdn_base_url": self.r2_cdn_base_url,
             "endpoint_url": self.r2_endpoint_url or "",
         }
 

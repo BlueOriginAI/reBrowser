@@ -1,13 +1,13 @@
 {
   "extensions": {
     "adlpneommgkgeanpaekgoaolcpncohkf": {
-      "external_update_url": "https://cdn.browseros.com/extensions/update-manifest.xml"
+      "external_update_url": "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-extensions/update-manifest.xml"
     },
     "bflpfmnmnokmjhmgnolecpppdbdophmk": {
-      "external_update_url": "https://cdn.browseros.com/extensions/update-manifest.xml"
+      "external_update_url": "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-extensions/update-manifest.xml"
     },
     "pjimfkbpehlcllblajnpfamdfjhhlgkc": {
-      "external_update_url": "https://cdn.browseros.com/extensions/update-manifest.xml"
+      "external_update_url": "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-extensions/update-manifest.xml"
     }
   }
 }

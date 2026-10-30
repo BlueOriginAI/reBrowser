@@ -9,8 +9,7 @@ rails publisher (dry-run by default; --publish writes to R2 with backup).
 from ..core.context import Context
 from ..core.step import Step, ValidationError
 from ..lib.utils import log_error, log_info
-from ..lib.r2 import BOTO3_AVAILABLE
-from .common import fetch_all_release_metadata
+from .common import check_gh_cli, fetch_all_release_metadata
 from .common import validate_release_metadata
 from .feeds.publisher import FeedPublisher
 from .feeds.render import render_browser_appcast
@@ -49,13 +48,10 @@ class AppcastModule(Step):
         self._fetch_metadata = fetch_metadata or fetch_all_release_metadata
 
     def validate(self, ctx: Context) -> None:
-        if not BOTO3_AVAILABLE:
+        if self.publish and not check_gh_cli():
             raise ValidationError(
-                "boto3 library not installed - run: pip install boto3"
+                "gh CLI not found. Install from: https://cli.github.com"
             )
-
-        if not ctx.env.has_r2_config():
-            raise ValidationError("R2 configuration not set")
 
         if not ctx.release_version:
             raise ValidationError("--version is required")
@@ -93,7 +89,9 @@ class AppcastModule(Step):
                 workflow_run_attempt=self.workflow_run_attempt,
             )
 
-        publisher = self._publisher or FeedPublisher(env=ctx.env)
+        publisher = self._publisher or FeedPublisher(
+            env=ctx.env, repo=ctx.github_repo or None
+        )
         rendered = 0
         failures = []
 

@@ -1,46 +1,47 @@
 #!/usr/bin/env python3
-"""Publish module - Copy versioned artifacts to download/ paths for fresh installs"""
+"""Publish a versioned GitHub release and its latest-installer aliases."""
 
+import tempfile
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from ..core.context import Context
 from ..core.step import Step, ValidationError
+from ..lib.github_releases import alias_tag
 from ..lib.utils import log_error, log_info, log_success, log_warning
-from ..lib.r2 import BOTO3_AVAILABLE, get_r2_client
 from .common import (
     PLATFORMS,
     PLATFORM_DISPLAY_NAMES,
     fetch_all_release_metadata,
     get_download_path_mapping,
+    get_repo_from_git,
     validate_release_metadata,
+)
+from .github import (
+    check_gh_cli,
+    download_release_asset,
+    edit_github_release,
+    ensure_published_release,
+    github_release_tag,
+    inspect_github_release,
+    upload_to_github_release,
 )
 
 
-def copy_to_download_path(
-    client,
-    bucket: str,
-    source_key: str,
-    dest_key: str,
-) -> bool:
-    """Copy object within R2 bucket"""
-    try:
-        client.copy_object(
-            Bucket=bucket,
-            CopySource={"Bucket": bucket, "Key": source_key},
-            Key=dest_key,
-        )
-        return True
-    except Exception as e:
-        log_error(f"Failed to copy {source_key} → {dest_key}: {e}")
-        return False
+def publish_release(tag: str, repo: str) -> None:
+    """Flip a draft product release to published."""
+    release = inspect_github_release(tag, repo)
+    if release.get("isDraft") is True:
+        edit_github_release(tag, repo, draft=False, latest=False)
+        log_success(f"Published release {tag}")
 
 
 class PublishModule(Step):
-    """Copy versioned artifacts to download/ paths (make release "live")"""
+    """Publish a versioned release and refresh its latest-installer aliases."""
 
     produces = []
     requires = []
-    description = "Publish versioned artifacts to latest download URLs"
+    description = "Publish a GitHub release and refresh latest-installer aliases"
 
     def __init__(
         self,
@@ -49,6 +50,7 @@ class PublishModule(Step):
         source_sha: str = "",
         workflow_run_id: str = "",
         workflow_run_attempt: str = "",
+        artifacts_dir: Optional[Path] = None,
     ):
         self.selected_platforms = platforms or PLATFORMS
         self.allow_missing_platforms = platforms is None
@@ -56,16 +58,9 @@ class PublishModule(Step):
         self.source_sha = source_sha
         self.workflow_run_id = workflow_run_id
         self.workflow_run_attempt = workflow_run_attempt
+        self.artifacts_dir = artifacts_dir
 
     def validate(self, context: Context) -> None:
-        if not BOTO3_AVAILABLE:
-            raise ValidationError(
-                "boto3 library not installed - run: pip install boto3"
-            )
-
-        if not context.env.has_r2_config():
-            raise ValidationError("R2 configuration not set")
-
         if not context.release_version:
             raise ValidationError("--version is required")
         invalid = sorted(set(self.selected_platforms) - set(PLATFORMS))
@@ -74,12 +69,26 @@ class PublishModule(Step):
                 f"Unknown platform(s): {', '.join(invalid)}. "
                 f"Valid: {', '.join(PLATFORMS)}"
             )
+        if not check_gh_cli():
+            raise ValidationError(
+                "gh CLI not found. Install from: https://cli.github.com"
+            )
+        if not context.github_repo:
+            context.github_repo = get_repo_from_git()
+        if not context.github_repo:
+            raise ValidationError("GitHub repo is required (--repo owner/name)")
 
     def execute(self, context: Context) -> None:
         version = context.release_version
-        env = context.env
+        repo = context.github_repo or ""
 
-        metadata = fetch_all_release_metadata(version, env, context.product.id)
+        metadata = fetch_all_release_metadata(
+            version,
+            context.env,
+            context.product.id,
+            artifacts_dir=self.artifacts_dir,
+            repo=repo,
+        )
         if not metadata:
             raise RuntimeError(f"No release metadata found for version {version}")
         missing_platforms = [
@@ -122,21 +131,19 @@ class PublishModule(Step):
                 )
             metadata = validated
 
-        candidates: Dict[str, List[Tuple[str, str, str]]] = {}
+        candidates: Dict[str, List[Tuple[str, str]]] = {}
         for platform in loaded_platforms:
-            release = metadata[platform]
-            artifacts = release.get("artifacts", {})
+            artifacts = metadata[platform].get("artifacts", {})
             platform_mapping = get_download_path_mapping(context.product).get(
                 platform, {}
             )
-            platform_candidates: List[Tuple[str, str, str]] = []
+            platform_candidates: List[Tuple[str, str]] = []
             for artifact_key, artifact in artifacts.items():
-                if artifact_key not in platform_mapping:
+                alias_path = platform_mapping.get(artifact_key)
+                if alias_path is None:
                     continue
-                dest_path = platform_mapping[artifact_key]
-                source_key = _release_source_key(context, platform, version, artifact)
                 platform_candidates.append(
-                    (artifact["filename"], source_key, dest_path)
+                    (artifact["filename"], Path(alias_path).name)
                 )
             if not platform_candidates:
                 raise RuntimeError(
@@ -144,56 +151,56 @@ class PublishModule(Step):
                 )
             candidates[platform] = platform_candidates
 
-        log_info(f"\n{'='*60}")
-        log_info(f"Publishing v{version} to download/ paths")
-        log_info(f"{'='*60}")
+        tag = github_release_tag(version, context.product.id)
+        log_info(f"\n{'=' * 60}")
+        log_info(f"Publishing {context.product.display_name} v{version}")
+        log_info(f"{'=' * 60}")
 
-        client = get_r2_client(env)
-        if not client:
-            raise RuntimeError("Failed to create R2 client")
+        # A feed or alias must never point at a draft asset, so publish first.
+        publish_release(tag, repo)
+
+        alias = alias_tag(context.product.id)
+        ensure_published_release(
+            alias, repo, f"{context.product.display_name} latest installers"
+        )
 
         results: List[Tuple[str, str, bool]] = []
+        with tempfile.TemporaryDirectory(prefix="rebrowser-aliases-") as temporary:
+            staging = Path(temporary)
+            for platform, platform_candidates in candidates.items():
+                log_info(f"\n{PLATFORM_DISPLAY_NAMES[platform]}:")
+                for filename, alias_name in platform_candidates:
+                    local = (
+                        self.artifacts_dir / filename
+                        if self.artifacts_dir is not None
+                        else None
+                    )
+                    if local is None or not local.is_file():
+                        local = download_release_asset(tag, repo, filename, staging)
+                    if local is None:
+                        log_error(f"  Missing {filename}")
+                        results.append((filename, alias_name, False))
+                        continue
 
-        for platform, platform_candidates in candidates.items():
-            log_info(f"\n{PLATFORM_DISPLAY_NAMES[platform]}:")
-            for filename, source_key, dest_path in platform_candidates:
-                log_info(f"  Copying {filename} → {dest_path}")
-                success = copy_to_download_path(
-                    client, env.r2_bucket, source_key, dest_path
-                )
-                results.append((filename, dest_path, success))
+                    target = staging / alias_name
+                    if local != target:
+                        target.write_bytes(local.read_bytes())
+                    log_info(f"  {filename} → {alias}/{alias_name}")
+                    ok = upload_to_github_release(alias, repo, target, clobber=True)
+                    results.append((filename, alias_name, ok))
+                    if ok:
+                        log_success(f"    ✓ {alias_name}")
 
-                if success:
-                    log_success(f"    ✓ Published to {env.r2_cdn_base_url}/{dest_path}")
-
-        log_info(f"\n{'='*60}")
+        log_info(f"\n{'=' * 60}")
         succeeded = sum(1 for _, _, ok in results if ok)
         failed = sum(1 for _, _, ok in results if not ok)
-
         if not results:
             raise RuntimeError("No promotable artifacts found in release metadata")
         if failed:
-            for filename, dest, ok in results:
+            for filename, alias_name, ok in results:
                 if not ok:
-                    log_error(f"  Failed: {filename} → {dest}")
+                    log_error(f"  Failed: {filename} → {alias_name}")
             raise RuntimeError(
                 f"Failed to publish {failed}/{succeeded + failed} artifact(s)"
             )
-        log_success(f"Published {succeeded} artifact(s) to download/ paths")
-
-
-def _release_source_key(
-    ctx: Context,
-    platform: str,
-    version: str,
-    artifact: dict,
-) -> str:
-    """Resolve the R2 key for an artifact in release metadata."""
-    cdn_prefix = f"{ctx.env.r2_cdn_base_url.rstrip('/')}/"
-    url = artifact.get("url", "")
-    if url.startswith(cdn_prefix):
-        return url.removeprefix(cdn_prefix)
-    return (
-        f"releases/{ctx.product.release_prefix}/{version}/"
-        f"{platform}/{artifact['filename']}"
-    )
+        log_success(f"Published {succeeded} alias asset(s) to {alias}")

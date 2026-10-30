@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Upload module for BrowserOS build artifacts to Cloudflare R2"""
+"""Prepare local release receipts for GitHub Releases distribution"""
 
 import json
 import hashlib
@@ -12,18 +12,16 @@ from ...core.step import Step, ValidationError, step
 from ...core.context import Context
 from ...lib.utils import (
     log_info,
-    log_error,
     log_success,
     log_warning,
     IS_WINDOWS,
     IS_MACOS,
 )
 
-from ...lib.r2 import (
-    BOTO3_AVAILABLE,
-    get_r2_client,
-    get_release_json,
-    upload_file_to_r2,
+from ...lib.github_releases import (
+    github_repo,
+    release_asset_url,
+    release_tag,
 )
 from ...release.prepared_resources import (
     PreparedResourcesManifest,
@@ -109,30 +107,18 @@ def _get_platform() -> str:
 
 @step("upload", phase="upload")
 class UploadModule(Step):
-    """Upload build artifacts to Cloudflare R2"""
+    """Write the release receipt consumed by GitHub release finalization"""
 
     produces = []
     requires = []
-    description = "Upload build artifacts to Cloudflare R2"
+    description = "Prepare local release metadata for GitHub Releases"
 
     def validate(self, ctx: Context) -> None:
-        # Family nightlies persist the complete receipt in Actions first and
-        # publish it only after both signed builds and the state merge pass.
-        if os.environ.get("BROWSEROS_DEFER_R2_UPLOAD") == "1":
-            return
-        if not BOTO3_AVAILABLE:
-            raise ValidationError(
-                "boto3 library not installed - run: pip install boto3"
-            )
-
-        if not ctx.env.has_r2_config():
-            raise ValidationError(
-                "R2 configuration not set. Required env vars: "
-                "R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY"
-            )
+        if not ctx.release_version:
+            raise ValidationError("--version is required")
 
     def execute(self, ctx: Context) -> None:
-        log_info("\nUploading package artifacts to R2...")
+        log_info("\nPreparing local release receipt...")
 
         extra_metadata = {}
         sparkle_signatures = cast(
@@ -148,7 +134,7 @@ class UploadModule(Step):
 
         success, release_json = upload_release_artifacts(ctx, extra_metadata)
         if not success:
-            raise RuntimeError("Failed to upload artifacts to R2")
+            raise RuntimeError("Failed to prepare release metadata")
 
 
 def generate_release_json(
@@ -157,13 +143,17 @@ def generate_release_json(
     platform: str,
 ) -> Dict:
     """Generate release metadata for one platform."""
-    env = ctx.env
+    version = ctx.get_semantic_version()
+    tag = release_tag(version, ctx.product.id)
+    repo = github_repo()
 
     release_data = {
         "product": ctx.product.id,
         "product_name": ctx.product.display_name,
         "platform": platform,
-        "version": ctx.get_semantic_version(),
+        "version": version,
+        "release_tag": tag,
+        "release_repo": repo,
         "chromium_version": ctx.chromium_version,
         "browseros_chromium_version": ctx.browseros_chromium_version,
         "build_date": datetime.now(timezone.utc).isoformat(),
@@ -176,8 +166,6 @@ def generate_release_json(
     if platform in ("macos", "win"):
         release_data["sparkle_version"] = ctx.get_sparkle_version()
 
-    base_url = f"{env.r2_cdn_base_url}/{ctx.get_release_path(platform)}"
-
     for artifact in artifacts:
         filename = artifact["filename"]
         artifact_key = artifact.get("release_key") or _get_artifact_key(
@@ -187,7 +175,7 @@ def generate_release_json(
 
         artifact_data = {
             "filename": filename,
-            "url": f"{base_url}{filename}",
+            "url": release_asset_url(tag, filename, repo),
         }
 
         for key, value in artifact.items():
@@ -314,31 +302,14 @@ def upload_release_artifacts(
     ctx: Context,
     extra_metadata: Optional[Dict[str, Dict[str, Any]]] = None,
 ) -> Tuple[bool, Optional[Dict]]:
-    """Upload release artifacts and their metadata to R2."""
-    deferred = os.environ.get("BROWSEROS_DEFER_R2_UPLOAD") == "1"
-    if not deferred and not BOTO3_AVAILABLE:
-        log_warning("boto3 not installed. Skipping R2 upload.")
-        log_info("Install with: pip install boto3")
-        return True, None
-
-    env = ctx.env
-
-    if not deferred and not env.has_r2_config():
-        log_warning("R2 configuration not set. Skipping upload.")
-        return True, None
-
+    """Prepare the local release receipt for GitHub release finalization."""
     platform = _get_platform()
     artifacts = detect_artifacts(ctx)
     if not artifacts:
-        log_info("No artifacts found to upload")
+        log_info("No artifacts found to prepare")
         return True, None
 
-    release_path = ctx.get_release_path(platform)
-
-    if deferred:
-        log_info("\nPreparing deferred immutable release receipt")
-    else:
-        log_info(f"\nUploading to R2: {env.r2_bucket}/{release_path}")
+    log_info(f"\nPreparing release receipt for {platform}")
     log_info(f"Found {len(artifacts)} artifact(s):")
     for artifact in artifacts:
         log_info(f"  - {artifact.name}")
@@ -365,37 +336,14 @@ def upload_release_artifacts(
         artifact_metadata.append(metadata)
 
     release_data = generate_release_json(ctx, artifact_metadata, platform)
+    serialized = json.dumps(release_data, indent=2)
     release_json_path = ctx.get_dist_dir() / "release.json"
-    release_json_path.write_text(json.dumps(release_data, indent=2))
-    if deferred:
-        # The receipt and DMG travel together as one Actions artifact. Keeping
-        # this step local prevents either product from becoming public before
-        # its sibling build and the family state transaction have succeeded.
-        ctx.artifact_registry.add("release_metadata", release_data)
-        log_success("Prepared release receipt for deferred immutable publication")
-        return True, release_data
+    release_json_path.write_text(serialized)
+    # Each lane ships one platform receipt next to its artifacts so the
+    # finalize job can assemble metadata without a shared object store.
+    (ctx.get_dist_dir() / f"release-{platform}.json").write_text(serialized)
 
-    client = get_r2_client(env)
-    if not client:
-        log_error("Failed to create R2 client")
-        return False, None
-
-    for artifact_path in artifacts:
-        r2_key = f"{release_path}{artifact_path.name}"
-        if not upload_file_to_r2(client, artifact_path, r2_key, env.r2_bucket):
-            return False, None
-
-    existing_release_data = get_release_json(
-        ctx.get_semantic_version(), platform, env, ctx.product.id
-    )
-    release_data = merge_release_metadata(existing_release_data, release_data)
-    release_json_path.write_text(json.dumps(release_data, indent=2))
-
-    r2_key = f"{release_path}release.json"
-    if not upload_file_to_r2(client, release_json_path, r2_key, env.r2_bucket):
-        return False, None
-
-    log_success(f"\nSuccessfully uploaded {len(artifacts)} artifact(s) to R2")
+    log_success(f"\nPrepared release receipt for {len(artifacts)} artifact(s)")
     log_info("\nRelease metadata:")
     log_info(f"  Version: {release_data['version']}")
     if platform in ("macos", "win"):

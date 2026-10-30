@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """Common utilities for release modules"""
 
+import json
 import re
 import subprocess
 from datetime import datetime
+from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from ..lib.env import EnvConfig
-from ..lib.utils import log_warning
+from ..lib.github_releases import github_repo, release_asset_url, release_tag
 from ..core.products import ProductDescriptor, default_product_descriptor
-from ..lib.r2 import get_release_json, get_r2_client, BOTO3_AVAILABLE
 
 PLATFORMS = ["macos", "win", "linux"]
 PLATFORM_DISPLAY_NAMES = {"macos": "macOS", "win": "Windows", "linux": "Linux"}
@@ -160,26 +161,61 @@ def get_download_path_mapping(
     }
 
 
+def release_metadata_path(artifacts_dir: Path, platform: str) -> Path:
+    return artifacts_dir / f"release-{platform}.json"
+
+
+def read_release_metadata(
+    artifacts_dir: Optional[Path],
+    tag: str,
+    platform: str,
+    repo: Optional[str] = None,
+) -> Optional[Dict]:
+    """Load one platform receipt from disk or from its GitHub release asset."""
+    if artifacts_dir is not None:
+        path = release_metadata_path(artifacts_dir, platform)
+        if not path.is_file():
+            return None
+        return json.loads(path.read_text())
+    url = release_asset_url(tag, f"release-{platform}.json", repo)
+    try:
+        response = subprocess.run(
+            ["curl", "--fail", "--silent", "--show-error", "-L", url],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except Exception:
+        return None
+    return json.loads(response.stdout)
+
+
 def fetch_all_release_metadata(
-    version: str, env: Optional[EnvConfig] = None, product_id: str = "browseros"
+    version: str,
+    env: Optional[EnvConfig] = None,
+    product_id: str = "browseros",
+    *,
+    artifacts_dir: Optional[Path] = None,
+    repo: Optional[str] = None,
 ) -> Dict[str, Dict]:
-    """Fetch release.json from all platforms for a version"""
-    if env is None:
-        env = EnvConfig()
+    """Collect every platform receipt for one version.
+
+    Finalize passes the Actions-artifact directory; CLI users rely on the
+    metadata assets attached to the published GitHub release.
+    """
+    del env  # Kept for call-site compatibility; metadata no longer lives in R2.
+    tag = release_tag(version, product_id)
+    resolved_repo = repo or github_repo()
 
     metadata = {}
     for platform in PLATFORMS:
-        release_data = get_release_json(version, platform, env, product_id)
+        release_data = read_release_metadata(
+            artifacts_dir, tag, platform, resolved_repo
+        )
         if release_data:
             metadata[platform] = release_data
 
     return metadata
-
-
-# Pre-product releases live at bare releases/<version>/; productized ones
-# at releases/<release_prefix>/<version>/. A version is digits-and-dots,
-# a product prefix is a name — that shape difference drives legacy detection.
-_VERSION_NAME_RE = re.compile(r"\d+(\.\d+)*")
 
 
 def version_sort_key(version: str) -> tuple:
@@ -193,77 +229,38 @@ def version_sort_key(version: str) -> tuple:
     return tuple(parts)
 
 
-def _r2_listing_client(env: Optional[EnvConfig]) -> Optional[Tuple[object, EnvConfig]]:
-    if not BOTO3_AVAILABLE:
-        return None
-
-    if env is None:
-        env = EnvConfig()
-
-    if not env.has_r2_config():
-        return None
-
-    client = get_r2_client(env)
-    if not client:
-        return None
-
-    return client, env
-
-
-def _list_common_prefixes(client, bucket: str, prefix: str) -> List[str]:
-    """Return child names under an R2 prefix via paginated delimiter listing."""
-    names = []
-    continuation_token = None
-
-    while True:
-        kwargs = {"Bucket": bucket, "Prefix": prefix, "Delimiter": "/"}
-        if continuation_token:
-            kwargs["ContinuationToken"] = continuation_token
-
-        try:
-            response = client.list_objects_v2(**kwargs)
-        except Exception as e:
-            # A partial listing renders as "(no releases found)" — flag it.
-            log_warning(f"R2 listing failed for {prefix}: {e}")
-            break
-
-        for entry in response.get("CommonPrefixes", []):
-            name = entry["Prefix"].removeprefix(prefix).rstrip("/")
-            if name:
-                names.append(name)
-
-        if not response.get("IsTruncated"):
-            break
-        continuation_token = response.get("NextContinuationToken")
-
-    return names
-
-
 def list_all_versions(
-    release_prefix: str, env: Optional[EnvConfig] = None
+    product_id: str = "browseros",
+    env: Optional[EnvConfig] = None,
+    repo: Optional[str] = None,
 ) -> List[str]:
-    """List a product's release versions from R2, newest first."""
-    resolved = _r2_listing_client(env)
-    if not resolved:
+    """List versioned browser releases from GitHub, newest first."""
+    del env
+    resolved_repo = repo or github_repo()
+    try:
+        response = subprocess.run(
+            [
+                "gh",
+                "api",
+                "--paginate",
+                f"repos/{resolved_repo}/releases?per_page=100",
+                "--jq",
+                ".[].tag_name",
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except Exception:
         return []
-    client, env = resolved
 
-    versions = _list_common_prefixes(
-        client, env.r2_bucket, f"releases/{release_prefix}/"
-    )
-    versions.sort(key=version_sort_key, reverse=True)
-    return versions
-
-
-def list_legacy_versions(env: Optional[EnvConfig] = None) -> List[str]:
-    """List pre-product bare releases/<version>/ entries, newest first."""
-    resolved = _r2_listing_client(env)
-    if not resolved:
-        return []
-    client, env = resolved
-
-    names = _list_common_prefixes(client, env.r2_bucket, "releases/")
-    versions = [name for name in names if _VERSION_NAME_RE.fullmatch(name)]
+    versions = []
+    for tag in response.stdout.splitlines():
+        tag = tag.strip()
+        prefix = "" if product_id == "browseros" else f"{product_id}/"
+        match = re.fullmatch(rf"{re.escape(prefix)}v(\d+(?:\.\d+)*)", tag)
+        if match:
+            versions.append(match.group(1))
     versions.sort(key=version_sort_key, reverse=True)
     return versions
 

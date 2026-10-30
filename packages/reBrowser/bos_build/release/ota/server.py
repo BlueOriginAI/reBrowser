@@ -34,7 +34,8 @@ from .sign_binary import (
     sign_server_bundle_windows,
 )
 from ..feeds.render import parse_server_appcast_content, render_server_appcast
-from ..feeds.spec import CDN_BASE_URL, server_feed
+from ..feeds.spec import server_feed
+from ...lib.github_releases import server_asset_url
 from ...products.server_binaries import ServerBundle, server_ota_bundles_for_product
 from ...products.mcp_instance_policy import validate_mcp_instance_policy
 from ...lib.r2 import get_r2_client, download_file_from_r2
@@ -361,7 +362,9 @@ class ServerOTAModule(Step):
 
         log_info("\nArtifact URLs:")
         for artifact in canonical_artifacts:
-            log_info(f"  {CDN_BASE_URL}/server/{artifact.zip_path.name}")
+            log_info(
+                f"  {server_asset_url(self.version, artifact.zip_path.name)}"
+            )
 
         log_info(f"\nAppcast saved to: {appcast_path}")
         log_info(

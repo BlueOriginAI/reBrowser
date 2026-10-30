@@ -3,7 +3,7 @@
   xmlns:dc="http://purl.org/dc/elements/1.1/">
   <channel>
     <title>reBrowser Windows Updates</title>
-    <link>https://cdn.browseros.com/appcast-win-arm64.xml</link>
+    <link>https://github.com/BlueOriginAI/reBrowser/releases/download/feed-win-browseros/appcast-win-arm64.xml</link>
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
 

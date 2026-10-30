@@ -432,10 +432,12 @@ jobs:
         if: always() && (steps.inputs.outputs.products == 'browseros' || steps.inputs.outputs.products == 'all')
         uses: actions/upload-artifact@v7
         with:
-          name: BrowserOS_v${{ steps.version.outputs.value }}_${{ steps.inputs.outputs.arch }}
+          name: browseros-release-macos-${{ steps.inputs.outputs.arch }}
           path: |
-            ${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser/releases/${{ steps.version.outputs.value }}/BrowserOS_*.dmg
-            !${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser/releases/${{ steps.version.outputs.value }}/BrowserOS_neo_*.dmg
+            ${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser/releases/${{ steps.version.outputs.value }}/reBrowser_*.dmg
+            !${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser/releases/${{ steps.version.outputs.value }}/reBrowser-agent_*.dmg
+            ${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser/releases/${{ steps.version.outputs.value }}/release.json
+            ${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser/releases/${{ steps.version.outputs.value }}/release-macos.json
           retention-days: 14
           if-no-files-found: warn
           overwrite: true
@@ -444,8 +446,11 @@ jobs:
         if: always() && (steps.inputs.outputs.products == 'browserclaw' || steps.inputs.outputs.products == 'all')
         uses: actions/upload-artifact@v7
         with:
-          name: BrowserOS_neo_v${{ steps.version.outputs.value }}_${{ steps.inputs.outputs.arch }}
-          path: ${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser/releases/${{ steps.version.outputs.value }}/BrowserOS_neo_*.dmg
+          name: browserclaw-release-macos-${{ steps.inputs.outputs.arch }}
+          path: |
+            ${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser/releases/${{ steps.version.outputs.value }}/reBrowser-agent_*.dmg
+            ${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser/releases/${{ steps.version.outputs.value }}/release.json
+            ${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser/releases/${{ steps.version.outputs.value }}/release-macos.json
           retention-days: 14
           if-no-files-found: warn
           overwrite: true

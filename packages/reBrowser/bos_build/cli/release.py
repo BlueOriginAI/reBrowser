@@ -274,9 +274,13 @@ def github_create(
     ),
     publish_to_download: bool = typer.Option(
         False,
-        "--publish",
-        "-p",
-        help="Also publish to download/ paths after creating release",
+        "--publish-download",
+        help="Also publish latest-installer aliases after creating release",
+    ),
+    artifacts_dir: Optional[Path] = typer.Option(
+        None,
+        "--artifacts-dir",
+        help="Directory holding built artifacts and release-<platform>.json receipts",
     ),
     product: Optional[str] = typer.Option(None, "--product", help=_PRODUCT_HELP),
     platforms: Optional[str] = typer.Option(
@@ -310,13 +314,13 @@ def github_create(
         help="Commit SHA or branch for the release tag",
     ),
 ):
-    """Create GitHub release from R2 artifacts
+    """Create a GitHub release from locally built artifacts
 
     \b
     Examples:
-      browseros release github create --version 0.31.0
-      browseros release github create --version 0.31.0 --publish  # Also publish to download/
-      browseros release github create --version 0.31.0 --no-draft # Create published release
+      browseros release github create --version 0.31.0 --artifacts-dir ./dist
+      browseros release github create --version 0.31.0 --publish-download
+      browseros release github create --version 0.31.0 --no-draft
     """
     ctx = create_release_context(version, repo, product)
 
@@ -331,6 +335,7 @@ def github_create(
         workflow_run_id=workflow_run_id,
         workflow_run_attempt=workflow_run_attempt,
         target=target,
+        artifacts_dir=artifacts_dir,
     )
     execute_module(ctx, module)
 

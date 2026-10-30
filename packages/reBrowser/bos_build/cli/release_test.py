@@ -376,7 +376,6 @@ class GithubCreateCliIntegrityTest(unittest.TestCase):
     def patches(self, metadata=None):
         with (
             _configured_r2_env(),
-            mock.patch.object(github_module, "BOTO3_AVAILABLE", True),
             mock.patch.object(github_module, "check_gh_cli", return_value=True),
             mock.patch.object(
                 github_module,
@@ -735,27 +734,47 @@ class PublishCliIntegrityTest(unittest.TestCase):
         )
 
     @contextmanager
-    def patches(self, metadata):
+    def patches(self, metadata, upload_ok=True):
+        def fake_download(tag, repo, filename, dest_dir):
+            path = Path(dest_dir) / filename
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_bytes(b"artifact")
+            return path
+
         with (
-            _configured_r2_env(),
-            mock.patch.object(publish_module, "BOTO3_AVAILABLE", True),
             mock.patch.object(
                 publish_module,
                 "fetch_all_release_metadata",
                 return_value=metadata,
             ),
+            mock.patch.object(
+                publish_module, "check_gh_cli", return_value=True
+            ),
+            mock.patch.object(
+                publish_module,
+                "inspect_github_release",
+                return_value={"isDraft": False},
+            ),
+            mock.patch.object(
+                publish_module, "ensure_published_release"
+            ),
+            mock.patch.object(
+                publish_module,
+                "download_release_asset",
+                side_effect=fake_download,
+            ),
+            mock.patch.object(
+                publish_module,
+                "upload_to_github_release",
+                return_value=upload_ok,
+            ) as upload,
         ):
+            self.upload = upload
             yield
 
     def test_missing_default_platform_warns_and_cli_succeeds(self):
         with (
             self.patches(_github_metadata()),
-            mock.patch.object(publish_module, "get_r2_client", return_value=object()),
-            mock.patch.object(
-                publish_module,
-                "copy_to_download_path",
-                return_value=True,
-            ),
         ):
             result = self.invoke_publish()
 
@@ -768,7 +787,6 @@ class PublishCliIntegrityTest(unittest.TestCase):
     def test_missing_explicit_platform_makes_actual_cli_exit_nonzero(self):
         with (
             self.patches(_github_metadata()),
-            mock.patch.object(publish_module, "get_r2_client", return_value=object()),
         ):
             result = self.invoke_publish("--platform", "linux")
 
@@ -777,13 +795,7 @@ class PublishCliIntegrityTest(unittest.TestCase):
 
     def test_copy_failure_makes_actual_cli_exit_nonzero(self):
         with (
-            self.patches(_github_metadata()),
-            mock.patch.object(publish_module, "get_r2_client", return_value=object()),
-            mock.patch.object(
-                publish_module,
-                "copy_to_download_path",
-                return_value=False,
-            ),
+            self.patches(_github_metadata(), upload_ok=False),
         ):
             result = self.invoke_publish(
                 "--platform",
@@ -804,12 +816,6 @@ class PublishCliIntegrityTest(unittest.TestCase):
     def test_explicit_partial_platform_can_succeed(self):
         with (
             self.patches(_github_metadata()),
-            mock.patch.object(publish_module, "get_r2_client", return_value=object()),
-            mock.patch.object(
-                publish_module,
-                "copy_to_download_path",
-                return_value=True,
-            ),
         ):
             result = self.invoke_publish(
                 "--platform",
@@ -831,12 +837,6 @@ class PublishCliIntegrityTest(unittest.TestCase):
         metadata["win"]["source_sha"] = "b" * 40
         with (
             self.patches(metadata),
-            mock.patch.object(publish_module, "get_r2_client", return_value=object()),
-            mock.patch.object(
-                publish_module,
-                "copy_to_download_path",
-                return_value=True,
-            ) as copy,
         ):
             result = self.invoke_publish(
                 "--platform",
@@ -853,7 +853,7 @@ class PublishCliIntegrityTest(unittest.TestCase):
 
         self.assertNotEqual(result.exit_code, 0)
         self.assertIn("source_sha mismatch", plain_output(result))
-        copy.assert_not_called()
+        self.upload.assert_not_called()
 
     def test_mixed_request_fails_when_one_platform_has_no_promotable_assets(self):
         metadata = {
@@ -879,12 +879,6 @@ class PublishCliIntegrityTest(unittest.TestCase):
         }
         with (
             self.patches(metadata),
-            mock.patch.object(publish_module, "get_r2_client", return_value=object()),
-            mock.patch.object(
-                publish_module,
-                "copy_to_download_path",
-                return_value=True,
-            ) as copy,
         ):
             result = self.invoke_publish(
                 "--platform",
@@ -895,7 +889,7 @@ class PublishCliIntegrityTest(unittest.TestCase):
 
         self.assertNotEqual(result.exit_code, 0)
         self.assertIn("requested platform win", plain_output(result))
-        copy.assert_not_called()
+        self.upload.assert_not_called()
 
 
 if __name__ == "__main__":

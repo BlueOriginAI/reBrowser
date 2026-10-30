@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""GitHub module - Create GitHub releases from R2 artifacts"""
+"""GitHub module - Create GitHub releases from locally built artifacts"""
 
 import json
 import re
@@ -12,7 +12,7 @@ from urllib.parse import quote
 from ..core.context import Context
 from ..core.step import Step, ValidationError
 from ..lib.utils import log_info, log_error, log_success, log_warning
-from ..lib.r2 import BOTO3_AVAILABLE
+from ..lib.github_releases import release_asset_url, release_tag
 from .common import (
     PLATFORMS,
     PLATFORM_DISPLAY_NAMES,
@@ -276,6 +276,7 @@ def create_github_release(
     notes: str,
     draft: bool = True,
     target: str = "",
+    latest: Optional[bool] = None,
 ) -> Tuple[bool, str]:
     """Create GitHub release via gh CLI"""
     cmd = [
@@ -294,6 +295,8 @@ def create_github_release(
         cmd.append("--draft")
     if target:
         cmd.extend(["--target", target])
+    if latest is not None:
+        cmd.extend(["--latest=true" if latest else "--latest=false"])
 
     try:
         result = subprocess.run(cmd, capture_output=True, text=True, check=True)
@@ -319,17 +322,66 @@ def download_file(url: str, dest: Path) -> bool:
         return False
 
 
-def upload_to_github_release(tag: str, repo: str, file_path: Path) -> bool:
-    """Upload file to existing GitHub release"""
+def upload_to_github_release(
+    tag: str, repo: str, file_path: Path, *, clobber: bool = False
+) -> bool:
+    """Upload file to an existing GitHub release."""
+    cmd = ["gh", "release", "upload", tag, str(file_path), "--repo", repo]
+    if clobber:
+        cmd.append("--clobber")
     try:
-        subprocess.run(
-            ["gh", "release", "upload", tag, str(file_path), "--repo", repo],
-            check=True,
-            capture_output=True,
-        )
+        subprocess.run(cmd, check=True, capture_output=True)
         return True
     except Exception:
         return False
+
+
+def ensure_published_release(tag: str, repo: str, title: str) -> None:
+    """Ensure a mutable feed/alias release exists and is publicly readable."""
+    try:
+        release = inspect_github_release(tag, repo)
+    except Exception:
+        created, result = create_github_release(
+            tag,
+            repo,
+            title,
+            "Managed by the reBrowser release pipeline.",
+            draft=False,
+            latest=False,
+        )
+        if not created and "already exists" not in result.lower():
+            raise RuntimeError(f"Could not create release {tag}: {result}")
+        return
+    if release.get("isDraft") is True:
+        edit_github_release(tag, repo, draft=False, latest=False)
+
+
+def download_release_asset(
+    tag: str, repo: str, filename: str, dest_dir: Path
+) -> Optional[Path]:
+    """Download one release asset into dest_dir, returning its path."""
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        subprocess.run(
+            [
+                "gh",
+                "release",
+                "download",
+                tag,
+                "--repo",
+                repo,
+                "--pattern",
+                filename,
+                "--dir",
+                str(dest_dir),
+            ],
+            check=True,
+            capture_output=True,
+        )
+    except Exception:
+        return None
+    path = dest_dir / filename
+    return path if path.is_file() else None
 
 
 def normalize_version(version: str) -> str:
@@ -342,10 +394,14 @@ def normalize_version(version: str) -> str:
 
 def github_release_tag(version: str, product_id: str) -> str:
     """Return the product-owned Git tag for a browser release."""
-    normalized = normalize_version(version)
-    if product_id == "browseros":
-        return f"v{normalized}"
-    return f"{product_id}/v{normalized}"
+    return release_tag(version, product_id)
+
+
+def github_release_asset_url(
+    tag: str, filename: str, repo: Optional[str] = None
+) -> str:
+    """Return the public download URL for one GitHub release asset."""
+    return release_asset_url(tag, filename, repo)
 
 
 def inspect_github_release(tag: str, repo: str) -> Dict:
@@ -464,23 +520,24 @@ def verify_github_release_target(
 def edit_github_release(
     tag: str,
     repo: str,
-    title: str,
-    notes: str,
+    title: Optional[str] = None,
+    notes: Optional[str] = None,
+    *,
+    draft: Optional[bool] = None,
+    latest: Optional[bool] = None,
 ) -> None:
-    """Refresh release presentation after validating draft ownership."""
+    """Refresh release presentation or publish state."""
+    cmd = ["gh", "release", "edit", tag, "--repo", repo]
+    if title is not None:
+        cmd.extend(["--title", title])
+    if notes is not None:
+        cmd.extend(["--notes", notes])
+    if draft is not None:
+        cmd.extend(["--draft=true" if draft else "--draft=false"])
+    if latest is not None:
+        cmd.extend(["--latest=true" if latest else "--latest=false"])
     subprocess.run(
-        [
-            "gh",
-            "release",
-            "edit",
-            tag,
-            "--repo",
-            repo,
-            "--title",
-            title,
-            "--notes",
-            notes,
-        ],
+        cmd,
         capture_output=True,
         text=True,
         check=True,
@@ -511,8 +568,9 @@ def download_and_upload_artifacts(
     repo: str,
     metadata: Dict[str, Dict],
     platforms: Optional[List[str]] = None,
+    artifacts_dir: Optional[Path] = None,
 ) -> List[Tuple[str, bool]]:
-    """Download artifacts from R2 and upload to GitHub release"""
+    """Upload locally built artifacts, falling back to their release URL."""
     if platforms is None:
         platforms = PLATFORMS
 
@@ -528,13 +586,18 @@ def download_and_upload_artifacts(
             for key, artifact in metadata[platform].get("artifacts", {}).items():
                 url = artifact["url"]
                 filename = artifact["filename"]
-                local_path = tmppath / filename
+                local_path = (
+                    artifacts_dir / filename
+                    if artifacts_dir is not None
+                    else tmppath / filename
+                )
 
-                log_info(f"  Downloading {filename}...")
-                if not download_file(url, local_path):
-                    log_error(f"  Failed to download {filename}")
-                    results.append((filename, False))
-                    continue
+                if not local_path.is_file():
+                    log_info(f"  Downloading {filename}...")
+                    if not download_file(url, local_path):
+                        log_error(f"  Failed to download {filename}")
+                        results.append((filename, False))
+                        continue
 
                 log_info(f"  Uploading {filename}...")
                 if upload_to_github_release(tag, repo, local_path):
@@ -547,12 +610,46 @@ def download_and_upload_artifacts(
     return results
 
 
+def upload_release_receipts(
+    tag: str,
+    repo: str,
+    metadata: Dict[str, Dict],
+    artifacts_dir: Optional[Path],
+) -> List[Tuple[str, bool]]:
+    """Attach per-platform receipts and a merged index to the release."""
+    if artifacts_dir is None:
+        return []
+
+    results: List[Tuple[str, bool]] = []
+    merged: Dict[str, object] = {
+        "version": "",
+        "product": "",
+        "platforms": {},
+    }
+    for platform, receipt in metadata.items():
+        filename = f"release-{platform}.json"
+        path = artifacts_dir / filename
+        if not path.is_file():
+            path.write_text(json.dumps(receipt, indent=2))
+        ok = upload_to_github_release(tag, repo, path)
+        results.append((filename, ok))
+        merged["version"] = receipt.get("version", merged["version"])
+        merged["product"] = receipt.get("product", merged["product"])
+        if isinstance(merged["platforms"], dict):
+            merged["platforms"][platform] = receipt
+
+    index_path = artifacts_dir / "release-index.json"
+    index_path.write_text(json.dumps(merged, indent=2))
+    results.append(("release-index.json", upload_to_github_release(tag, repo, index_path)))
+    return results
+
+
 class GithubModule(Step):
-    """Create GitHub release from R2 artifacts"""
+    """Create a GitHub release from locally built artifacts"""
 
     produces = []
     requires = []
-    description = "Create GitHub release from R2 artifacts"
+    description = "Create a GitHub release from locally built artifacts"
 
     def __init__(
         self,
@@ -565,6 +662,7 @@ class GithubModule(Step):
         workflow_run_id: str = "",
         workflow_run_attempt: str = "",
         target: str = "",
+        artifacts_dir: Optional[Path] = None,
     ):
         self.draft = draft
         self.skip_upload = skip_upload
@@ -575,16 +673,9 @@ class GithubModule(Step):
         self.workflow_run_id = workflow_run_id
         self.workflow_run_attempt = workflow_run_attempt
         self.target = target
+        self.artifacts_dir = artifacts_dir
 
     def validate(self, ctx: Context) -> None:
-        if not BOTO3_AVAILABLE:
-            raise ValidationError(
-                "boto3 library not installed - run: pip install boto3"
-            )
-
-        if not ctx.env.has_r2_config():
-            raise ValidationError("R2 configuration not set")
-
         if not ctx.release_version:
             raise ValidationError("--version is required")
 
@@ -607,7 +698,13 @@ class GithubModule(Step):
         tag = github_release_tag(tag_version, ctx.product.id)
         repo = ctx.github_repo
 
-        metadata = fetch_all_release_metadata(version, ctx.env, ctx.product.id)
+        metadata = fetch_all_release_metadata(
+            version,
+            ctx.env,
+            ctx.product.id,
+            artifacts_dir=self.artifacts_dir,
+            repo=repo,
+        )
         if not metadata:
             raise RuntimeError(f"No release metadata found for version {version}")
         expected_assets: Optional[set[str]] = None
@@ -721,6 +818,7 @@ class GithubModule(Step):
                 repo,
                 metadata,
                 platforms=list(metadata),
+                artifacts_dir=self.artifacts_dir,
             )
 
             if not results:
@@ -757,6 +855,15 @@ class GithubModule(Step):
                         f"Release {tag} asset set mismatch: expected "
                         f"{sorted(expected_assets)}, got {sorted(actual_assets)}"
                     )
+
+            receipt_results = upload_release_receipts(
+                tag, repo, metadata, self.artifacts_dir
+            )
+            receipt_failures = [name for name, ok in receipt_results if not ok]
+            if receipt_failures:
+                raise RuntimeError(
+                    f"Failed to upload release metadata: {', '.join(receipt_failures)}"
+                )
 
         if "macos" in metadata:
             log_info("\n" + "=" * 60)

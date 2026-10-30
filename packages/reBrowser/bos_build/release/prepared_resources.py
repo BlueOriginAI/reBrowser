@@ -17,6 +17,7 @@ from typing import Mapping, Protocol, cast
 import requests
 
 from ..core.products import BROWSEROS_BUG_REPORTER_EXTENSION_ID
+from ..lib.github_releases import feed_asset_url
 from ..products.resource_sources import source_resources_for_product
 from ..steps.storage.download import extract_artifact_zip
 from .extensions.build import build_extension_crx
@@ -26,8 +27,8 @@ from .extensions.specs import spec_by_name
 
 PREPARED_RESOURCES_NAME = "prepared-resources.json"
 PREPARED_RESOURCES_SCHEMA = "browseros-prepared-resources-v1"
-DEFAULT_BUNDLED_MANIFEST_URL = (
-    "https://cdn.browseros.com/extensions/bundled-manifest.xml"
+DEFAULT_BUNDLED_MANIFEST_URL = feed_asset_url(
+    "extensions", "browseros", "bundled-manifest.xml"
 )
 
 

@@ -183,7 +183,7 @@ class PromoteContentTest(unittest.TestCase):
 
         self.assertIn("<title>BrowserOS Server</title>", promoted)
         self.assertIn(
-            "<link>https://cdn.browseros.com/appcast-server.xml</link>", promoted
+            "<link>https://github.com/BlueOriginAI/reBrowser/releases/download/feed-server-browseros/appcast-server.xml</link>", promoted
         )
         self.assertNotIn("(Alpha)", promoted)
         self.assertNotIn("appcast-server.alpha.xml", promoted)

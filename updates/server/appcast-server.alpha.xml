@@ -2,7 +2,7 @@
 <rss xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" version="2.0">
   <channel>
     <title>BrowserOS Server (Alpha)</title>
-    <link>https://cdn.browseros.com/appcast-server.alpha.xml</link>
+    <link>https://github.com/BlueOriginAI/reBrowser/releases/download/feed-server-browseros/appcast-server.alpha.xml</link>
     <description>BrowserOS Server (Alpha) binary updates</description>
     <language>en</language>
 
@@ -12,7 +12,7 @@
 
       <!-- macOS arm64 -->
       <enclosure
-        url="https://cdn.browseros.com/server/browseros_server_0.0.166_darwin_arm64.zip"
+        url="https://github.com/BlueOriginAI/reBrowser/releases/download/server%2Fv0.0.166/browseros_server_0.0.166_darwin_arm64.zip"
         sparkle:os="macos"
         sparkle:arch="arm64"
         sparkle:edSignature="OUTGuEbjes7JMiaydRbl4vZMY6SSLQoUY0IBVrNskOZa7/4NP8RkPw40K/4W1zwSlq7xxrWWlZkGZ6LDnLV4Ag=="
@@ -21,7 +21,7 @@
 
       <!-- macOS x86_64 -->
       <enclosure
-        url="https://cdn.browseros.com/server/browseros_server_0.0.166_darwin_x64.zip"
+        url="https://github.com/BlueOriginAI/reBrowser/releases/download/server%2Fv0.0.166/browseros_server_0.0.166_darwin_x64.zip"
         sparkle:os="macos"
         sparkle:arch="x86_64"
         sparkle:edSignature="D142mQkNmL88sluot7r36VwLR2VPKP526b6s4Tyo8/BZ2aJXTf5f/O5Lob4ZljXRRSKQpQmT8kBHB7HnnyePAw=="
@@ -30,7 +30,7 @@
 
       <!-- Linux arm64 -->
       <enclosure
-        url="https://cdn.browseros.com/server/browseros_server_0.0.166_linux_arm64.zip"
+        url="https://github.com/BlueOriginAI/reBrowser/releases/download/server%2Fv0.0.166/browseros_server_0.0.166_linux_arm64.zip"
         sparkle:os="linux"
         sparkle:arch="arm64"
         sparkle:edSignature="1y7Up6wCp/JoGqkv0FmztJuTqiaC8SsuywAPKax4y9lunaUSuHmIF9iMZRqmAxjWlBsgJOAs7GJrloxty7Q8Ag=="
@@ -39,7 +39,7 @@
 
       <!-- Linux x86_64 -->
       <enclosure
-        url="https://cdn.browseros.com/server/browseros_server_0.0.166_linux_x64.zip"
+        url="https://github.com/BlueOriginAI/reBrowser/releases/download/server%2Fv0.0.166/browseros_server_0.0.166_linux_x64.zip"
         sparkle:os="linux"
         sparkle:arch="x86_64"
         sparkle:edSignature="6EBtYB9UTMlIDUdLVKHS4ts2Ywo55ER1KtyyWSfdMvx/ef8XLFSI9cIDmaTydS235V6cGjQ3Ab5D06eufM/SBw=="
@@ -48,7 +48,7 @@
 
       <!-- Windows x86_64 -->
       <enclosure
-        url="https://cdn.browseros.com/server/browseros_server_0.0.166_windows_x64.zip"
+        url="https://github.com/BlueOriginAI/reBrowser/releases/download/server%2Fv0.0.166/browseros_server_0.0.166_windows_x64.zip"
         sparkle:os="windows"
         sparkle:arch="x86_64"
         sparkle:edSignature="Le3DAZ35axe3dyqlmzRYGH+w2WtH9d7/070uAJRLj3Imd8giNENBHXJqP9Vlhu4xoDSv+H541G5g6orJCESxCQ=="

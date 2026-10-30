@@ -36,8 +36,8 @@ index 0000000000000..7a5da195279c1
 +  // Feed keys are owned by release/feeds/spec.py (_BROWSER_FEED_SLUGS) in
 +  // the BrowserOS repo; keep the two in lockstep.
 +  const char* base_url = browseros::IsBrowserClawProduct()
-+                             ? "https://cdn.browseros.com/appcast-claw"
-+                             : "https://cdn.browseros.com/appcast";
++                             ? "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-browserclaw/appcast-claw"
++                             : "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-browseros/appcast";
 +
 +  if (base::SysInfo::OperatingSystemArchitecture() == "x86_64") {
 +    return [NSString stringWithFormat:@"%s-x86_64.xml", base_url];

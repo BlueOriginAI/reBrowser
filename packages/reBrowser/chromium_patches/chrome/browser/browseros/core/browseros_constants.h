@@ -28,9 +28,9 @@ index 0000000000000..e7b9a3a608cde
 +}
 +
 +inline constexpr char kBrowserOSConfigUrl[] =
-+    "https://cdn.browseros.com/extensions/extensions.json";
++    "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-extensions/extensions.json";
 +inline constexpr char kBrowserOSAlphaConfigUrl[] =
-+    "https://cdn.browseros.com/extensions/extensions.alpha.json";
++    "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-extensions/extensions.alpha.json";
 +
 +inline constexpr char kAgentExtensionId[] = "bflpfmnmnokmjhmgnolecpppdbdophmk";
 +
@@ -41,9 +41,9 @@ index 0000000000000..e7b9a3a608cde
 +    "naenhmeajakeeifaphccfdccdpnhkdmj";
 +
 +inline constexpr char kBrowserOSUpdateUrl[] =
-+    "https://cdn.browseros.com/extensions/update-manifest.xml";
++    "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-extensions/update-manifest.xml";
 +inline constexpr char kBrowserOSAlphaUpdateUrl[] =
-+    "https://cdn.browseros.com/extensions/update-manifest.alpha.xml";
++    "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-extensions/update-manifest.alpha.xml";
 +
 +inline constexpr char kBrowserOSHost[] = "browseros";
 +

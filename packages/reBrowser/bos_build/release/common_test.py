@@ -14,7 +14,6 @@ from .common import (
     generate_appcast_item,
     get_download_path_mapping,
     list_all_versions,
-    list_legacy_versions,
     validate_release_metadata,
 )
 
@@ -234,103 +233,33 @@ class DownloadPathMappingTest(unittest.TestCase):
         )
 
 
-class _FakeR2Client:
-    """Serves canned delimiter-listing pages; records call kwargs."""
-
-    def __init__(self, pages_by_prefix):
-        self.pages_by_prefix = pages_by_prefix
-        self.calls = []
-
-    def list_objects_v2(self, **kwargs):
-        self.calls.append(kwargs)
-        pages = self.pages_by_prefix[kwargs["Prefix"]]
-        return pages[int(kwargs.get("ContinuationToken", 0))]
-
-
-def _page(prefix, names, next_token=None):
-    page: dict = {"CommonPrefixes": [{"Prefix": f"{prefix}{name}/"} for name in names]}
-    if next_token is not None:
-        page["IsTruncated"] = True
-        page["NextContinuationToken"] = str(next_token)
-    return page
-
-
-def _env(configured=True):
-    return cast(
-        EnvConfig,
-        SimpleNamespace(r2_bucket="bucket", has_r2_config=lambda: configured),
-    )
+def _env() -> EnvConfig:
+    return cast(EnvConfig, SimpleNamespace())
 
 
 class ListAllVersionsTest(unittest.TestCase):
-    def test_lists_productized_versions_newest_first(self):
-        prefix = "releases/browseros/"
-        client = _FakeR2Client({prefix: [_page(prefix, ["0.30.0", "0.31.0"])]})
+    def _gh(self, stdout: str):
+        return mock.patch.object(
+            common.subprocess,
+            "run",
+            return_value=SimpleNamespace(stdout=stdout, returncode=0),
+        )
 
-        with mock.patch.object(common, "get_r2_client", return_value=client):
+    def test_lists_browseros_versions_newest_first(self):
+        with self._gh("v0.30.0\nv0.31.0\nbrowserclaw/v9.0.0\n"):
             versions = list_all_versions("browseros", _env())
 
         self.assertEqual(versions, ["0.31.0", "0.30.0"])
 
-    def test_paginates_truncated_listings(self):
-        prefix = "releases/browseros/"
-        client = _FakeR2Client(
-            {
-                prefix: [
-                    _page(prefix, ["0.29.0"], next_token=1),
-                    _page(prefix, ["0.31.0"]),
-                ]
-            }
-        )
+    def test_lists_browserclaw_versions(self):
+        with self._gh("v0.30.0\nbrowserclaw/v1.0.0\nbrowserclaw/v1.2.0\n"):
+            versions = list_all_versions("browserclaw", _env())
 
-        with mock.patch.object(common, "get_r2_client", return_value=client):
-            versions = list_all_versions("browseros", _env())
+        self.assertEqual(versions, ["1.2.0", "1.0.0"])
 
-        self.assertEqual(versions, ["0.31.0", "0.29.0"])
-
-    def test_requests_product_release_prefix_with_delimiter(self):
-        prefix = "releases/browserclaw/"
-        client = _FakeR2Client({prefix: [_page(prefix, [])]})
-
-        with mock.patch.object(common, "get_r2_client", return_value=client):
-            list_all_versions("browserclaw", _env())
-
-        self.assertEqual(
-            client.calls[0],
-            {"Bucket": "bucket", "Prefix": prefix, "Delimiter": "/"},
-        )
-
-    def test_returns_empty_without_r2_config(self):
-        self.assertEqual(list_all_versions("browseros", _env(configured=False)), [])
-
-
-class ListLegacyVersionsTest(unittest.TestCase):
-    def test_keeps_only_version_shaped_prefixes(self):
-        client = _FakeR2Client(
-            {
-                "releases/": [
-                    _page("releases/", ["browseros", "browserclaw", "0.28.4", "0.29.0"])
-                ]
-            }
-        )
-
-        with mock.patch.object(common, "get_r2_client", return_value=client):
-            versions = list_legacy_versions(_env())
-
-        self.assertEqual(versions, ["0.29.0", "0.28.4"])
-
-    def test_rejects_decorated_version_names(self):
-        client = _FakeR2Client(
-            {"releases/": [_page("releases/", ["v0.31.0", "0.31.0-beta", "1.2.3.4"])]}
-        )
-
-        with mock.patch.object(common, "get_r2_client", return_value=client):
-            versions = list_legacy_versions(_env())
-
-        self.assertEqual(versions, ["1.2.3.4"])
-
-    def test_returns_empty_without_r2_config(self):
-        self.assertEqual(list_legacy_versions(_env(configured=False)), [])
+    def test_returns_empty_when_gh_fails(self):
+        with mock.patch.object(common.subprocess, "run", side_effect=OSError("gh")):
+            self.assertEqual(list_all_versions("browseros", _env()), [])
 
 
 if __name__ == "__main__":

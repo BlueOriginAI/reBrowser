@@ -54,13 +54,13 @@ index 0000000000000000000000000000000000000000..08612fa1795d97550c56f02254ea8916
 +// the two in lockstep.
 +#if defined(ARCH_CPU_ARM64)
 +constexpr char kAppcastURL[] =
-+    "https://cdn.browseros.com/appcast-win-arm64.xml";
++    "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-win-browseros/appcast-win-arm64.xml";
 +constexpr char kClawAppcastURL[] =
-+    "https://cdn.browseros.com/appcast-claw-win-arm64.xml";
++    "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-win-browserclaw/appcast-claw-win-arm64.xml";
 +#else
-+constexpr char kAppcastURL[] = "https://cdn.browseros.com/appcast-win.xml";
++constexpr char kAppcastURL[] = "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-win-browseros/appcast-win.xml";
 +constexpr char kClawAppcastURL[] =
-+    "https://cdn.browseros.com/appcast-claw-win.xml";
++    "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-win-browserclaw/appcast-claw-win.xml";
 +#endif
 +
 +const char* GetAppcastURL() {

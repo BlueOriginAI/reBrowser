@@ -2,7 +2,6 @@
 """Update-feed ownership: spec table, renderers, and the rails publisher."""
 
 from .spec import (
-    CDN_BASE_URL,
     EXTENSIONS,
     ExtensionSpec,
     FeedSpec,
@@ -17,7 +16,6 @@ from .spec import (
 )
 
 __all__ = [
-    "CDN_BASE_URL",
     "EXTENSIONS",
     "ExtensionSpec",
     "FeedSpec",

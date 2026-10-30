@@ -27,8 +27,8 @@ index 0000000000000..6fe71062a9c96
 +    {
 +        // Empty state dir keeps the legacy .browseros/current_version layout.
 +        FILE_PATH_LITERAL(""),
-+        "https://cdn.browseros.com/appcast-server.xml",
-+        "https://cdn.browseros.com/appcast-server.alpha.xml",
++        "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-server-browseros/appcast-server.xml",
++        "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-server-browseros/appcast-server.alpha.xml",
 +        "/status",
 +    },
 +};
@@ -44,8 +44,8 @@ index 0000000000000..6fe71062a9c96
 +    {
 +        // Isolate Claw OTA state under .browseros/BrowserClawServer/.
 +        FILE_PATH_LITERAL("BrowserClawServer"),
-+        "https://cdn.browseros.com/appcast-claw-server.xml",
-+        "https://cdn.browseros.com/appcast-claw-server.alpha.xml",
++        "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-server-browserclaw/appcast-claw-server.xml",
++        "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-server-browserclaw/appcast-claw-server.alpha.xml",
 +        // Claw does not expose the {can_update} readiness contract yet; empty
 +        // skips readiness and restarts after verification.
 +        "",

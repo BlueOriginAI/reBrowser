@@ -15,6 +15,7 @@ from typing import Any, Dict, Optional
 
 from ..lib import versions as versions_mod
 from ..lib.env import EnvConfig
+from ..lib.github_releases import feed_asset_url
 from ..lib.paths import get_feature_registry_path, get_package_root
 from .products import (
     ProductDescriptor,
@@ -205,8 +206,8 @@ class Context:
 
     def get_extensions_manifest_url(self) -> str:
         """Get CDN URL for bundled extensions manifest"""
-        return self.env.bundled_extensions_manifest_url or (
-            "https://cdn.browseros.com/extensions/bundled-manifest.xml"
+        return self.env.bundled_extensions_manifest_url or feed_asset_url(
+            "extensions", "browseros", "bundled-manifest.xml"
         )
 
     def get_entitlements_dir(self) -> Path:

@@ -482,10 +482,10 @@ jobs:
           set -euo pipefail
           case "$PRODUCT" in
             browseros)
-              echo "value=BrowserOS" >> "$GITHUB_OUTPUT"
+              echo "value=reBrowser" >> "$GITHUB_OUTPUT"
               ;;
             browserclaw)
-              echo "value=BrowserOS_neo" >> "$GITHUB_OUTPUT"
+              echo "value=reBrowser-agent" >> "$GITHUB_OUTPUT"
               ;;
             *)
               echo "::error::product must be one of: browseros, browserclaw"
@@ -508,3 +508,5 @@ jobs:
             packages/reBrowser/releases/*/${{ steps.artifact_prefix.outputs.value }}_*.deb
             packages/reBrowser/releases/*/${{ steps.artifact_prefix.outputs.value }}_*_installer.exe
             packages/reBrowser/releases/*/${{ steps.artifact_prefix.outputs.value }}_*_installer.zip
+            packages/reBrowser/releases/*/release.json
+            packages/reBrowser/releases/*/release-*.json

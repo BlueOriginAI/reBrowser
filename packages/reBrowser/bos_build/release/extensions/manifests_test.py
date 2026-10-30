@@ -110,7 +110,7 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
         )
         # JSON points every update-feed id at the channel manifest URL.
         self.assertIn(
-            "https://cdn.browseros.com/extensions/update-manifest.alpha.xml",
+            "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-extensions/update-manifest.alpha.xml",
             json_content,
         )
         self.assertIn(AGENT_ID, json_content)
@@ -318,11 +318,11 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
         self.assertEqual(extract_manifest_versions(bundled)[AGENT_ID], "0.0.119.0")
         # Both agent crx versions are referenced somewhere — both checked.
         self.assertIn(
-            "https://cdn.browseros.com/extensions/agent-0.0.118.0.crx",
+            "https://github.com/BlueOriginAI/reBrowser/releases/download/extensions%2Fv0.0.118.0/agent-0.0.118.0.crx",
             publisher.head_calls,
         )
         self.assertIn(
-            "https://cdn.browseros.com/extensions/agent-0.0.119.0.crx",
+            "https://github.com/BlueOriginAI/reBrowser/releases/download/extensions%2Fv0.0.119.0/agent-0.0.119.0.crx",
             publisher.head_calls,
         )
 
@@ -356,7 +356,7 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
         self.assertEqual(publisher.calls, [])
 
     def test_missing_crx_refuses_before_any_write(self):
-        url = "https://cdn.browseros.com/extensions/agent-0.0.118.0.crx"
+        url = "https://github.com/BlueOriginAI/reBrowser/releases/download/extensions%2Fv0.0.118.0/agent-0.0.118.0.crx"
         publisher = FakePublisher(live=_live_feeds(), head_status={url: 404})
 
         with self.assertRaisesRegex(RuntimeError, "agent-0.0.118.0.crx"):
@@ -369,9 +369,9 @@ class ExtensionsFeedModuleTest(unittest.TestCase):
         self._run(set_versions={"agent": "0.0.118.0"})
 
         expected = {
-            "https://cdn.browseros.com/extensions/agent-0.0.118.0.crx",
-            "https://cdn.browseros.com/extensions/bugreporter-54.0.0.0.crx",
-            "https://cdn.browseros.com/extensions/browserclaw-0.0.0.2.crx",
+            "https://github.com/BlueOriginAI/reBrowser/releases/download/extensions%2Fv0.0.118.0/agent-0.0.118.0.crx",
+            "https://github.com/BlueOriginAI/reBrowser/releases/download/extensions%2Fv54.0.0.0/bugreporter-54.0.0.0.crx",
+            "https://github.com/BlueOriginAI/reBrowser/releases/download/extensions%2Fv0.0.0.2/browserclaw-0.0.0.2.crx",
         }
         self.assertEqual(set(self.publisher.head_calls), expected)
 

@@ -119,7 +119,6 @@ class UploadMetadataTest(unittest.TestCase):
     def test_deferred_upload_writes_exact_receipt_without_r2_mutation(self) -> None:
         with (
             tempfile.TemporaryDirectory() as tmp,
-            mock.patch("bos_build.steps.storage.upload.BOTO3_AVAILABLE", False),
             mock.patch("bos_build.steps.storage.upload.IS_MACOS", lambda: True),
             mock.patch.dict(
                 "os.environ",
@@ -130,10 +129,6 @@ class UploadMetadataTest(unittest.TestCase):
                 },
                 clear=False,
             ),
-            mock.patch("bos_build.steps.storage.upload.get_r2_client") as get_client,
-            mock.patch(
-                "bos_build.steps.storage.upload.upload_file_to_r2"
-            ) as upload_file,
         ):
             root = Path(tmp)
             filename = "BrowserOS_v1.2.3_arm64.dmg"
@@ -145,12 +140,17 @@ class UploadMetadataTest(unittest.TestCase):
                 {filename: {"sparkle_signature": "SIG==", "sparkle_length": 10}},
             )
             persisted = json.loads((root / "release.json").read_text(encoding="utf-8"))
+            platform_receipt = json.loads(
+                (root / "release-macos.json").read_text(encoding="utf-8")
+            )
 
         self.assertTrue(success)
         self.assertEqual(release["reservation_sha"], "b" * 40)
         self.assertEqual(persisted, release)
-        get_client.assert_not_called()
-        upload_file.assert_not_called()
+        self.assertEqual(platform_receipt, release)
+        self.assertIn(
+            "/releases/download/v1.2.3/", release["artifacts"]["arm64"]["url"]
+        )
 
     def test_release_json_records_actions_provenance(self) -> None:
         with (
@@ -322,19 +322,8 @@ class UploadMetadataTest(unittest.TestCase):
     def test_upload_attaches_macos_dmg_signature_metadata_by_filename(self) -> None:
         with (
             tempfile.TemporaryDirectory() as tmp,
-            mock.patch("bos_build.steps.storage.upload.BOTO3_AVAILABLE", True),
             mock.patch("bos_build.steps.storage.upload.IS_MACOS", lambda: True),
             mock.patch("bos_build.steps.storage.upload.IS_WINDOWS", lambda: False),
-            mock.patch(
-                "bos_build.steps.storage.upload.get_r2_client", return_value=object()
-            ),
-            mock.patch(
-                "bos_build.steps.storage.upload.get_release_json", return_value=None
-            ),
-            mock.patch(
-                "bos_build.steps.storage.upload.upload_file_to_r2",
-                return_value=True,
-            ),
         ):
             dist_dir = Path(tmp)
             dmg_name = "BrowserOS_v1.2.3_arm64.dmg"
@@ -376,21 +365,8 @@ class UploadMetadataTest(unittest.TestCase):
             with (
                 self.subTest(product_id=product_id),
                 tempfile.TemporaryDirectory() as tmp,
-                mock.patch("bos_build.steps.storage.upload.BOTO3_AVAILABLE", True),
                 mock.patch("bos_build.steps.storage.upload.IS_MACOS", lambda: True),
                 mock.patch("bos_build.steps.storage.upload.IS_WINDOWS", lambda: False),
-                mock.patch(
-                    "bos_build.steps.storage.upload.get_r2_client",
-                    return_value=object(),
-                ),
-                mock.patch(
-                    "bos_build.steps.storage.upload.get_release_json",
-                    return_value=None,
-                ),
-                mock.patch(
-                    "bos_build.steps.storage.upload.upload_file_to_r2",
-                    return_value=True,
-                ) as upload_file,
             ):
                 dist_dir = Path(tmp)
                 (dist_dir / selected_name).write_bytes(b"selected")
@@ -408,27 +384,13 @@ class UploadMetadataTest(unittest.TestCase):
                 self.assertEqual(
                     release["artifacts"]["arm64"]["filename"], selected_name
                 )
-                uploaded_names = [
-                    Path(call.args[1]).name for call in upload_file.call_args_list
-                ]
-                self.assertEqual(uploaded_names, [selected_name, "release.json"])
+                self.assertEqual(set(release["artifacts"]), {"arm64"})
 
     def test_upload_keeps_same_product_macos_arch_artifacts(self) -> None:
         with (
             tempfile.TemporaryDirectory() as tmp,
-            mock.patch("bos_build.steps.storage.upload.BOTO3_AVAILABLE", True),
             mock.patch("bos_build.steps.storage.upload.IS_MACOS", lambda: True),
             mock.patch("bos_build.steps.storage.upload.IS_WINDOWS", lambda: False),
-            mock.patch(
-                "bos_build.steps.storage.upload.get_r2_client", return_value=object()
-            ),
-            mock.patch(
-                "bos_build.steps.storage.upload.get_release_json", return_value=None
-            ),
-            mock.patch(
-                "bos_build.steps.storage.upload.upload_file_to_r2",
-                return_value=True,
-            ) as upload_file,
         ):
             dist_dir = Path(tmp)
             product_names = [
@@ -454,11 +416,6 @@ class UploadMetadataTest(unittest.TestCase):
             {artifact["filename"] for artifact in release["artifacts"].values()},
             set(product_names),
         )
-        uploaded_names = [
-            Path(call.args[1]).name for call in upload_file.call_args_list
-        ]
-        self.assertEqual(uploaded_names[:-1], sorted(product_names))
-        self.assertEqual(uploaded_names[-1], "release.json")
 
     def test_merge_release_metadata_preserves_existing_artifacts(self) -> None:
         existing = {

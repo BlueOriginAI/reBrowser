@@ -5,6 +5,7 @@ import difflib
 import hashlib
 import json
 import re
+import tempfile
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -13,7 +14,12 @@ from typing import Callable, List, Optional, Sequence
 
 from ...lib.env import EnvConfig
 from ...lib.paths import get_package_root
-from ...lib.r2 import get_r2_client
+from ...lib.github_releases import github_repo
+from ..github import (
+    download_release_asset,
+    ensure_published_release,
+    upload_to_github_release,
+)
 from ...lib.utils import log_error, log_info, log_success, log_warning
 from .render import (
     SPARKLE_NS,
@@ -228,15 +234,17 @@ class FeedPublisher:
     def __init__(
         self,
         env: Optional[EnvConfig] = None,
-        r2_client=None,
+        repo: Optional[str] = None,
         http_head: Optional[Callable[[str], int]] = None,
         staging_root: Optional[Path] = None,
         appcast_staging_dir: Optional[Path] = None,
         extensions_staging_dir: Optional[Path] = None,
         now: Optional[Callable[[], datetime]] = None,
+        r2_client=None,  # Compatibility shim; feeds no longer use R2.
+        **_: object,
     ):
         self.env = env or EnvConfig()
-        self._client = r2_client
+        self.repo = repo or github_repo()
         self.http_head = http_head or _default_http_head
         root = staging_root or _default_staging_root()
         self._staging_dirs = {
@@ -244,23 +252,25 @@ class FeedPublisher:
             "server": appcast_staging_dir or root / "server",
             "extensions": extensions_staging_dir or root / "extensions",
         }
+        self._backup_root = root.parent / "feeds-history"
         self._now = now or (lambda: datetime.now(timezone.utc))
 
-    @property
-    def client(self):
-        if self._client is None:
-            self._client = get_r2_client(self.env)
-            if self._client is None:
-                raise RuntimeError("Failed to create R2 client")
-        return self._client
+    def _spec(self, key: str) -> FeedSpec:
+        spec = feed_by_key(key)
+        if spec is None:
+            raise ValueError(f"Unknown feed key: {key}")
+        return spec
 
     def fetch_live(self, key: str) -> Optional[str]:
-        """Read authoritative live content while preserving corrupt objects."""
-        try:
-            response = self.client.get_object(Bucket=self.env.r2_bucket, Key=key)
-            return response["Body"].read().decode("utf-8", errors="replace")
-        except self.client.exceptions.NoSuchKey:
-            return None
+        """Read the live feed asset from its GitHub release."""
+        spec = self._spec(key)
+        with tempfile.TemporaryDirectory(prefix="rebrowser-feed-") as temporary:
+            path = download_release_asset(
+                spec.release_tag, self.repo, spec.asset_name, Path(temporary)
+            )
+            if path is None:
+                return None
+            return path.read_text(errors="replace")
 
     def staging_path(self, spec: FeedSpec) -> Path:
         basename = spec.key.rsplit("/", 1)[-1]
@@ -486,15 +496,17 @@ class FeedPublisher:
         if live is not None and not self._backup_live(spec.key):
             return False
 
-        content_type = (
-            "application/json" if spec.key.endswith(".json") else "application/xml"
+        ensure_published_release(
+            spec.release_tag, self.repo, f"Update feed: {spec.release_tag}"
         )
-        self.client.put_object(
-            Bucket=self.env.r2_bucket,
-            Key=spec.key,
-            Body=content.encode("utf-8"),
-            ContentType=content_type,
-        )
+        with tempfile.TemporaryDirectory(prefix="rebrowser-feed-") as temporary:
+            asset = Path(temporary) / spec.asset_name
+            asset.write_text(content)
+            if not upload_to_github_release(
+                spec.release_tag, self.repo, asset, clobber=True
+            ):
+                log_error(f"Failed to upload feed asset {spec.asset_name}")
+                return False
 
         staging = self.stage(spec, content)
         log_success(f"Published {spec.url} (staging: {staging})")
@@ -958,36 +970,34 @@ class FeedPublisher:
         )
         return ", ".join(f"{name}={version}" for name, version in named)
 
-    def _last_backup_timestamp(self, key: str) -> Optional[str]:
-        prefix = f"{BACKUP_PREFIX}/{key}."
-        keys: List[str] = []
-        token = None
-        while True:
-            kwargs = {"Bucket": self.env.r2_bucket, "Prefix": prefix}
-            if token:
-                kwargs["ContinuationToken"] = token
-            response = self.client.list_objects_v2(**kwargs)
-            keys.extend(obj["Key"] for obj in response.get("Contents", []))
-            if not response.get("IsTruncated"):
-                break
-            token = response.get("NextContinuationToken")
+    def _backup_path(self, key: str) -> Path:
+        return self._backup_root / key
 
-        if not keys:
+    def _last_backup_timestamp(self, key: str) -> Optional[str]:
+        target = self._backup_path(key)
+        prefix = f"{target.name}."
+        if not target.parent.is_dir():
             return None
+        stamps = [
+            entry.name[len(prefix) :]
+            for entry in target.parent.iterdir()
+            if entry.name.startswith(prefix)
+        ]
         # Timestamps are fixed-width UTC, so lexical max is newest.
-        return max(keys)[len(prefix) :]
+        return max(stamps) if stamps else None
 
     def _backup_live(self, key: str) -> bool:
+        content = self.fetch_live(key)
+        if content is None:
+            return True
         timestamp = self._now().strftime(_TIMESTAMP_FORMAT)
-        backup_key = f"{BACKUP_PREFIX}/{key}.{timestamp}"
+        target = self._backup_path(key)
+        backup = target.with_name(f"{target.name}.{timestamp}")
         try:
-            self.client.copy_object(
-                Bucket=self.env.r2_bucket,
-                CopySource={"Bucket": self.env.r2_bucket, "Key": key},
-                Key=backup_key,
-            )
+            backup.parent.mkdir(parents=True, exist_ok=True)
+            backup.write_text(content)
         except Exception as e:
             log_error(f"Backup failed for {key} ({e}) — refusing to overwrite")
             return False
-        log_info(f"Backed up live {key} -> {backup_key}")
+        log_info(f"Backed up live {key} -> {backup}")
         return True

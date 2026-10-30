@@ -2,7 +2,7 @@
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
     <title>reBrowser Windows Updates</title>
-    <link>https://cdn.browseros.com/appcast-win.xml</link>
+    <link>https://github.com/BlueOriginAI/reBrowser/releases/download/feed-win-browseros/appcast-win.xml</link>
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
 
@@ -15,7 +15,7 @@
       <pubDate>Tue, 15 Sep 2026 01:55:02 +0000</pubDate>
       <link>https://www.browseros.com/</link>
       <enclosure
-        url="http://cdn.browseros.com/releases/browseros/0.50.5/win/BrowserOS_v0.50.5_x64_installer.exe"
+        url="https://github.com/BlueOriginAI/reBrowser/releases/download/v0.50.5/BrowserOS_v0.50.5_x64_installer.exe"
         sparkle:os="windows"
         sparkle:edSignature="rr5OCdzn+errBv5anIIweCGswAz55Kc7GtTkzDaCPSGoExSXc42U6Y2uJkuVfOpDaZpOYwT5lOBALNfD6G+cAw=="
         length="155923000"

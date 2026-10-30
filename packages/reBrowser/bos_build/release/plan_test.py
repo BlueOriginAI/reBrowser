@@ -194,7 +194,7 @@ class ReleasePlanTest(unittest.TestCase):
             )
             urls = extract_enclosure_urls(manifest_bytes.decode())
             self.assertIn(
-                "https://cdn.browseros.com/extensions/agent-0.0.124.0.crx",
+                "https://github.com/BlueOriginAI/reBrowser/releases/download/extensions%2Fv0.0.124.0/agent-0.0.124.0.crx",
                 urls,
             )
             self.assertNotIn("latest", result.manifest_url)

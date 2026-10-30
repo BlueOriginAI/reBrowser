@@ -2,7 +2,7 @@
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
     <title>reBrowser Windows Updates</title>
-    <link>https://cdn.browseros.com/appcast-claw-win.xml</link>
+    <link>https://github.com/BlueOriginAI/reBrowser/releases/download/feed-win-browserclaw/appcast-claw-win.xml</link>
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
 
@@ -15,7 +15,7 @@
       <pubDate>Tue, 15 Sep 2026 21:03:00 +0000</pubDate>
       <link>https://www.browseros.com/</link>
       <enclosure
-        url="http://cdn.browseros.com/releases/browserclaw/0.50.5/win/BrowserOS_neo_v0.50.5_x64_installer.exe"
+        url="https://github.com/BlueOriginAI/reBrowser/releases/download/browserclaw%2Fv0.50.5/BrowserOS_neo_v0.50.5_x64_installer.exe"
         sparkle:os="windows"
         sparkle:edSignature="17RZtlR3th/8bEAIrhK6DnbxsvL6xkT1qXr9zfHBgWNi/8oftLYAHGp8kATe4BmMv0yKmWEQKOFggEnIS3opCw=="
         length="132284984"

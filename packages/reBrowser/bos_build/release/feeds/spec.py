@@ -18,8 +18,12 @@ from ...core.products import (
 )
 from ...products import SERVER_BUNDLES
 from ...products.server_binaries import ServerBundle
-
-CDN_BASE_URL = "https://cdn.browseros.com"
+from ...lib.github_releases import (
+    extension_tag,
+    feed_asset_url,
+    feed_tag,
+    release_asset_url,
+)
 
 
 @dataclass(frozen=True)
@@ -34,7 +38,9 @@ class ExtensionSpec:
         return f"extensions/{self.name}-{version}.crx"
 
     def crx_url(self, version: str) -> str:
-        return f"{CDN_BASE_URL}/{self.crx_key(version)}"
+        return release_asset_url(
+            extension_tag(version), f"{self.name}-{version}.crx"
+        )
 
 
 EXTENSIONS: Tuple[ExtensionSpec, ...] = (
@@ -69,8 +75,23 @@ class FeedSpec:
     publishable: bool = True
 
     @property
+    def asset_name(self) -> str:
+        """GitHub release asset name for this feed (flat, no directory)."""
+        return self.key.rsplit("/", 1)[-1]
+
+    @property
+    def release_tag(self) -> str:
+        """Stable GitHub release tag that holds this feed's live asset."""
+        if self.kind == "browser":
+            channel = "win" if self.platform == "win" else "macos"
+            return feed_tag(channel, self.product)
+        if self.kind == "server":
+            return feed_tag("server", self.product)
+        return feed_tag("extensions", self.product)
+
+    @property
     def url(self) -> str:
-        return f"{CDN_BASE_URL}/{self.key}"
+        return release_asset_url(self.release_tag, self.asset_name)
 
 
 # Browser feed key infix per product ("" keeps today's browseros keys).
@@ -116,7 +137,9 @@ def _browser_feeds(product_id: str) -> Tuple[FeedSpec, ...]:
             product=product_id,
             channel="prod",
             title=title,
-            link=f"{CDN_BASE_URL}/{key}",
+            link=feed_asset_url(
+                "win" if platform == "win" else "macos", product_id, key
+            ),
             platform=platform,
             artifact_keys=artifact_keys,
             legacy_titles=(
@@ -158,7 +181,7 @@ def _server_feeds(bundle: ServerBundle) -> Tuple[FeedSpec, ...]:
             product=product_id,
             channel=channel,
             title=title,
-            link=f"{CDN_BASE_URL}/{key}",
+            link=feed_asset_url("server", product_id, key),
             bundle_id=bundle.id,
         )
 

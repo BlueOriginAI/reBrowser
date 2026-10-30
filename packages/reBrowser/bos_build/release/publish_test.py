@@ -1,172 +1,110 @@
 #!/usr/bin/env python3
-"""Tests for release publish helpers."""
+"""Tests for the GitHub-backed release publish helpers."""
 
+import tempfile
 import unittest
+from pathlib import Path
 from types import SimpleNamespace
-from typing import cast
 from unittest import mock
 
-from ..core.context import Context
 from ..core.products import get_product_descriptor
-from .publish import PublishModule, _release_source_key
+from .publish import PublishModule, publish_release
 
 
-class ReleaseSourceKeyTest(unittest.TestCase):
-    def test_uses_metadata_url_when_it_points_at_cdn(self):
-        ctx = self._ctx("browseros")
+def _ctx(product: str = "browserclaw") -> SimpleNamespace:
+    return SimpleNamespace(
+        release_version="0.49.0",
+        env=SimpleNamespace(),
+        product=get_product_descriptor(product),
+        github_repo="BlueOriginAI/reBrowser",
+    )
 
-        key = _release_source_key(
-            ctx,
-            "win",
-            "0.31.0",
-            {
-                "filename": "BrowserOS_v0.31.0_x64_installer.exe",
-                "url": "https://cdn.browseros.com/releases/0.31.0/win/BrowserOS_v0.31.0_x64_installer.exe",
-            },
-        )
 
-        self.assertEqual(
-            key,
-            "releases/0.31.0/win/BrowserOS_v0.31.0_x64_installer.exe",
-        )
+def _metadata(**artifacts: dict) -> dict:
+    return {
+        "win": {
+            "product": "browserclaw",
+            "version": "0.49.0",
+            "platform": "win",
+            "artifacts": artifacts,
+        }
+    }
 
-    def test_falls_back_to_product_prefixed_release_path(self):
-        ctx = self._ctx("browserclaw")
 
-        key = _release_source_key(
-            ctx,
-            "macos",
-            "0.31.0",
-            {"filename": "BrowserOS_neo_v0.31.0_universal.dmg"},
-        )
-
-        self.assertEqual(
-            key,
-            "releases/browserclaw/0.31.0/macos/BrowserOS_neo_v0.31.0_universal.dmg",
-        )
-
-    def _ctx(self, product: str) -> Context:
-        return cast(
-            Context,
-            SimpleNamespace(
-                env=SimpleNamespace(r2_cdn_base_url="https://cdn.browseros.com"),
-                product=get_product_descriptor(product),
+class PublishReleaseTest(unittest.TestCase):
+    def test_flips_a_draft_release(self):
+        with (
+            mock.patch(
+                "bos_build.release.publish.inspect_github_release",
+                return_value={"isDraft": True},
             ),
+            mock.patch(
+                "bos_build.release.publish.edit_github_release"
+            ) as edit,
+        ):
+            publish_release("v0.49.0", "BlueOriginAI/reBrowser")
+
+        edit.assert_called_once_with(
+            "v0.49.0", "BlueOriginAI/reBrowser", draft=False, latest=False
         )
+
+    def test_leaves_a_published_release_untouched(self):
+        with (
+            mock.patch(
+                "bos_build.release.publish.inspect_github_release",
+                return_value={"isDraft": False},
+            ),
+            mock.patch(
+                "bos_build.release.publish.edit_github_release"
+            ) as edit,
+        ):
+            publish_release("v0.49.0", "BlueOriginAI/reBrowser")
+
+        edit.assert_not_called()
 
 
 class PublishModuleIntegrityTest(unittest.TestCase):
     def test_default_selection_skips_every_missing_platform(self):
-        module = PublishModule()
-        ctx = SimpleNamespace(
-            release_version="0.49.0",
-            env=SimpleNamespace(
-                r2_cdn_base_url="https://cdn.browseros.com",
-                r2_bucket="bucket",
-            ),
-            product=get_product_descriptor("browserclaw"),
-        )
+        ctx = _ctx()
 
-        with (
-            mock.patch(
-                "bos_build.release.publish.fetch_all_release_metadata",
-                return_value={
-                    "win": {
-                        "artifacts": {
-                            "x64_installer": {
-                                "filename": "BrowserOS_neo_installer.exe",
-                                "url": "https://cdn.browseros.com/installer.exe",
-                            }
+        with tempfile.TemporaryDirectory() as temporary:
+            (Path(temporary) / "reBrowser-agent_v0.49.0_x64_installer.exe").write_bytes(
+                b"installer"
+            )
+            module = PublishModule(artifacts_dir=Path(temporary))
+            with (
+                mock.patch(
+                    "bos_build.release.publish.fetch_all_release_metadata",
+                    return_value=_metadata(
+                        x64_installer={
+                            "filename": "reBrowser-agent_v0.49.0_x64_installer.exe"
                         }
-                    }
-                },
-            ),
-            mock.patch(
-                "bos_build.release.publish.get_r2_client",
-                return_value=object(),
-            ),
-            mock.patch(
-                "bos_build.release.publish.copy_to_download_path",
-                return_value=True,
-            ) as copy,
-            mock.patch("bos_build.release.publish.log_warning") as warning,
-        ):
-            module.execute(ctx)
+                    ),
+                ),
+                mock.patch(
+                    "bos_build.release.publish.inspect_github_release",
+                    return_value={"isDraft": False},
+                ),
+                mock.patch(
+                    "bos_build.release.publish.ensure_published_release"
+                ),
+                mock.patch(
+                    "bos_build.release.publish.upload_to_github_release",
+                    return_value=True,
+                ) as upload,
+                mock.patch("bos_build.release.publish.log_warning") as warning,
+            ):
+                module.execute(ctx)
 
         warning.assert_called_once_with(
             "Skipping platforms with no release metadata: macos, linux"
         )
-        copy.assert_called_once_with(
-            mock.ANY,
-            "bucket",
-            "installer.exe",
-            "download/reBrowser-agent_installer.exe",
-        )
+        upload.assert_called_once()
+        uploaded_name = upload.call_args.args[2].name
+        self.assertEqual(uploaded_name, "reBrowser-agent_installer.exe")
 
-    def test_default_selection_validates_only_loaded_platforms(self):
-        module = PublishModule(
-            source_sha="a" * 40,
-            workflow_run_id="123",
-            workflow_run_attempt="1",
-        )
-        ctx = SimpleNamespace(
-            release_version="0.49.0",
-            env=SimpleNamespace(
-                r2_cdn_base_url="https://cdn.browseros.com",
-                r2_bucket="bucket",
-            ),
-            product=get_product_descriptor("browserclaw"),
-        )
-        metadata = {
-            "win": {
-                "product": "browserclaw",
-                "version": "0.49.0",
-                "platform": "win",
-                "source_sha": "a" * 40,
-                "workflow_run_id": "123",
-                "workflow_run_attempt": "1",
-                "artifacts": {
-                    "x64_installer": {
-                        "filename": "BrowserOS_neo_installer.exe",
-                        "url": "https://cdn.browseros.com/installer.exe",
-                    },
-                    "x64_zip": {
-                        "filename": "BrowserOS_neo_installer.zip",
-                        "url": "https://cdn.browseros.com/installer.zip",
-                    },
-                },
-            }
-        }
-
-        with (
-            mock.patch(
-                "bos_build.release.publish.fetch_all_release_metadata",
-                return_value=metadata,
-            ),
-            mock.patch(
-                "bos_build.release.publish.get_r2_client",
-                return_value=object(),
-            ),
-            mock.patch(
-                "bos_build.release.publish.copy_to_download_path",
-                return_value=True,
-            ) as copy,
-            mock.patch("bos_build.release.publish.log_warning"),
-        ):
-            module.execute(ctx)
-
-        copy.assert_called_once()
-
-    def test_explicit_missing_platform_raises_before_copy(self):
+    def test_explicit_missing_platform_raises_before_upload(self):
         module = PublishModule(platforms=["linux"])
-        ctx = SimpleNamespace(
-            release_version="0.49.0",
-            env=SimpleNamespace(
-                r2_cdn_base_url="https://cdn.browseros.com",
-                r2_bucket="bucket",
-            ),
-            product=get_product_descriptor("browserclaw"),
-        )
 
         with (
             mock.patch(
@@ -174,112 +112,37 @@ class PublishModuleIntegrityTest(unittest.TestCase):
                 return_value={"win": {"artifacts": {}}},
             ),
             mock.patch(
-                "bos_build.release.publish.copy_to_download_path",
-                return_value=True,
-            ) as copy,
+                "bos_build.release.publish.upload_to_github_release"
+            ) as upload,
             self.assertRaisesRegex(RuntimeError, "requested platform.*linux"),
         ):
-            module.execute(ctx)
+            module.execute(_ctx())
 
-        copy.assert_not_called()
-
-    def test_missing_r2_client_raises(self):
-        module = PublishModule(platforms=["win"])
-        ctx = SimpleNamespace(
-            release_version="0.49.0",
-            env=SimpleNamespace(
-                r2_cdn_base_url="https://cdn.browseros.com",
-                r2_bucket="bucket",
-            ),
-            product=get_product_descriptor("browserclaw"),
-        )
-
-        with (
-            mock.patch(
-                "bos_build.release.publish.fetch_all_release_metadata",
-                return_value={
-                    "win": {
-                        "artifacts": {
-                            "x64_installer": {
-                                "filename": "BrowserOS_neo_installer.exe",
-                                "url": "https://cdn.browseros.com/installer.exe",
-                            }
-                        }
-                    }
-                },
-            ),
-            mock.patch(
-                "bos_build.release.publish.get_r2_client",
-                return_value=None,
-            ),
-            self.assertRaisesRegex(RuntimeError, "R2 client"),
-        ):
-            module.execute(ctx)
+        upload.assert_not_called()
 
     def test_zero_mapped_artifacts_raises(self):
         module = PublishModule(platforms=["win"])
-        ctx = SimpleNamespace(
-            release_version="0.49.0",
-            env=SimpleNamespace(
-                r2_bucket="bucket",
-                r2_cdn_base_url="https://cdn.browseros.com",
-            ),
-            product=get_product_descriptor("browserclaw"),
-        )
-        metadata = {
-            "win": {
-                "artifacts": {
-                    "unknown": {
-                        "filename": "unknown.bin",
-                        "url": "https://cdn.browseros.com/unknown.bin",
-                    }
-                }
-            }
-        }
 
         with (
             mock.patch(
                 "bos_build.release.publish.fetch_all_release_metadata",
-                return_value=metadata,
-            ),
-            mock.patch(
-                "bos_build.release.publish.get_r2_client",
-                return_value=object(),
+                return_value=_metadata(unknown={"filename": "unknown.bin"}),
             ),
             self.assertRaisesRegex(RuntimeError, "No promotable artifacts"),
         ):
-            module.execute(ctx)
+            module.execute(_ctx())
 
     def test_each_requested_platform_requires_a_promotable_artifact(self):
         module = PublishModule(platforms=["macos", "win"])
-        ctx = SimpleNamespace(
-            release_version="0.49.0",
-            env=SimpleNamespace(
-                r2_bucket="bucket",
-                r2_cdn_base_url="https://cdn.browseros.com",
-            ),
-            product=get_product_descriptor("browserclaw"),
-        )
         metadata = {
             "macos": {
                 "artifacts": {
                     "universal": {
-                        "filename": "BrowserOS_neo_v0.49.0_universal.dmg",
-                        "url": (
-                            "https://cdn.browseros.com/releases/browserclaw/"
-                            "0.49.0/macos/BrowserOS_neo_v0.49.0_universal.dmg"
-                        ),
+                        "filename": "reBrowser-agent_v0.49.0_universal.dmg"
                     }
                 }
             },
-            "win": {
-                "artifacts": {
-                    "unknown": {
-                        "filename": "unknown.bin",
-                        "url": "https://cdn.browseros.com/unknown.bin",
-                    }
-                }
-            },
+            "win": {"artifacts": {"unknown": {"filename": "unknown.bin"}}},
         }
 
         with (
@@ -287,19 +150,72 @@ class PublishModuleIntegrityTest(unittest.TestCase):
                 "bos_build.release.publish.fetch_all_release_metadata",
                 return_value=metadata,
             ),
-            mock.patch(
-                "bos_build.release.publish.get_r2_client",
-                return_value=object(),
-            ),
-            mock.patch(
-                "bos_build.release.publish.copy_to_download_path",
-                return_value=True,
-            ) as copy,
             self.assertRaisesRegex(RuntimeError, "requested platform win"),
         ):
-            module.execute(ctx)
+            module.execute(_ctx())
 
-        copy.assert_not_called()
+    def test_aliases_are_uploaded_with_alias_names(self):
+        module = PublishModule(platforms=["win"])
+
+        with tempfile.TemporaryDirectory() as temporary:
+            built = Path(temporary) / "reBrowser-agent_v0.49.0_x64_installer.exe"
+            built.write_bytes(b"installer")
+            module.artifacts_dir = Path(temporary)
+
+            with (
+                mock.patch(
+                    "bos_build.release.publish.fetch_all_release_metadata",
+                    return_value=_metadata(
+                        x64_installer={
+                            "filename": "reBrowser-agent_v0.49.0_x64_installer.exe"
+                        }
+                    ),
+                ),
+                mock.patch(
+                    "bos_build.release.publish.inspect_github_release",
+                    return_value={"isDraft": False},
+                ),
+                mock.patch(
+                    "bos_build.release.publish.ensure_published_release"
+                ) as ensure,
+                mock.patch(
+                    "bos_build.release.publish.upload_to_github_release",
+                    return_value=True,
+                ) as upload,
+            ):
+                module.execute(_ctx())
+
+        ensure.assert_called_once()
+        self.assertEqual(
+            upload.call_args.args[0], "latest-browserclaw"
+        )
+        self.assertEqual(
+            upload.call_args.args[2].name, "reBrowser-agent_installer.exe"
+        )
+        self.assertTrue(upload.call_args.kwargs["clobber"])
+
+    def test_validate_rejects_unknown_platform(self):
+        module = PublishModule(platforms=["windows"])
+
+        with self.assertRaisesRegex(Exception, "Unknown platform"):
+            module.validate(_ctx())
+
+    def test_validate_requires_repo(self):
+        module = PublishModule(platforms=["win"])
+        ctx = _ctx()
+        ctx.github_repo = ""
+
+        with (
+            mock.patch(
+                "bos_build.release.publish.check_gh_cli", return_value=True
+            ),
+            mock.patch(
+                "bos_build.release.publish.get_repo_from_git",
+                return_value=None,
+            ),
+            self.assertRaisesRegex(Exception, "GitHub repo is required"),
+        ):
+            module.validate(ctx)
 
 
 if __name__ == "__main__":

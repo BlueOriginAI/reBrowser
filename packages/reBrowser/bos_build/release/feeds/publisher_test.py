@@ -12,6 +12,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
 
+from . import publisher as publisher_module
 from .publisher import FeedPublisher
 from .render import (
     ExistingAppcast,
@@ -204,6 +205,43 @@ class PublisherTestCase(unittest.TestCase):
     def _publisher(self, objects=None, head_status=200):
         self.client = FakeR2Client(objects)
 
+        def key_for_asset(filename: str) -> str:
+            for spec in all_feeds():
+                if spec.asset_name == filename:
+                    return spec.key
+            return filename
+
+        def fake_download(tag, repo, filename, dest_dir):
+            key = key_for_asset(filename)
+            try:
+                body = self.client.get_object("b", key)["Body"].read()
+            except self.client.exceptions.NoSuchKey:
+                return None
+            dest = Path(dest_dir) / filename
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            dest.write_bytes(body)
+            return dest
+
+        def fake_upload(tag, repo, path, clobber=False):
+            key = key_for_asset(Path(path).name)
+            content_type = (
+                "application/json" if key.endswith(".json") else "application/xml"
+            )
+            self.client.put_object("b", key, Path(path).read_bytes(), content_type)
+            return True
+
+        for patcher in (
+            mock.patch.object(
+                publisher_module, "download_release_asset", side_effect=fake_download
+            ),
+            mock.patch.object(
+                publisher_module, "upload_to_github_release", side_effect=fake_upload
+            ),
+            mock.patch.object(publisher_module, "ensure_published_release"),
+        ):
+            patcher.start()
+            self.addCleanup(patcher.stop)
+
         def fake_head(url):
             self.head_calls.append(url)
             if isinstance(head_status, dict):
@@ -211,8 +249,7 @@ class PublisherTestCase(unittest.TestCase):
             return head_status
 
         return FeedPublisher(
-            env=SimpleNamespace(r2_bucket="browseros"),
-            r2_client=self.client,
+            repo="BlueOriginAI/reBrowser",
             http_head=fake_head,
             staging_root=self.staging_root,
             now=lambda: FIXED_NOW,
@@ -272,11 +309,12 @@ class PublisherTestCase(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(
             self.client.calls,
-            [
-                ("copy", "appcast.xml", "feeds-history/appcast.xml.20260701T120000Z"),
-                ("put", "appcast.xml", "application/xml"),
-            ],
+            [("put", "appcast.xml", "application/xml")],
         )
+        backup = self.staging_root.parent / "feeds-history" / (
+            "appcast.xml.20260701T120000Z"
+        )
+        self.assertEqual(backup.read_bytes(), live)
         staged = self.staging_root / "browser" / "appcast.xml"
         self.assertEqual(staged.read_text(), _mac_appcast())
 
@@ -323,16 +361,17 @@ class PublisherTestCase(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(
             self.client.calls,
-            [
-                ("copy", "appcast.xml", "feeds-history/appcast.xml.20260701T120000Z"),
-                ("put", "appcast.xml", "application/xml"),
-            ],
+            [("put", "appcast.xml", "application/xml")],
         )
+        backup = self.staging_root.parent / "feeds-history" / (
+            "appcast.xml.20260701T120000Z"
+        )
+        self.assertTrue(backup.is_file())
 
     def test_wrong_channel_empty_live_shell_fails_closed(self):
         live = _empty_item_mac_appcast().replace(
-            "https://cdn.browseros.com/appcast.xml",
-            "https://cdn.browseros.com/appcast-claw.xml",
+            feed_by_key("appcast.xml").link,
+            feed_by_key("appcast-claw.xml").link,
         )
         publisher = self._publisher({"appcast.xml": live.encode()})
 
@@ -488,15 +527,12 @@ class PublisherTestCase(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(
             self.client.calls,
-            [
-                (
-                    "copy",
-                    spec.key,
-                    f"feeds-history/{spec.key}.20260701T120000Z",
-                ),
-                ("put", spec.key, "application/xml"),
-            ],
+            [("put", spec.key, "application/xml")],
         )
+        backup = self.staging_root.parent / "feeds-history" / (
+            f"{spec.asset_name}.20260701T120000Z"
+        )
+        self.assertTrue(backup.is_file())
 
     def test_browserclaw_legacy_title_migrates_on_empty_placeholder(self):
         spec = feed_by_key("appcast-claw-win-arm64.xml")
@@ -509,15 +545,12 @@ class PublisherTestCase(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(
             self.client.calls,
-            [
-                (
-                    "copy",
-                    spec.key,
-                    f"feeds-history/{spec.key}.20260701T120000Z",
-                ),
-                ("put", spec.key, "application/xml"),
-            ],
+            [("put", spec.key, "application/xml")],
         )
+        backup = self.staging_root.parent / "feeds-history" / (
+            f"{spec.asset_name}.20260701T120000Z"
+        )
+        self.assertTrue(backup.is_file())
 
     def test_empty_placeholder_migration_rejects_release_markers(self):
         spec = feed_by_key("appcast-claw-win-arm64.xml")
@@ -607,7 +640,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertTrue(ok)
-        self.assertEqual(len(self.client.calls), 2)
+        self.assertEqual(len(self.client.calls), 1)
 
     def test_equal_version_passes(self):
         publisher = self._publisher({"appcast.xml": _mac_appcast().encode()})
@@ -659,12 +692,15 @@ class PublisherTestCase(unittest.TestCase):
             {"appcast.xml": _mac_appcast("10000.0.46.0.0").encode()}
         )
 
-        def broken_copy(**kwargs):
-            raise RuntimeError("copy exploded")
+        # A file where the backup directory belongs makes the backup write
+        # fail; the publisher must refuse the upload.
+        (self.staging_root.parent / "feeds-history").write_text("not a directory")
 
-        self.client.copy_object = broken_copy
-
-        ok = publisher.publish(feed_by_key("appcast.xml"), _mac_appcast(), publish=True)
+        ok = publisher.publish(
+            feed_by_key("appcast.xml"),
+            _mac_appcast(),
+            publish=True,
+        )
 
         self.assertFalse(ok)
         self.assertEqual(self.client.calls, [])
@@ -780,15 +816,12 @@ class PublisherTestCase(unittest.TestCase):
             )
             self.assertEqual(
                 self.client.calls,
-                [
-                    (
-                        "copy",
-                        spec.key,
-                        f"feeds-history/{spec.key}.20260701T120000Z",
-                    ),
-                    ("put", spec.key, "application/xml"),
-                ],
+                [("put", spec.key, "application/xml")],
             )
+            backup = self.staging_root.parent / "feeds-history" / (
+                f"{spec.asset_name}.20260701T120000Z"
+            )
+            self.assertTrue(backup.is_file())
 
     def test_repair_accepts_nonempty_manifest_when_live_is_malformed(self):
         versions = {
@@ -1058,8 +1091,14 @@ class PublisherTestCase(unittest.TestCase):
         self.assertIn("REPAIR INVALID LIVE", message)
         self.assertIn(hashlib.sha256(invalid_live.encode()).hexdigest(), message)
         self.assertIn(hashlib.sha256(corrected.encode()).hexdigest(), message)
-        self.assertEqual(self.client.calls[0][0], "copy")
-        self.assertEqual(self.client.calls[1][0], "put")
+        self.assertEqual(self.client.calls[0][0], "put")
+        self.assertTrue(
+            (
+                self.staging_root.parent
+                / "feeds-history"
+                / f"{spec.key}.20260701T120000Z"
+            ).is_file()
+        )
 
     def test_repair_backup_failure_blocks_put(self):
         spec = server_feed("browseros-server", "prod")
@@ -1071,10 +1110,7 @@ class PublisherTestCase(unittest.TestCase):
             }
         )
 
-        def broken_copy(**kwargs):
-            raise RuntimeError("copy exploded")
-
-        self.client.copy_object = broken_copy
+        (self.staging_root.parent / "feeds-history").write_text("not a directory")
 
         self.assertFalse(
             publisher.publish(
@@ -1148,7 +1184,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(len(self.client.calls), 2)
+        self.assertEqual(len(self.client.calls), 1)
 
         self.client.calls.clear()
         self.assertTrue(
@@ -1398,7 +1434,14 @@ class PublisherTestCase(unittest.TestCase):
         )
         self.assertEqual(
             [call[0] for call in self.client.calls],
-            ["copy", "put"],
+            ["put"],
+        )
+        self.assertTrue(
+            (
+                self.staging_root.parent
+                / "feeds-history"
+                / f"{manifest_key}.20260701T120000Z"
+            ).is_file()
         )
 
         bundled_key = "extensions/bundled-manifest.xml"
@@ -1594,8 +1637,6 @@ class PublisherTestCase(unittest.TestCase):
         publisher = self._publisher(
             {
                 "appcast.xml": _mac_appcast().encode(),
-                "feeds-history/appcast.xml.20260630T000000Z": b"old",
-                "feeds-history/appcast.xml.20260701T120000Z": b"older backup",
                 "extensions/update-manifest.alpha.xml": render_update_manifest(
                     {"agent": "0.0.118.0", "bugreporter": "54.0.0.0"}
                 ).encode(),
@@ -1604,6 +1645,11 @@ class PublisherTestCase(unittest.TestCase):
                 ).encode(),
             }
         )
+
+        backup_dir = self.staging_root.parent / "feeds-history"
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        (backup_dir / "appcast.xml.20260630T000000Z").write_bytes(b"old")
+        (backup_dir / "appcast.xml.20260701T120000Z").write_bytes(b"older backup")
 
         statuses = {s.spec.key: s for s in publisher.collect_status()}
 

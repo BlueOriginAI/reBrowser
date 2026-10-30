@@ -116,10 +116,10 @@ index 0000000000000..9a25f32a0da56
 +
 +  // Empty state dir preserves the legacy .browseros/current_version layout.
 +  EXPECT_TRUE(descriptor.updater.state_dir.empty());
-+  EXPECT_EQ(std::string_view("https://cdn.browseros.com/appcast-server.xml"),
++  EXPECT_EQ(std::string_view("https://github.com/BlueOriginAI/reBrowser/releases/download/feed-server-browseros/appcast-server.xml"),
 +            descriptor.updater.appcast_url);
 +  EXPECT_EQ(
-+      std::string_view("https://cdn.browseros.com/appcast-server.alpha.xml"),
++      std::string_view("https://github.com/BlueOriginAI/reBrowser/releases/download/feed-server-browseros/appcast-server.alpha.xml"),
 +      descriptor.updater.alpha_appcast_url);
 +  EXPECT_EQ(std::string_view("/status"), descriptor.updater.readiness_path);
 +}
@@ -144,10 +144,10 @@ index 0000000000000..9a25f32a0da56
 +  EXPECT_EQ(base::FilePath::StringType(FILE_PATH_LITERAL("BrowserClawServer")),
 +            ToPathString(descriptor.updater.state_dir));
 +  EXPECT_EQ(
-+      std::string_view("https://cdn.browseros.com/appcast-claw-server.xml"),
++      std::string_view("https://github.com/BlueOriginAI/reBrowser/releases/download/feed-server-browserclaw/appcast-claw-server.xml"),
 +      descriptor.updater.appcast_url);
 +  EXPECT_EQ(std::string_view(
-+                "https://cdn.browseros.com/appcast-claw-server.alpha.xml"),
++                "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-server-browserclaw/appcast-claw-server.alpha.xml"),
 +            descriptor.updater.alpha_appcast_url);
 +  // No readiness contract yet: empty path skips the status fetch.
 +  EXPECT_TRUE(descriptor.updater.readiness_path.empty());

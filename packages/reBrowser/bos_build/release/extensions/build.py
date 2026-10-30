@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Optional
 
+from ...lib.github_releases import feed_asset_url
 from ..components import component_version_from_package, normalize_component_version
 from .crx import pack_crx
 from .specs import ExtensionSpec, InRepoSource
@@ -18,7 +19,9 @@ from .workspace import (
 )
 
 
-_UPDATE_MANIFEST_URL = "https://cdn.browseros.com/extensions/update-manifest.xml"
+_UPDATE_MANIFEST_URL = feed_asset_url(
+    "extensions", "browseros", "update-manifest.xml"
+)
 _UPDATE_FEED_NAMES = frozenset({"agent", "browserclaw", "bugreporter"})
 
 

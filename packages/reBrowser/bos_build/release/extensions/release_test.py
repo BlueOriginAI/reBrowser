@@ -629,7 +629,7 @@ class ValidateTest(unittest.TestCase):
 class ManifestUpdateUrlTest(unittest.TestCase):
     def setUp(self):
         self.dist_path = Path("apps/claw-app/dist/chrome-mv3")
-        self.expected_url = "https://cdn.browseros.com/extensions/update-manifest.xml"
+        self.expected_url = "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-extensions/update-manifest.xml"
 
     def test_in_feed_extension_without_update_url_fails(self):
         with self.assertRaisesRegex(

@@ -2,7 +2,7 @@
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
     <title>reBrowser</title>
-    <link>https://cdn.browseros.com/appcast-claw-x86_64.xml</link>
+    <link>https://github.com/BlueOriginAI/reBrowser/releases/download/feed-browserclaw/appcast-claw-x86_64.xml</link>
     <description>Most recent changes with links to updates.</description>
     <language>en</language>
 
@@ -15,7 +15,7 @@
       <pubDate>Tue, 15 Sep 2026 22:32:03 +0000</pubDate>
       <link>https://www.browseros.com/</link>
       <enclosure
-        url="http://cdn.browseros.com/releases/browserclaw/0.50.5/macos/BrowserOS_neo_v0.50.5_x64.dmg"
+        url="https://github.com/BlueOriginAI/reBrowser/releases/download/browserclaw%2Fv0.50.5/BrowserOS_neo_v0.50.5_x64.dmg"
         sparkle:edSignature="EDONjT+QipZ2fWC+CxIJ3/gHLN1JIrrSuXelAZgrHij4UUAE9rjF3KmLBu/0JRIQaaDkwY4Yk5bxS0X8i3KfBQ=="
         length="172079782"
         type="application/octet-stream" />

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""List module - Display release artifacts from R2"""
+"""List module - Display release artifacts from GitHub Releases"""
 
 from typing import List, Optional, Tuple
 
@@ -8,7 +8,6 @@ from ..core.products import ProductDescriptor
 from ..core.step import Step, ValidationError
 from ..lib.env import EnvConfig
 from ..lib.utils import log_info
-from ..lib.r2 import BOTO3_AVAILABLE
 from ..products import DEFAULT_PRODUCT_ID, PRODUCTS
 from .common import (
     PLATFORMS,
@@ -16,7 +15,6 @@ from .common import (
     fetch_all_release_metadata,
     format_size,
     list_all_versions,
-    list_legacy_versions,
     version_sort_key,
 )
 
@@ -40,17 +38,13 @@ def merge_product_versions(
 def collect_product_rows(
     product: ProductDescriptor, env: EnvConfig
 ) -> List[Tuple[str, bool]]:
-    """Gather a product's version rows from R2.
+    """Gather a product's version rows from GitHub Releases.
 
     Bare pre-product releases predate the registry, so they surface under
     the default product only.
     """
-    # Listing keys off release_prefix (R2 layout) while release.json fetches
-    # key off product.id (get_release_json's contract); the two are equal
-    # for every registered product today.
-    productized = list_all_versions(product.release_prefix, env)
-    legacy = list_legacy_versions(env) if product.id == DEFAULT_PRODUCT_ID else []
-    return merge_product_versions(productized, legacy)
+    productized = list_all_versions(product.id, env)
+    return merge_product_versions(productized, [])
 
 
 def apply_list_limit(
@@ -67,7 +61,7 @@ class ListModule(Step):
 
     produces = []
     requires = []
-    description = "List release artifacts from R2"
+    description = "List release artifacts from GitHub Releases"
 
     def __init__(
         self,
@@ -78,13 +72,8 @@ class ListModule(Step):
         self.limit = limit
 
     def validate(self, ctx: Context) -> None:
-        if not BOTO3_AVAILABLE:
-            raise ValidationError(
-                "boto3 library not installed - run: pip install boto3"
-            )
-
-        if not ctx.env.has_r2_config():
-            raise ValidationError("R2 configuration not set")
+        if not ctx.release_version and not self.products:
+            return
 
     def execute(self, ctx: Context) -> None:
         if not ctx.release_version:

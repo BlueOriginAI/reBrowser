@@ -17,9 +17,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from ...core.products import get_product_descriptor
+from ...lib.github_releases import server_asset_url
 from ...lib.utils import log_error, log_info
 from .spec import (
-    CDN_BASE_URL,
     EXTENSIONS,
     FeedSpec,
     extension_by_name,
@@ -211,7 +211,7 @@ def render_server_appcast(
         enclosures.append(
             SERVER_ENCLOSURE_TEMPLATE.format(
                 comment=comment,
-                url=f"{CDN_BASE_URL}/server/{zip_filename}",
+                url=server_asset_url(version, zip_filename),
                 os=artifact.os,
                 arch=artifact.arch,
                 signature=artifact.signature,

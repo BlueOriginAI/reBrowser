@@ -114,7 +114,7 @@ class PreparedResourcesTest(unittest.TestCase):
                 "app-onboard": "0.0.12",
             },
             output_dir=self.output,
-            manifest_url="https://cdn.browseros.com/extensions/bundled-manifest.xml",
+            manifest_url="https://github.com/BlueOriginAI/reBrowser/releases/download/feed-extensions/bundled-manifest.xml",
         )
 
     def test_prepares_each_common_resource_once_and_binds_identity(self) -> None:

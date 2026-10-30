@@ -9,7 +9,6 @@ from ...core.products import (
     BROWSERCLAW_EXTENSION_ID,
 )
 from .spec import (
-    CDN_BASE_URL,
     EXTENSIONS,
     all_feeds,
     browser_feeds_for_product,
@@ -111,7 +110,7 @@ class FeedTableTest(unittest.TestCase):
     def test_feed_links_point_at_their_own_key(self):
         for feed in all_feeds():
             if feed.kind in ("browser", "server"):
-                self.assertEqual(feed.link, f"{CDN_BASE_URL}/{feed.key}", feed.key)
+                self.assertEqual(feed.link, feed.url, feed.key)
 
     def test_server_feed_lookup_and_titles(self):
         prod = server_feed("browseros-server", "prod")
@@ -171,7 +170,8 @@ class ExtensionRegistryTest(unittest.TestCase):
         agent = extension_by_name("agent")
         self.assertEqual(
             agent.crx_url("0.0.118.0"),
-            "https://cdn.browseros.com/extensions/agent-0.0.118.0.crx",
+            "https://github.com/BlueOriginAI/reBrowser/releases/download/"
+            "extensions%2Fv0.0.118.0/agent-0.0.118.0.crx",
         )
         self.assertEqual(agent.crx_key("0.0.118.0"), "extensions/agent-0.0.118.0.crx")
 

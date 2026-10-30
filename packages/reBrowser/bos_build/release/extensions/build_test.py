@@ -48,7 +48,7 @@ class ExtensionBuildTest(unittest.TestCase):
                 json.dumps(
                     {
                         "version": "0.0.101",
-                        "update_url": "https://cdn.browseros.com/extensions/update-manifest.xml",
+                        "update_url": "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-extensions/update-manifest.xml",
                     }
                 )
             )
@@ -98,7 +98,7 @@ class ExtensionBuildTest(unittest.TestCase):
                 json.dumps(
                     {
                         "version": "0.1.7",
-                        "update_url": "https://cdn.browseros.com/extensions/update-manifest.xml",
+                        "update_url": "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-extensions/update-manifest.xml",
                     }
                 )
             )

@@ -1411,9 +1411,11 @@ print(json.dumps({
         browseros_path = upload_steps["Upload BrowserOS DMG artifact"]["with"]["path"]
         neo_path = upload_steps["Upload BrowserOS neo DMG artifact"]["with"]["path"]
 
-        self.assertIn("/BrowserOS_*.dmg\n!", browseros_path)
-        self.assertIn("/BrowserOS_neo_*.dmg", browseros_path)
-        self.assertTrue(neo_path.endswith("/BrowserOS_neo_*.dmg"))
+        self.assertIn("/reBrowser_*.dmg\n!", browseros_path)
+        self.assertIn("/reBrowser-agent_*.dmg", browseros_path)
+        self.assertIn("/release-macos.json", browseros_path)
+        self.assertIn("/reBrowser-agent_*.dmg", neo_path)
+        self.assertIn("/release-macos.json", neo_path)
 
     def test_top_level_release_changes_trigger_build_system_tests(self):
         workflow = self.load_workflow("bos-build-tests.yml")
