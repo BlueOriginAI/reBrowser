@@ -13,3 +13,6 @@ docs/videos/** filter=lfs diff=lfs merge=lfs -text
 
 # This Chromium CDP protocol file is hashed as raw bytes; never rewrite line endings.
 packages/reBrowser-agent/crates/browseros-cdp/protocol/protocol.json -text
+
+# Source entries here are unified patches; blank context lines retain a space.
+packages/reBrowser/chromium_patches/** whitespace=-blank-at-eol,-blank-at-eof

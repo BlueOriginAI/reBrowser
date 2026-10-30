@@ -1,17 +1,200 @@
 diff --git a/chrome/app/settings_strings.grdp b/chrome/app/settings_strings.grdp
-index 763bba112d55b235b1a4a11ea027342ef3920dfe..3d0072122c9829a0ddcd6bfcfe1ab187f32c55b5 100644
 --- a/chrome/app/settings_strings.grdp
 +++ b/chrome/app/settings_strings.grdp
-@@ -3910,6 +3910,12 @@
+@@ -3727,6 +3727,183 @@
+     </message>
+ 
+     <!-- Sync / People Page -->
++    <message name="IDS_SETTINGS_REMOCODE_PEOPLE" meaning="Remocode account settings" desc="Navigation and page title for Remocode account settings">
++      You and Remocode
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_LOCAL_PROFILE_TITLE" meaning="Remocode account settings" desc="Heading for existing local profile and genuine Google services">
++      Local profile and Google services
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_TITLE" meaning="Remocode account settings" desc="Heading for independent Remocode account card">
++      Remocode account
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_DESCRIPTION" meaning="Remocode account settings" desc="Explain account isolation and retention of local browser data">
++      Your Remocode account is separate from your local browser profile and Google services. Signing out keeps your local profile and imported data.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_LOADING" meaning="Remocode account settings" desc="Initial account snapshot is loading">
++      Checking Remocode account…
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_SIGNED_OUT" meaning="Remocode account settings" desc="Signed out account state">
++      Not signed in to Remocode
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_AUTHORIZING" meaning="Remocode account settings" desc="Authorization in progress">
++      Waiting for Remocode authorization…
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_SIGNED_IN" meaning="Remocode account settings" desc="Signed in account state">
++      Signed in to Remocode
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_REAUTH_REQUIRED" meaning="Remocode account settings" desc="Account requires fresh authorization">
++      Sign in to Remocode again
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_ERROR" meaning="Remocode account settings" desc="Account error state">
++      Remocode account unavailable
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_LOGIN" meaning="Remocode account settings" desc="Start Remocode authorization">
++      Sign in to Remocode
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_CANCEL" meaning="Remocode account settings" desc="Cancel ongoing authorization">
++      Cancel authorization
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_LOGOUT" meaning="Remocode account settings" desc="Remove local Remocode session">
++      Sign out of Remocode
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_MANAGE" meaning="Remocode account settings" desc="Open native-controlled Remocode account management">
++      Manage Remocode account
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_REAUTH" meaning="Remocode account settings" desc="Reauthorize Remocode account">
++      Sign in again
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_RETRY" meaning="Remocode account settings" desc="Retry failed Remocode account operation">
++      Try again
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_SYNC_UNAVAILABLE" meaning="Remocode account settings" desc="Informational notice only; Remocode sync cannot be enabled">
++      Remocode Sync is not available yet. Signing in does not sync bookmarks, history, passwords, or other browsing data.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_ERROR_DETAIL" meaning="Remocode account settings" desc="Safe generic fallback for unknown errors">
++      The Remocode account operation could not be completed. Try again.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_PORT_IN_USE" meaning="Remocode account settings" desc="Local authorization callback port unavailable">
++      The local sign-in port is in use. Close other sign-in windows and try again.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_STORAGE_UNAVAILABLE" meaning="Remocode account settings" desc="Native credential storage unavailable">
++      Secure account storage is unavailable. Check your system keychain and try again.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_NETWORK_ERROR" meaning="Remocode account settings" desc="Account service network error">
++      Could not reach Remocode. Check your connection and try again.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_PROVIDER_ERROR" meaning="Remocode account settings" desc="Account provider rejected authorization">
++      Remocode could not complete authorization. Try signing in again.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_SESSION_EXPIRED" meaning="Remocode account settings" desc="Account session expired">
++      Your Remocode session has expired. Sign in again.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_LOGOUT_UNCONFIRMED" meaning="Remocode account settings" desc="Local credentials cleared but provider revocation not confirmed">
++      Signed out on this device. Cloud authorization revocation has not been confirmed; check your Remocode account to revoke access.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_ACCOUNT_TIMEOUT" meaning="Remocode account settings" desc="Authorization timeout">
++      Remocode authorization timed out. Try again.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_TITLE" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Remocode Sync
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_LOCAL_PROFILES" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Local profiles
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_DESCRIPTION" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      reBrowser VIP only. Choose which browsing data to sync.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_SIGNED_OUT" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Sign in to Remocode to check sync access
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_LOGIN" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Sign in to Remocode
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_LOADING" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Checking sync access…
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_FREE" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      This account has no active reBrowser sync VIP
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_ACTIVE" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      reBrowser sync VIP is active
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_UNAVAILABLE" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Sync is not available or has not been enabled yet
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_ERROR" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Could not verify sync access. Try again.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_PURCHASE_UNAVAILABLE" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      VIP purchases are not available yet
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_AGENT_HISTORY" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Agent browsing history
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_HISTORY" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Browsing history
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_BOOKMARKS" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Bookmarks
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_DEVELOPING" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      In development — not available yet
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_SCOPE" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      History and Agent visits include only new records after enabling sync. Bookmarks are pulled and merged first, preserving local content. URLs exclude credentials, queries and fragments. Passwords, cookies, page contents, screenshots, recordings and prompts are never uploaded.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_PAUSED" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Paused; local data is preserved
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_PENDING" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Syncing
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_FAILED" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Sync failed. Try again.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_CONFLICT" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Concurrent changes detected. Local data is preserved; cloud data was not overwritten.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_SUCCESS" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Last successful sync
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_NEVER" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      No successful sync yet
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_PURCHASE" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Get reBrowser Sync
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_MANAGE" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Manage subscription
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_RETRY" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Refresh status
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_DELETE" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Delete cloud sync data
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_DELETE_CONFIRM" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Permanently delete cloud sync data? Local data will be kept.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_CANCEL" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Cancel
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_CONFIRM_DELETE" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Delete cloud data
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_DELETE_FAILED" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Cloud deletion is not complete. Try again.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_DELETE_PENDING" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Cloud deletion is pending; physical cleanup has not been confirmed.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_REAUTH_REQUIRED" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Authorize this desktop again within five minutes before deleting cloud data.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_ENABLE_CONFIRM" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Allow syncing the selected categories? Only newly collected history will be uploaded. Switching off stops future sync but does not delete local or cloud data.
++    </message>
++    <message name="IDS_SETTINGS_REMOCODE_SYNC_CONFIRM_ENABLE" meaning="Remocode sync settings" desc="Remocode native account and sync interface">
++      Allow sync
++    </message>
+     <message name="IDS_SETTINGS_PEOPLE" desc="Name of the settings page which manages the user's relationship to Google.">
+       You and Google
+     </message>
+@@ -3909,6 +4086,12 @@
+       </message>
        <message name="IDS_SETTINGS_IMPORT_AUTOFILL_FORM_DATA_CHECKBOX" desc="Checkbox for importing form data for autofill">
          Autofill form data
-       </message>
++      </message>
 +      <message name="IDS_SETTINGS_IMPORT_EXTENSIONS_CHECKBOX" desc="Checkbox for importing extensions">
 +        Extensions
 +      </message>
 +      <message name="IDS_SETTINGS_IMPORT_COOKIES_CHECKBOX" desc="Checkbox for importing login sessions (cookies)">
 +        Login sessions
-+      </message>
+       </message>
  
        <message name="IDS_SETTINGS_IMPORT_CHOOSE_FILE" desc="Text for the Choose File on dialog">
-         Choose File

@@ -1,0 +1,160 @@
+diff --git a/chrome/browser/browseros/sync/BUILD.gn b/chrome/browser/browseros/sync/BUILD.gn
+new file mode 100644
+--- /dev/null
++++ b/chrome/browser/browseros/sync/BUILD.gn
+@@ -0,0 +1,155 @@
++# Copyright 2026 The Chromium Authors
++# Use of this source code is governed by a BSD-style license.
++import("//chrome/browser/sparkle_buildflags.gni")
++import("//testing/test.gni")
++source_set("protocol") {
++  sources = [ "sync_protocol.h",
++    "sensitive_sync_path.h", "sync_protocol.cc" ]
++  public_deps = [ "//base" ]
++  deps = [ "//net", "//url" ]
++}
++source_set("sync") {
++  sources = [
++    "remocode_sync_service.h",
++    "remocode_sync_service.cc",
++    "remocode_sync_service_factory.h",
++    "remocode_sync_service_factory.cc",
++  ]
++  public_deps = [
++    ":protocol",
++    "//base",
++    "//chrome/browser/browseros/account",
++    "//chrome/browser/browseros/sync/adapters:local_adapters",
++    "//chrome/browser/profiles:profile",
++    "//components/keyed_service/core",
++  ]
++  deps = [
++    "//chrome/browser/profiles:profile_util",
++    "//chrome/browser/bookmarks",
++    "//chrome/browser/history",
++    "//components/keyed_service/content",
++    "//components/prefs",
++    "//components/pref_registry",
++    "//content/public/browser",
++  ]
++}
++test("remocode_sync_protocol_unittests") {
++  sources = [ "sync_protocol_unittest.cc" ]
++  deps = [ ":protocol", "//base/test:run_all_unittests", "//testing/gtest" ]
++}
++
++# No fake identity or endpoint transport enters :sync or the shipping browser.
++source_set("account_test_peer") {
++  testonly = true
++  sources = [ "../account/remocode_account_service_test_peer.h" ]
++  public_deps = [ "//chrome/browser/browseros/account" ]
++}
++
++# Link into chrome/test:unit_tests; never a runtime provider-injection surface.
++source_set("unit_tests") {
++  testonly = true
++  sources = [ "remocode_sync_service_unittest.cc" ]
++  deps = [
++    ":account_test_peer",
++    ":sync",
++    "//base/test:test_support",
++    "//chrome/browser/bookmarks",
++    "//chrome/browser/history",
++    "//chrome/test:test_support",
++    "//components/bookmarks/browser",
++    "//components/bookmarks/test",
++    "//components/history/core/browser",
++    "//components/history/core/test",
++    "//components/os_crypt/async/browser:test_support",
++    "//content/test:test_support",
++    "//net",
++    "//services/network:test_support",
++    "//testing/gtest",
++  ]
++}
++
++if (!is_android && !is_chromeos) {
++  # Reuse Chromium's unit main so TestingProfile receives ChromeUnitTestSuite,
++  # content clients, Mojo IPC and resource initialization. Only our focused
++  # service tests are linked, not //chrome/test:unit_tests.
++  test("remocode_sync_service_unittests") {
++    testonly = true
++    sources = [ "//chrome/test/base/run_all_unittests.cc" ]
++    deps = [
++      ":unit_tests",
++      "//base/test:test_support",
++      "//build:branding_buildflags",
++      "//chrome:packed_resources",
++      "//chrome:resources",
++      "//chrome:strings",
++      "//chrome/browser",
++      "//chrome/browser:chrome_content_browser_client",
++      "//chrome/common",
++      "//chrome/test:test_support",
++      "//chrome/utility",
++      "//content/test:test_support",
++      "//mojo/core/embedder",
++    ]
++    if (is_mac) {
++      data_deps = [ "//chrome:chrome_framework" ]
++      ldflags = [ "-Wl,-ObjC" ]
++      if (enable_sparkle) {
++        configs += [ "//third_party/sparkle:sparkle_link_test" ]
++      }
++    }
++  }
++
++  source_set("browser_profile_tests") {
++    testonly = true
++    defines = [ "HAS_OUT_OF_PROC_TEST_RUNNER" ]
++    sources = [ "remocode_sync_browser_profiles_e2e.cc" ]
++    deps = [
++      ":account_test_peer",
++      ":sync",
++      "//base/test:test_support",
++      "//chrome/browser:browser_process",
++      "//chrome/browser/bookmarks",
++      "//chrome/browser/history",
++      "//chrome/browser/profiles:profile_manager",
++      "//chrome/browser/ui",
++      "//chrome/test:test_support",
++      "//chrome/test:test_support_ui",
++      "//components/bookmarks/browser",
++      "//components/bookmarks/test",
++      "//components/history/core/browser",
++      "//components/history/core/test",
++      "//components/os_crypt/async/browser:test_support",
++      "//content/test:test_support",
++      "//mojo/public/cpp/bindings",
++      "//net",
++      "//services/network:test_support",
++      "//testing/gtest",
++    ]
++  }
++
++  # Focused real-Profile harness; intentionally does NOT depend on the monolithic
++  # //chrome/test:browser_tests or :platform_browser_tests. The launcher creates
++  # disposable regular profiles; the only HTTP destination is 127.0.0.1:8792.
++  # Run with --gtest_filter=RemocodeSyncBrowserProfilesE2ETest.*
++  # --test-launcher-jobs=1 while a fresh sync-local-worker fixture is running.
++  test("remocode_sync_browser_profiles_e2e") {
++    testonly = true
++    deps = [
++      ":browser_profile_tests",
++      "//chrome:packed_resources",
++      "//chrome:resources",
++      "//chrome:strings",
++      "//chrome/browser",
++      "//chrome/test:browser_tests_runner",
++      "//chrome/test:test_support",
++      "//chrome/test:test_support_ui",
++    ]
++    if (is_mac) {
++      data_deps = [ "//chrome:chrome_framework" ]
++      ldflags = [ "-Wl,-ObjC" ]
++      if (enable_sparkle) {
++        configs += [ "//third_party/sparkle:sparkle_link_test" ]
++      }
++    }
++  }
++}

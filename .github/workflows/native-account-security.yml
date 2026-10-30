@@ -1,0 +1,20 @@
+name: Native account source security
+on:
+  pull_request:
+    paths:
+      - packages/reBrowser/chromium_patches/chrome/browser/browseros/account/**
+      - packages/reBrowser/chromium_patches/chrome/browser/browseros/sync/**
+      - packages/reBrowser/security/**
+      - .github/workflows/native-account-security.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  source-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - run: python3 packages/reBrowser/security/check_account_source_tracked.py
+      - run: python3 packages/reBrowser/security/check_sync_url_policy.py
+      - run: python3 packages/reBrowser/security/check_sync_patch_contract.py

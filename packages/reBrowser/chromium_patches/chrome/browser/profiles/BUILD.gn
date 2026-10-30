@@ -1,0 +1,12 @@
+diff --git a/chrome/browser/profiles/BUILD.gn b/chrome/browser/profiles/BUILD.gn
+--- a/chrome/browser/profiles/BUILD.gn
++++ b/chrome/browser/profiles/BUILD.gn
+@@ -604,6 +604,8 @@
+   sources = [ "chrome_browser_main_extra_parts_profiles.cc" ]
+ 
+   deps = [
++    "//chrome/browser/browseros/account",
++    "//chrome/browser/browseros/sync",
+     ":misc",
+     ":profile_manager",
+     ":profile_util",

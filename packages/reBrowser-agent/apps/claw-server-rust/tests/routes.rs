@@ -308,7 +308,7 @@ async fn mcp_hygiene_rejects_browser_originated_requests() -> anyhow::Result<()>
     assert_eq!(status, StatusCode::FORBIDDEN);
     assert_eq!(body, json!({ "error": "unsupported request" }));
 
-    // Hygiene applies to /mcp only: the same origin header is fine elsewhere.
+    // Browser origins are rejected by the shared management boundary too.
     let (status, _headers, _body) = request_json_with_headers(
         &app.router,
         "GET",
@@ -317,10 +317,9 @@ async fn mcp_hygiene_rejects_browser_originated_requests() -> anyhow::Result<()>
         &[("origin", "http://evil.example")],
     )
     .await?;
-    assert_eq!(status, StatusCode::OK);
+    assert_eq!(status, StatusCode::FORBIDDEN);
 
-    // CORS preflight stays 204 like every other route (TS cors layer
-    // answers OPTIONS before hygiene runs).
+    // Untrusted preflights cannot bypass request authorization.
     let (status, _headers, _body) = request_json_with_headers(
         &app.router,
         "OPTIONS",
@@ -329,7 +328,7 @@ async fn mcp_hygiene_rejects_browser_originated_requests() -> anyhow::Result<()>
         &[("origin", "http://evil.example")],
     )
     .await?;
-    assert_eq!(status, StatusCode::NO_CONTENT);
+    assert_eq!(status, StatusCode::FORBIDDEN);
     Ok(())
 }
 

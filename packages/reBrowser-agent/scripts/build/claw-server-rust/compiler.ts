@@ -16,6 +16,8 @@ const LINUX_GLIBC_VERSION = '2.17'
 const VERSION_MARKER_PREFIX = 'browseros-claw-server-version='
 const POSTHOG_KEY_MARKER_PREFIX = 'browseros-claw-posthog-key='
 const MARKER_SUFFIX = ';'
+const INSTANCE_POLICY_MARKER = 'rebrowser-mcp-instance-policy=1;'
+const HTTP_REQUEST_POLICY_MARKER = 'rebrowser-http-origin-policy=1;'
 
 interface RustBuildSpec {
   rustTarget: string
@@ -235,6 +237,16 @@ export async function validateCompiledBinary(
   if (!binary.includes(versionMarker)) {
     throw new Error(
       `Compiled BrowserClaw server does not contain version ${version}: ${binaryPath}`,
+    )
+  }
+  if (!binary.includes(Buffer.from(INSTANCE_POLICY_MARKER))) {
+    throw new Error(
+      `Compiled reBrowser server lacks primary-instance protection: ${binaryPath}`,
+    )
+  }
+  if (!binary.includes(Buffer.from(HTTP_REQUEST_POLICY_MARKER))) {
+    throw new Error(
+      `Compiled reBrowser server lacks HTTP source protection: ${binaryPath}`,
     )
   }
 }

@@ -1,0 +1,30 @@
+diff --git a/chrome/browser/resources/settings/people_page/remocode_account_card.html b/chrome/browser/resources/settings/people_page/remocode_account_card.html
+new file mode 100644
+--- /dev/null
++++ b/chrome/browser/resources/settings/people_page/remocode_account_card.html
+@@ -0,0 +1,25 @@
++    <style include="cr-shared-style settings-shared">
++      :host {
++        display: block;
++      }
++
++      cr-link-row {
++        min-height: 80px;
++        --cr-link-row-icon-width: 40px;
++      }
++
++      #logout {
++        flex-shrink: 0;
++        margin-inline: 12px;
++      }
++    </style>
++    <cr-link-row id="accountEntry" start-icon="cr:person"
++        label="[[getEntryLabel_(account_, loading_)]]"
++        sub-label="[[getEntrySublabel_(account_)]]"
++        disabled="[[isEntryDisabled_(loading_, actionPending_, account_)]]"
++        on-click="onAccountEntryClick_">
++      <cr-button id="logout"
++          hidden="[[!canSignOut_(account_.state)]]"
++          disabled="[[isCancelDisabled_(loading_, actionPending_)]]"
++          on-click="onEntryLogoutClick_">$i18n{remocodeAccountLogout}</cr-button>
++    </cr-link-row>

@@ -34,7 +34,7 @@ use tokio_util::sync::CancellationToken;
 use tower::ServiceExt;
 
 const BROWSERCLAW_EXTENSION_ORIGIN: &str = "chrome-extension://naenhmeajakeeifaphccfdccdpnhkdmj";
-const EXPECTED_ALLOW_METHODS: &str = "GET,POST,PUT,PATCH,DELETE,OPTIONS";
+const EXPECTED_ALLOW_METHODS: &str = "GET,HEAD,POST,PUT,PATCH,DELETE,OPTIONS";
 const EXPECTED_ALLOW_HEADERS: &str = "accept,content-type,authorization,mcp-session-id,mcp-protocol-version,last-event-id,x-recording-batch-id,x-recording-tab-id,x-recording-document-id,x-recording-has-gap";
 
 struct TestApp {
@@ -295,25 +295,30 @@ fn json_body(bytes: &[u8]) -> anyhow::Result<Value> {
     Ok(serde_json::from_slice(bytes)?)
 }
 
-fn assert_permissive_cors(headers: &HeaderMap) {
+fn assert_cors(headers: &HeaderMap, expected: Option<&str>) {
     assert_eq!(
         headers
             .get(header::ACCESS_CONTROL_ALLOW_ORIGIN)
-            .and_then(|value| value.to_str().ok()),
-        Some("*")
+            .and_then(|v| v.to_str().ok()),
+        expected
     );
-    assert_eq!(
-        headers
-            .get(header::ACCESS_CONTROL_ALLOW_METHODS)
-            .and_then(|value| value.to_str().ok()),
-        Some(EXPECTED_ALLOW_METHODS)
-    );
-    assert_eq!(
-        headers
-            .get(header::ACCESS_CONTROL_ALLOW_HEADERS)
-            .and_then(|value| value.to_str().ok()),
-        Some(EXPECTED_ALLOW_HEADERS)
-    );
+    if expected.is_some() {
+        assert_eq!(
+            headers
+                .get(header::ACCESS_CONTROL_ALLOW_METHODS)
+                .and_then(|v| v.to_str().ok()),
+            Some(EXPECTED_ALLOW_METHODS)
+        );
+        assert_eq!(
+            headers
+                .get(header::ACCESS_CONTROL_ALLOW_HEADERS)
+                .and_then(|v| v.to_str().ok()),
+            Some(EXPECTED_ALLOW_HEADERS)
+        );
+    } else {
+        assert!(!headers.contains_key(header::ACCESS_CONTROL_ALLOW_METHODS));
+        assert!(!headers.contains_key(header::ACCESS_CONTROL_ALLOW_HEADERS));
+    }
     assert!(headers.contains_key("x-request-id"));
 }
 
@@ -359,12 +364,12 @@ async fn trusted_recording_preflight_returns_cors_headers() -> anyhow::Result<()
 
     assert_eq!(status, StatusCode::NO_CONTENT);
     assert!(bytes.is_empty());
-    assert_permissive_cors(&headers);
+    assert_cors(&headers, Some(BROWSERCLAW_EXTENSION_ORIGIN));
     Ok(())
 }
 
 #[tokio::test]
-async fn originless_preflight_to_exact_route_returns_cors_headers() -> anyhow::Result<()> {
+async fn originless_preflight_has_no_browser_cors() -> anyhow::Result<()> {
     let app = test_app().await?;
     let (status, headers, bytes) = request_with_headers(
         &app.router,
@@ -381,7 +386,7 @@ async fn originless_preflight_to_exact_route_returns_cors_headers() -> anyhow::R
 
     assert_eq!(status, StatusCode::NO_CONTENT);
     assert!(bytes.is_empty());
-    assert_permissive_cors(&headers);
+    assert_cors(&headers, None);
     Ok(())
 }
 
@@ -408,7 +413,7 @@ async fn null_origin_native_recording_preflight_is_trusted() -> anyhow::Result<(
 
     assert_eq!(status, StatusCode::NO_CONTENT);
     assert!(bytes.is_empty());
-    assert_permissive_cors(&headers);
+    assert_cors(&headers, Some("null"));
     Ok(())
 }
 
@@ -489,7 +494,7 @@ async fn unsupported_non_options_method_keeps_axum_allow_header() -> anyhow::Res
 }
 
 #[tokio::test]
-async fn mcp_preflight_remains_no_content() -> anyhow::Result<()> {
+async fn hostile_mcp_preflight_is_forbidden() -> anyhow::Result<()> {
     let app = test_app().await?;
     let (status, headers, bytes) = request_with_headers(
         &app.router,
@@ -505,14 +510,14 @@ async fn mcp_preflight_remains_no_content() -> anyhow::Result<()> {
     )
     .await?;
 
-    assert_eq!(status, StatusCode::NO_CONTENT);
-    assert!(bytes.is_empty());
-    assert_permissive_cors(&headers);
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(json_body(&bytes)?["error"], "unsupported request");
+    assert_cors(&headers, None);
     Ok(())
 }
 
 #[tokio::test]
-async fn unknown_path_preflight_remains_no_content() -> anyhow::Result<()> {
+async fn hostile_unknown_path_preflight_is_forbidden() -> anyhow::Result<()> {
     let app = test_app().await?;
     let (status, headers, bytes) = request_with_headers(
         &app.router,
@@ -528,9 +533,9 @@ async fn unknown_path_preflight_remains_no_content() -> anyhow::Result<()> {
     )
     .await?;
 
-    assert_eq!(status, StatusCode::NO_CONTENT);
-    assert!(bytes.is_empty());
-    assert_permissive_cors(&headers);
+    assert_eq!(status, StatusCode::FORBIDDEN);
+    assert_eq!(json_body(&bytes)?["code"], "forbidden");
+    assert_cors(&headers, None);
     Ok(())
 }
 
