@@ -81,15 +81,55 @@ diff --git a/chrome/app/resources/generated_resources_zh-CN.xtb b/chrome/app/res
  <translation id="3740945083753997630">缩小显示大小和文字大小</translation>
  <translation id="3741056951918180319">您可以在任意网站上点击该扩展程序，即可随时使用它</translation>
  <translation id="374124333420280219">应用详细信息：</translation>
-@@ -5534,6 +5535,7 @@
+@@ -3973,6 +3983,7 @@
+ <translation id="3909791450649380159">剪切(&amp;T)</translation>
+ <translation id="39103738135459590">激活码</translation>
+ <translation id="3911824782900911339">打开新的标签页</translation>
++<translation id="391241667459647668">需要重新登录 Remocode</translation>
+ <translation id="3913689539406883376">在拔下计算机电源线时开启</translation>
+ <translation id="3914173277599553213">必需</translation>
+ <translation id="3914568430265141791">打开文件夹“<ph name="FOLDER_TITLE" />”</translation>
+@@ -4039,6 +4050,7 @@
+ <translation id="3954354850384043518">正在下载</translation>
+ <translation id="3954468641195530330">不允许应用使用您的麦克风</translation>
+ <translation id="3954469006674843813"><ph name="WIDTH" />x<ph name="HEIGHT" />（<ph name="REFRESH_RATE" /> 赫兹）</translation>
++<translation id="3954839810348674100">管理 Remocode 账号</translation>
+ <translation id="3954953195017194676">您最近未记录 WebRTC 事件日志。</translation>
+ <translation id="3955321697524543127">不允许网站连接到 USB 设备</translation>
+ <translation id="3957663711862465084">USB 设置</translation>
+@@ -5000,6 +5012,7 @@
+ <translation id="4694024090038830733">打印机配置由管理员处理。</translation>
+ <translation id="4694604912444486114">猴子</translation>
+ <translation id="4694820450536519583">权限</translation>
++<translation id="4694832403793454591">正在检查 Remocode 账号…</translation>
+ <translation id="4695318956047767909">深色主题，屏保</translation>
+ <translation id="4697071790493980729">找不到任何结果</translation>
+ <translation id="4697231114332146850">使用 7、8、9、4、6、1、2、3 键可移动光标</translation>
+@@ -5104,6 +5117,7 @@
+ <translation id="4778653490315793244">尚无可显示的内容</translation>
+ <translation id="4779083564647765204">缩放</translation>
+ <translation id="4779136857077979611">饭团</translation>
++<translation id="4779403135537222702">重试</translation>
+ <translation id="4779766576531456629">重命名 eSIM 卡移动网络</translation>
+ <translation id="4780321648949301421">页面存储为...</translation>
+ <translation id="4780558987886269159">用于工作</translation>
+@@ -5534,6 +5548,7 @@
  <translation id="5095848221827496531">取消选择</translation>
  <translation id="5096775069898886423">在您访问不支持安全连接的网站前，系统会发出警告</translation>
  <translation id="5097002363526479830">无法连接到网络“<ph name="NAME" />”：<ph name="DETAILS" /></translation>
-+<translation id="5097276334233313454">我与Remocode</translation>
++<translation id="5097276334233313454">您与 Remocode</translation>
  <translation id="5097306410549350357">详细了解如何使用位置信息</translation>
  <translation id="5097349930204431044">您访问的网站能判断您的喜好，然后在您继续浏览时向您展示建议的广告</translation>
  <translation id="5097649414558628673">工具：<ph name="PRINT_NAME" /></translation>
-@@ -6928,6 +6930,7 @@
+@@ -6218,6 +6233,7 @@
+ <translation id="5624120631404540903">管理密码</translation>
+ <translation id="5624959475330585145">在使用不安全的连接前询问</translation>
+ <translation id="5625225435499354052">在 Google Pay 中修改</translation>
++<translation id="5625524600353208347">重新登录</translation>
+ <translation id="5627832140542566187">显示屏方向</translation>
+ <translation id="5628434207686266338">设置设备密码</translation>
+ <translation id="562935524653278697">您的管理员已停止同步您的书签、历史记录、密码及其他设置。</translation>
+@@ -6928,6 +6944,7 @@
  <translation id="6185151644843671709">已保存通行密钥并创建 PIN 码</translation>
  <translation id="6185353868193925315">{PASSWORD_COUNT,plural, =1{有 1 个密码和其他内容只保存到此设备上。若要在其他设备上使用它们，请将它们保存到您的 Google 账号中。此操作还会清理所有重复项。}other{有 {PASSWORD_COUNT} 个密码和其他内容只保存到此设备上。若要在其他设备上使用它们，请将它们保存到您的 Google 账号中。此操作还会清理所有重复项。}}</translation>
  <translation id="6186177419203903310">此操作将为系统中的所有新 USB 外围设备启用通知功能。确定要继续吗？</translation>

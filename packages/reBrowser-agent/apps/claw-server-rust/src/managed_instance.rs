@@ -6,6 +6,8 @@
 
 use std::path::Path;
 
+pub const POLICY_MARKER: &str = "rebrowser-mcp-instance-policy=1;";
+
 pub const REJECTION: &str =
     "reBrowser: global MCP sidecar disabled for a non-primary browser profile";
 
