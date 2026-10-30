@@ -346,14 +346,25 @@ fn classify(relative: &Path) -> Result<Layer, String> {
         [db, ..] if db == "db" => Ok(Layer::Db),
         [identity, ..] if identity == "identity" => Ok(Layer::Identity),
         [analytics, ..] if analytics == "analytics" => Ok(Layer::Support),
-        [file] if matches!(file.as_str(), "app.rs" | "runtime.rs" | "main.rs") => {
+        [file]
+            if matches!(
+                file.as_str(),
+                "app.rs" | "runtime.rs" | "main.rs" | "managed_launcher.rs"
+            ) =>
+        {
             Ok(Layer::Composition)
         }
         [api, file] if api == "api" && file == "mod.rs" => Ok(Layer::Support),
         [file]
             if matches!(
                 file.as_str(),
-                "clock.rs" | "config.rs" | "error.rs" | "ids.rs" | "lib.rs" | "storage.rs"
+                "clock.rs"
+                    | "config.rs"
+                    | "error.rs"
+                    | "ids.rs"
+                    | "lib.rs"
+                    | "managed_instance.rs"
+                    | "storage.rs"
             ) =>
         {
             Ok(Layer::Support)
