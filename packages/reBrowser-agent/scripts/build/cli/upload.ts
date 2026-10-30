@@ -1,19 +1,14 @@
+import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import {
-  createR2Client,
-  joinObjectKey,
-  uploadFileToObject,
-} from '@browseros/build-server-tools'
-import { EXTERNAL_URLS } from '@browseros/shared/constants/urls'
 import { log } from '../log'
-import { type CliUploadConfig, loadCliUploadConfig } from './config'
 
-const JSON_CONTENT_TYPE = 'application/json; charset=utf-8'
+const DEFAULT_REPO = 'BlueOriginAI/reBrowser'
+const FEED_TAG = 'feed-cli'
 const CLI_ARCHIVE_PATTERN =
   /^browseros-cli_(?<version>[^_]+)_(?<os>darwin|linux|windows)_(?<arch>amd64|arm64)\.(?<ext>tar\.gz|zip)$/
 
@@ -21,12 +16,10 @@ const INSTALLERS = [
   {
     filePath: join('apps', 'cli', 'scripts', 'install.sh'),
     objectName: 'install.sh',
-    contentType: 'text/x-shellscript; charset=utf-8',
   },
   {
     filePath: join('apps', 'cli', 'scripts', 'install.ps1'),
     objectName: 'install.ps1',
-    contentType: 'text/plain; charset=utf-8',
   },
 ] as const
 
@@ -57,6 +50,18 @@ export interface CliArchiveMetadata {
   archive_format: 'tar.gz' | 'zip'
 }
 
+export function resolveCliRepo(): string {
+  return process.env.GITHUB_REPOSITORY || DEFAULT_REPO
+}
+
+export function cliReleaseAssetUrl(
+  repo: string,
+  tag: string,
+  filename: string,
+): string {
+  return `https://github.com/${repo}/releases/download/${encodeURIComponent(tag)}/${encodeURIComponent(filename)}`
+}
+
 function resolveRootDir(): string {
   const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
   process.chdir(rootDir)
@@ -71,32 +76,74 @@ export async function runCliRelease(options: CliReleaseOptions): Promise<void> {
   await uploadCliRelease(resolveRootDir(), options)
 }
 
-async function uploadCliInstallers(rootDir: string): Promise<void> {
-  const { r2 } = loadCliUploadConfig(rootDir)
-  const client = createR2Client(r2)
+function gh(args: string[]): string {
+  return execFileSync('gh', args, {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim()
+}
 
-  log.header('Uploading BrowserOS CLI installer scripts')
-
+function releaseAssetNames(tag: string, repo: string): string[] | null {
   try {
-    for (const installer of INSTALLERS) {
-      const absolutePath = join(rootDir, installer.filePath)
-      if (!existsSync(absolutePath)) {
-        throw new Error(`Installer script not found: ${installer.filePath}`)
-      }
-
-      const objectKey = joinObjectKey(r2.uploadPrefix, installer.objectName)
-      log.step(`Uploading ${installer.filePath}`)
-      await uploadFileToObject(client, r2, objectKey, absolutePath, {
-        contentType: installer.contentType,
-      })
-      log.success(`Uploaded ${objectKey}`)
-      log.info(`${EXTERNAL_URLS.CDN}/${objectKey}`)
-    }
-
-    log.done('CLI installer upload completed')
-  } finally {
-    client.destroy()
+    const document = JSON.parse(
+      gh(['release', 'view', tag, '--repo', repo, '--json', 'assets']),
+    ) as { assets?: Array<{ name?: string }> }
+    return (document.assets ?? [])
+      .map((asset) => asset.name)
+      .filter((name): name is string => Boolean(name))
+  } catch {
+    return null
   }
+}
+
+function ensureRelease(tag: string, repo: string, title: string): void {
+  if (releaseAssetNames(tag, repo) !== null) {
+    return
+  }
+  gh([
+    'release',
+    'create',
+    tag,
+    '--repo',
+    repo,
+    '--title',
+    title,
+    '--notes',
+    'Managed by the reBrowser release pipeline.',
+    '--latest=false',
+  ])
+}
+
+function uploadAsset(
+  tag: string,
+  repo: string,
+  path: string,
+  clobber = true,
+): void {
+  const args = ['release', 'upload', tag, path, '--repo', repo]
+  if (clobber) {
+    args.push('--clobber')
+  }
+  gh(args)
+}
+
+async function uploadCliInstallers(rootDir: string): Promise<void> {
+  const repo = resolveCliRepo()
+  log.header('Uploading BrowserOS CLI installer scripts')
+  ensureRelease(FEED_TAG, repo, 'CLI installers and update feed')
+
+  for (const installer of INSTALLERS) {
+    const absolutePath = join(rootDir, installer.filePath)
+    if (!existsSync(absolutePath)) {
+      throw new Error(`Installer script not found: ${installer.filePath}`)
+    }
+    log.step(`Uploading ${installer.filePath}`)
+    uploadAsset(FEED_TAG, repo, absolutePath)
+    log.success(`Uploaded ${FEED_TAG}/${installer.objectName}`)
+    log.info(cliReleaseAssetUrl(repo, FEED_TAG, installer.objectName))
+  }
+
+  log.done('CLI installer upload completed')
 }
 
 export function parseCliChecksums(contents: string): Map<string, string> {
@@ -137,14 +184,13 @@ export function buildCliReleaseManifest(options: {
   filenames: string[]
   checksumsContent: string
   published_at?: string
-  cdnBaseURL?: string
-  uploadPrefix?: string
+  repo?: string
 }): CliReleaseManifest {
   const checksumByFilename = parseCliChecksums(options.checksumsContent)
   const assets: Record<string, CliReleaseAsset> = {}
   const filenames = [...options.filenames].sort()
-  const cdnBaseURL = options.cdnBaseURL ?? EXTERNAL_URLS.CDN
-  const uploadPrefix = options.uploadPrefix ?? 'cli'
+  const repo = options.repo ?? resolveCliRepo()
+  const tag = `cli/v${options.version}`
 
   for (const filename of filenames) {
     const archive = parseCliArchiveFilename(filename)
@@ -165,7 +211,7 @@ export function buildCliReleaseManifest(options: {
     const assetKey = `${archive.os}/${archive.arch}`
     assets[assetKey] = {
       filename,
-      url: `${cdnBaseURL}/${joinObjectKey(uploadPrefix, `v${options.version}`, filename)}`,
+      url: cliReleaseAssetUrl(repo, tag, filename),
       archive_format: archive.archive_format,
       sha256: checksum,
     }
@@ -174,53 +220,9 @@ export function buildCliReleaseManifest(options: {
   return {
     version: options.version,
     published_at: options.published_at ?? new Date().toISOString(),
-    tag: `cli/v${options.version}`,
+    tag,
     assets,
   }
-}
-
-async function uploadCliManifest(
-  client: ReturnType<typeof createR2Client>,
-  version: string,
-  releaseArchives: string[],
-  uploadPrefix: string,
-  absoluteBinariesDir: string,
-  r2: CliUploadConfig['r2'],
-): Promise<void> {
-  const checksumsPath = join(absoluteBinariesDir, 'checksums.txt')
-  if (!existsSync(checksumsPath)) {
-    throw new Error('checksums.txt is required to build CLI manifest')
-  }
-
-  const manifest = buildCliReleaseManifest({
-    version,
-    filenames: releaseArchives,
-    checksumsContent: readFileSync(checksumsPath, 'utf-8'),
-    uploadPrefix,
-  })
-  const manifestPath = join(tmpdir(), `browseros-cli-manifest-${version}.json`)
-  await writeFile(
-    manifestPath,
-    `${JSON.stringify(manifest, null, 2)}\n`,
-    'utf-8',
-  )
-
-  const versionedKey = joinObjectKey(
-    uploadPrefix,
-    `v${version}`,
-    'manifest.json',
-  )
-  const latestKey = joinObjectKey(uploadPrefix, 'latest', 'manifest.json')
-
-  log.step('Uploading manifest.json')
-  await uploadFileToObject(client, r2, versionedKey, manifestPath, {
-    contentType: JSON_CONTENT_TYPE,
-  })
-  await uploadFileToObject(client, r2, latestKey, manifestPath, {
-    contentType: JSON_CONTENT_TYPE,
-  })
-  log.success(`Uploaded ${latestKey}`)
-  log.info(`${EXTERNAL_URLS.CDN}/${latestKey}`)
 }
 
 async function uploadCliRelease(
@@ -234,58 +236,55 @@ async function uploadCliRelease(
     throw new Error(`Binaries directory not found: ${binariesDir}`)
   }
 
-  const archives = readdirSync(absoluteBinariesDir).filter(
+  const files = readdirSync(absoluteBinariesDir).filter(
     (f) => f.endsWith('.tar.gz') || f.endsWith('.zip') || f === 'checksums.txt',
   )
-  if (archives.length === 0) {
+  if (files.length === 0) {
     throw new Error(`No archives found in ${binariesDir}`)
   }
-  const releaseArchives = archives.filter((f) => f !== 'checksums.txt')
+  const releaseArchives = files.filter((f) => f !== 'checksums.txt')
 
-  const { r2 } = loadCliUploadConfig(rootDir)
-  const client = createR2Client(r2)
+  const repo = resolveCliRepo()
+  const tag = `cli/v${version}`
 
   log.header(`Uploading BrowserOS CLI v${version} release`)
+  ensureRelease(tag, repo, `BrowserOS CLI v${version}`)
 
-  try {
-    for (const filename of archives) {
-      const filePath = join(absoluteBinariesDir, filename)
-      const versionedKey = joinObjectKey(
-        r2.uploadPrefix,
-        `v${version}`,
-        filename,
-      )
-      const latestKey = joinObjectKey(r2.uploadPrefix, 'latest', filename)
-
-      log.step(`Uploading ${filename}`)
-      await uploadFileToObject(client, r2, versionedKey, filePath)
-      await uploadFileToObject(client, r2, latestKey, filePath)
-      log.success(`Uploaded ${filename}`)
-      log.info(`${EXTERNAL_URLS.CDN}/${versionedKey}`)
-    }
-
-    await uploadCliManifest(
-      client,
-      version,
-      releaseArchives,
-      r2.uploadPrefix,
-      absoluteBinariesDir,
-      r2,
-    )
-
-    const versionTxtPath = join(tmpdir(), 'browseros-cli-version.txt')
-    await writeFile(versionTxtPath, version, 'utf-8')
-    const versionKey = joinObjectKey(r2.uploadPrefix, 'latest', 'version.txt')
-    await uploadFileToObject(client, r2, versionKey, versionTxtPath, {
-      contentType: 'text/plain; charset=utf-8',
-    })
-    log.success(`Uploaded ${versionKey}`)
-    log.info(`${EXTERNAL_URLS.CDN}/${versionKey}`)
-
-    log.done('CLI binary upload completed')
-  } finally {
-    client.destroy()
+  for (const filename of files) {
+    const filePath = join(absoluteBinariesDir, filename)
+    log.step(`Uploading ${filename}`)
+    uploadAsset(tag, repo, filePath)
+    log.success(`Uploaded ${filename}`)
+    log.info(cliReleaseAssetUrl(repo, tag, filename))
   }
 
+  const checksumsPath = join(absoluteBinariesDir, 'checksums.txt')
+  if (!existsSync(checksumsPath)) {
+    throw new Error('checksums.txt is required to build CLI manifest')
+  }
+  const manifest = buildCliReleaseManifest({
+    version,
+    filenames: releaseArchives,
+    checksumsContent: readFileSync(checksumsPath, 'utf-8'),
+    repo,
+  })
+  const manifestPath = join(tmpdir(), `browseros-cli-manifest-${version}.json`)
+  await writeFile(
+    manifestPath,
+    `${JSON.stringify(manifest, null, 2)}\n`,
+    'utf-8',
+  )
+
+  log.step('Uploading manifest.json')
+  uploadAsset(tag, repo, manifestPath)
+  uploadAsset(FEED_TAG, repo, manifestPath)
+  log.success(`Published ${FEED_TAG}/manifest.json`)
+
+  const versionTxtPath = join(tmpdir(), 'browseros-cli-version.txt')
+  await writeFile(versionTxtPath, version, 'utf-8')
+  uploadAsset(FEED_TAG, repo, versionTxtPath)
+  log.success(`Published ${FEED_TAG}/version.txt`)
+
   await uploadCliInstallers(rootDir)
+  log.done('CLI binary upload completed')
 }

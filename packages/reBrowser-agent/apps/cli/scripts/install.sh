@@ -3,14 +3,16 @@
 # Install browseros-cli — downloads the latest release binary for your platform.
 #
 # Usage:
-#   curl -fsSL https://cdn.browseros.com/cli/install.sh | bash
+#   curl -fsSL https://github.com/BlueOriginAI/reBrowser/releases/download/feed-cli/install.sh | bash
 #
 #   # Or with options:
-#   curl -fsSL https://cdn.browseros.com/cli/install.sh | bash -s -- --version 0.1.0 --dir /usr/local/bin
+#   curl -fsSL https://github.com/BlueOriginAI/reBrowser/releases/download/feed-cli/install.sh | bash -s -- --version 0.1.0 --dir /usr/local/bin
 
 set -euo pipefail
 
-CDN_BASE="https://cdn.browseros.com/cli"
+REPO="BlueOriginAI/reBrowser"
+FEED_BASE="https://github.com/${REPO}/releases/download/feed-cli"
+RELEASE_BASE="https://github.com/${REPO}/releases/download"
 BINARY="browseros-cli"
 INSTALL_DIR="${HOME}/.browseros/bin"
 
@@ -43,7 +45,7 @@ done
 # ── Resolve latest version ───────────────────────────────────────────────────
 
 if [[ -z "$VERSION" ]]; then
-  VERSION=$(curl -fsSL "${CDN_BASE}/latest/version.txt" | tr -d '[:space:]')
+  VERSION=$(curl -fsSL "${FEED_BASE}/version.txt" | tr -d '[:space:]')
 
   if [[ -z "$VERSION" ]]; then
     echo "Error: could not determine latest version." >&2
@@ -79,8 +81,8 @@ esac
 # ── Download and extract ─────────────────────────────────────────────────────
 
 FILENAME="${BINARY}_${VERSION}_${OS}_${ARCH}.tar.gz"
-URL="${CDN_BASE}/v${VERSION}/${FILENAME}"
-CHECKSUM_URL="${CDN_BASE}/v${VERSION}/checksums.txt"
+URL="${RELEASE_BASE}/cli%2Fv${VERSION}/${FILENAME}"
+CHECKSUM_URL="${RELEASE_BASE}/cli%2Fv${VERSION}/checksums.txt"
 
 TMPDIR_DL=$(mktemp -d)
 trap 'rm -rf "$TMPDIR_DL"' EXIT

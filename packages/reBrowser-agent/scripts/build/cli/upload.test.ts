@@ -61,8 +61,7 @@ describe('buildCliReleaseManifest', () => {
         'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb  browseros-cli_1.2.3_windows_arm64.zip',
       ].join('\n'),
       published_at: '2026-03-27T19:00:00Z',
-      cdnBaseURL: 'https://cdn.example.com',
-      uploadPrefix: 'cli',
+      repo: 'o/r',
     })
 
     expect(manifest).toEqual({
@@ -72,14 +71,14 @@ describe('buildCliReleaseManifest', () => {
       assets: {
         'darwin/arm64': {
           filename: 'browseros-cli_1.2.3_darwin_arm64.tar.gz',
-          url: 'https://cdn.example.com/cli/v1.2.3/browseros-cli_1.2.3_darwin_arm64.tar.gz',
+          url: 'https://github.com/o/r/releases/download/cli%2Fv1.2.3/browseros-cli_1.2.3_darwin_arm64.tar.gz',
           archive_format: 'tar.gz',
           sha256:
             'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
         },
         'windows/arm64': {
           filename: 'browseros-cli_1.2.3_windows_arm64.zip',
-          url: 'https://cdn.example.com/cli/v1.2.3/browseros-cli_1.2.3_windows_arm64.zip',
+          url: 'https://github.com/o/r/releases/download/cli%2Fv1.2.3/browseros-cli_1.2.3_windows_arm64.zip',
           archive_format: 'zip',
           sha256:
             'bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',

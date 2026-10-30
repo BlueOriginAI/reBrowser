@@ -34,7 +34,7 @@ export interface OnboardingVideo {
  * exist.
  */
 const ONBOARDING_VIDEO_URL =
-  'https://cdn.browseros.com/artifacts/claw/onboarding-recording/video.mp4'
+  'https://github.com/BlueOriginAI/reBrowser/releases/download/feed-onboarding/first-run-demo.mp4'
 
 /** Thumbnail for the featured onboarding recording, from its YouTube upload. */
 const ONBOARDING_POSTER_URL =

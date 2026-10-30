@@ -26,8 +26,10 @@ describe('onboarding video upload', () => {
 
     const plan = buildOnboardingVideoUploadPlan(rootDir)
 
+    const base = 'https://github.com/BlueOriginAI/reBrowser/releases/download'
     expect(plan).toEqual({
       version: '0.1.0',
+      tag: 'onboarding/v0.1.0',
       assets: [
         {
           filename: 'first-run-demo.mp4',
@@ -37,8 +39,9 @@ describe('onboarding video upload', () => {
             'packages/onboarding-video/out/first-run-demo.mp4',
           ),
           contentType: 'video/mp4',
-          key: 'artifacts/claw/onboarding-video/v0.1.0/first-run-demo.mp4',
-          url: 'https://cdn.browseros.com/artifacts/claw/onboarding-video/v0.1.0/first-run-demo.mp4',
+          tag: 'onboarding/v0.1.0',
+          url: `${base}/onboarding%2Fv0.1.0/first-run-demo.mp4`,
+          feedUrl: `${base}/feed-onboarding/first-run-demo.mp4`,
           renderCommand: 'bun run --cwd packages/onboarding-video render',
         },
         {
@@ -50,8 +53,9 @@ describe('onboarding video upload', () => {
             'packages/onboarding-video/out/first-run-demo-poster.png',
           ),
           contentType: 'image/png',
-          key: 'artifacts/claw/onboarding-video/v0.1.0/first-run-demo-poster.png',
-          url: 'https://cdn.browseros.com/artifacts/claw/onboarding-video/v0.1.0/first-run-demo-poster.png',
+          tag: 'onboarding/v0.1.0',
+          url: `${base}/onboarding%2Fv0.1.0/first-run-demo-poster.png`,
+          feedUrl: `${base}/feed-onboarding/first-run-demo-poster.png`,
           renderCommand:
             'bun run --cwd packages/onboarding-video render:poster',
         },

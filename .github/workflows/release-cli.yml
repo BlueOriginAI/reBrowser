@@ -72,12 +72,9 @@ jobs:
         run: bun ci
         working-directory: packages/reBrowser-agent
 
-      - name: Upload to CDN
+      - name: Upload CLI assets to GitHub Releases
         env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           CLI_VERSION: ${{ steps.release.outputs.version }}
         run: |
           bun scripts/build/cli.ts \
@@ -141,13 +138,13 @@ jobs:
           ### macOS / Linux
 
           ```bash
-          curl -fsSL https://cdn.browseros.com/cli/install.sh | bash
+          curl -fsSL https://github.com/BlueOriginAI/reBrowser/releases/download/feed-cli/install.sh | bash
           ```
 
           ### Windows
 
           ```powershell
-          irm https://cdn.browseros.com/cli/install.ps1 | iex
+          irm https://github.com/BlueOriginAI/reBrowser/releases/download/feed-cli/install.ps1 | iex
           ```
 
           After install, run `browseros-cli init` to point the CLI at your BrowserOS MCP server.

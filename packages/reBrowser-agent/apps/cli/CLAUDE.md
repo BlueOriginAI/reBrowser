@@ -68,7 +68,7 @@ Never hard-code the version or the key — they are build-time ldflags only. Ana
 
 ## Auto-update (`update/`)
 
-`Execute()` fires a background check (~daily, 24h TTL) and prints a cached "update available" notice on a *later* run. It is skipped for the `help`, `completion`, and `update`/`self-update`/`upgrade` commands, for `--version`/`-h`, when `--json` is set, when `BROWSEROS_SKIP_UPDATE_CHECK` is set, for non-release builds, and when installed via a package manager (`BROWSEROS_INSTALL_METHOD=npm|brew`). `update` downloads from `cdn.browseros.com/cli/latest/manifest.json`, verifies the SHA-256, then atomically replaces the binary (`minio/selfupdate`).
+`Execute()` fires a background check (~daily, 24h TTL) and prints a cached "update available" notice on a *later* run. It is skipped for the `help`, `completion`, and `update`/`self-update`/`upgrade` commands, for `--version`/`-h`, when `--json` is set, when `BROWSEROS_SKIP_UPDATE_CHECK` is set, for non-release builds, and when installed via a package manager (`BROWSEROS_INSTALL_METHOD=npm|brew`). `update` downloads from the `feed-cli` GitHub release manifest, verifies the SHA-256, then atomically replaces the binary (`minio/selfupdate`).
 
 ## Config (`config/`)
 

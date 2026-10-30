@@ -2,12 +2,12 @@
 # Install browseros-cli for Windows — downloads the latest release binary.
 #
 # Usage (PowerShell — save and run):
-#   Invoke-WebRequest -Uri "https://cdn.browseros.com/cli/install.ps1" -OutFile install.ps1
+#   Invoke-WebRequest -Uri "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-cli/install.ps1" -OutFile install.ps1
 #   .\install.ps1
 #   .\install.ps1 -Version "0.1.0" -Dir "C:\tools\browseros"
 #
 # Usage (one-liner, uses env vars for options):
-#   & { $env:BROWSEROS_VERSION="0.1.0"; irm https://cdn.browseros.com/cli/install.ps1 | iex }
+#   & { $env:BROWSEROS_VERSION="0.1.0"; irm https://github.com/BlueOriginAI/reBrowser/releases/download/feed-cli/install.ps1 | iex }
 #
 
 param(
@@ -20,7 +20,9 @@ $ErrorActionPreference = "Stop"
 # TLS 1.2 — older PS 5.1 defaults to TLS 1.0
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
-$CdnBase = "https://cdn.browseros.com/cli"
+$Repo = "BlueOriginAI/reBrowser"
+$FeedBase = "https://github.com/$Repo/releases/download/feed-cli"
+$ReleaseBase = "https://github.com/$Repo/releases/download"
 $Binary = "browseros-cli"
 
 # When piped via irm | iex, param() is ignored — fall back to env vars
@@ -31,7 +33,7 @@ if (-not $Dir) { $Dir = if ($env:BROWSEROS_DIR) { $env:BROWSEROS_DIR } else { "$
 
 if (-not $Version) {
     Write-Host "Fetching latest version..."
-    $Version = (Invoke-WebRequest -Uri "$CdnBase/latest/version.txt" -UseBasicParsing).Content.Trim()
+    $Version = (Invoke-WebRequest -Uri "$FeedBase/version.txt" -UseBasicParsing).Content.Trim()
     if (-not $Version) {
         Write-Error "Could not determine latest version. Try: -Version 0.1.0"
         exit 1
@@ -67,7 +69,7 @@ if (-not [Environment]::Is64BitOperatingSystem) {
 # ── Download and extract ─────────────────────────────────────────────────────
 
 $Filename = "${Binary}_${Version}_windows_${Arch}.zip"
-$Url = "$CdnBase/v$Version/$Filename"
+$Url = "$ReleaseBase/cli%2Fv$Version/$Filename"
 $TmpDir = Join-Path ([System.IO.Path]::GetTempPath()) ("browseros-cli-install-" + [System.IO.Path]::GetRandomFileName())
 
 try {

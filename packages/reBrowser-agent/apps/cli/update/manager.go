@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	DefaultManifestURL     = "https://cdn.browseros.com/cli/latest/manifest.json"
+	DefaultManifestURL     = "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-cli/manifest.json"
 	DefaultCheckTTL        = 24 * time.Hour
 	DefaultHTTPTimeout     = 2 * time.Second
 	DefaultDownloadTimeout = 5 * time.Minute

@@ -19,7 +19,7 @@ npm install -g browseros-cli
 **Shell script fallback:**
 
 ```bash
-curl -fsSL https://cdn.browseros.com/cli/install.sh | bash
+curl -fsSL https://github.com/BlueOriginAI/reBrowser/releases/download/feed-cli/install.sh | bash
 ```
 
 ## Quick Start

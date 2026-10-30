@@ -11,13 +11,13 @@ Communicates with the BrowserOS MCP server over JSON-RPC 2.0 / StreamableHTTP an
 ### macOS / Linux
 
 ```bash
-curl -fsSL https://cdn.browseros.com/cli/install.sh | bash
+curl -fsSL https://github.com/BlueOriginAI/reBrowser/releases/download/feed-cli/install.sh | bash
 ```
 
 ### Windows
 
 ```powershell
-irm https://cdn.browseros.com/cli/install.ps1 | iex
+irm https://github.com/BlueOriginAI/reBrowser/releases/download/feed-cli/install.ps1 | iex
 ```
 
 ### Build from Source
@@ -97,8 +97,8 @@ Inspect versions with:
 
 ```bash
 browseros-cli --version
-curl -fsSL https://cdn.browseros.com/cli/latest/version.txt
-curl -fsSL https://cdn.browseros.com/cli/latest/manifest.json
+curl -fsSL https://github.com/BlueOriginAI/reBrowser/releases/download/feed-cli/version.txt
+curl -fsSL https://github.com/BlueOriginAI/reBrowser/releases/download/feed-cli/manifest.json
 git tag -l 'cli/v*' --sort=-v:refname
 git tag -l 'browseros-cli-v*' --sort=-v:refname
 ```

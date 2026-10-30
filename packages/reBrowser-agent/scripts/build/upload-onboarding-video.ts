@@ -1,24 +1,16 @@
 #!/usr/bin/env bun
 
+import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { HeadObjectCommand, type S3Client } from '@aws-sdk/client-s3'
-import {
-  createR2Client,
-  joinObjectKey,
-  type R2Config,
-  uploadFileToObject,
-} from '@browseros/build-server-tools'
-import { EXTERNAL_URLS } from '@browseros/shared/constants/urls'
-import { requireEnv, resolveEnv } from '@browseros/shared/env/load'
-
 import { log } from './log'
 
-const UPLOAD_PREFIX = 'artifacts/claw/onboarding-video'
 const PACKAGE_DIR = join('packages', 'onboarding-video')
 const OUT_DIR = join(PACKAGE_DIR, 'out')
+const VERSIONED_TAG_PREFIX = 'onboarding/v'
+const FEED_TAG = 'feed-onboarding'
 
 const ONBOARDING_VIDEO_ASSETS = [
   {
@@ -43,18 +35,32 @@ export interface OnboardingVideoAssetPlan {
   relativePath: string
   absolutePath: string
   contentType: string
-  key: string
+  tag: string
   url: string
+  feedUrl: string
   renderCommand: string
 }
 
 export interface OnboardingVideoUploadPlan {
   version: string
+  tag: string
   assets: OnboardingVideoAssetPlan[]
 }
 
 function resolveRootDir(): string {
   return resolve(dirname(fileURLToPath(import.meta.url)), '../..')
+}
+
+function resolveRepo(): string {
+  return process.env.GITHUB_REPOSITORY || 'BlueOriginAI/reBrowser'
+}
+
+export function releaseAssetUrl(
+  repo: string,
+  tag: string,
+  filename: string,
+): string {
+  return `https://github.com/${repo}/releases/download/${encodeURIComponent(tag)}/${encodeURIComponent(filename)}`
 }
 
 function readPackageVersion(rootDir: string): string {
@@ -68,26 +74,28 @@ function readPackageVersion(rootDir: string): string {
   return pkg.version
 }
 
-/** Builds the immutable R2 keys and public CDN URLs for one onboarding-video version. */
+/** Builds the versioned and stable GitHub release URLs for one onboarding video. */
 export function buildOnboardingVideoUploadPlan(
   rootDir: string,
 ): OnboardingVideoUploadPlan {
   const version = readPackageVersion(rootDir)
+  const tag = `${VERSIONED_TAG_PREFIX}${version}`
+  const repo = resolveRepo()
   const assets = ONBOARDING_VIDEO_ASSETS.map((asset) => {
     const relativePath = join(OUT_DIR, asset.filename)
-    const key = joinObjectKey(UPLOAD_PREFIX, `v${version}`, asset.filename)
     return {
       filename: asset.filename,
       relativePath,
       absolutePath: join(rootDir, relativePath),
       contentType: asset.contentType,
-      key,
-      url: `${EXTERNAL_URLS.CDN}/${key}`,
+      tag,
+      url: releaseAssetUrl(repo, tag, asset.filename),
+      feedUrl: releaseAssetUrl(repo, FEED_TAG, asset.filename),
       renderCommand: asset.renderCommand,
     }
   })
 
-  return { version, assets }
+  return { version, tag, assets }
 }
 
 export function validateOnboardingVideoInputs(
@@ -114,24 +122,6 @@ export function validateOnboardingVideoInputs(
   )
 }
 
-function loadR2Config(rootDir: string): R2Config {
-  const resolved = resolveEnv({ rootDir, mode: 'production' })
-  const r2 = requireEnv(resolved, [
-    'R2_ACCOUNT_ID',
-    'R2_ACCESS_KEY_ID',
-    'R2_SECRET_ACCESS_KEY',
-    'R2_BUCKET',
-  ])
-  return {
-    accountId: r2.R2_ACCOUNT_ID,
-    accessKeyId: r2.R2_ACCESS_KEY_ID,
-    secretAccessKey: r2.R2_SECRET_ACCESS_KEY,
-    bucket: r2.R2_BUCKET,
-    downloadPrefix: '',
-    uploadPrefix: UPLOAD_PREFIX,
-  }
-}
-
 export function parseOnboardingVideoUploadArgs(
   argv: string[],
 ): OnboardingVideoUploadOptions {
@@ -151,76 +141,73 @@ export function parseOnboardingVideoUploadArgs(
   return options
 }
 
-function isMissingObjectError(error: unknown): boolean {
-  const candidate = error as {
-    name?: string
-    $metadata?: { httpStatusCode?: number }
-  }
-  return (
-    candidate.name === 'NotFound' || candidate.$metadata?.httpStatusCode === 404
-  )
+function gh(args: string[]): string {
+  return execFileSync('gh', args, {
+    encoding: 'utf-8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim()
 }
 
-async function objectExists(
-  client: S3Client,
-  r2: R2Config,
-  key: string,
-): Promise<boolean> {
+function releaseAssetNames(tag: string, repo: string): string[] | null {
   try {
-    await client.send(
-      new HeadObjectCommand({
-        Bucket: r2.bucket,
-        Key: key,
-      }),
-    )
-    return true
-  } catch (error) {
-    if (isMissingObjectError(error)) {
-      return false
-    }
-    throw error
+    const document = JSON.parse(
+      gh(['release', 'view', tag, '--repo', repo, '--json', 'assets']),
+    ) as { assets?: Array<{ name?: string }> }
+    return (document.assets ?? [])
+      .map((asset) => asset.name)
+      .filter((name): name is string => Boolean(name))
+  } catch {
+    return null
   }
 }
 
-async function assertObjectsDoNotExist(
-  client: S3Client,
-  r2: R2Config,
-  plan: OnboardingVideoUploadPlan,
-): Promise<void> {
-  const existingKeys: string[] = []
-  for (const asset of plan.assets) {
-    log.step(`Checking ${asset.key}`)
-    if (await objectExists(client, r2, asset.key)) {
-      existingKeys.push(asset.key)
-    }
+function ensureRelease(tag: string, repo: string, title: string): void {
+  if (releaseAssetNames(tag, repo) !== null) {
+    return
   }
+  gh([
+    'release',
+    'create',
+    tag,
+    '--repo',
+    repo,
+    '--title',
+    title,
+    '--notes',
+    'Managed by the reBrowser release pipeline.',
+    '--latest=false',
+  ])
+}
 
-  if (existingKeys.length > 0) {
-    throw new Error(
-      [
-        'R2 object already exists:',
-        ...existingKeys.map((key) => `- ${key}`),
-        '',
-        'Please bump the package version in packages/onboarding-video/package.json, or rerun with --force to overwrite intentionally.',
-      ].join('\n'),
-    )
+function uploadAsset(
+  tag: string,
+  repo: string,
+  path: string,
+  clobber: boolean,
+): void {
+  const args = ['release', 'upload', tag, path, '--repo', repo]
+  if (clobber) {
+    args.push('--clobber')
   }
+  gh(args)
 }
 
 function printPlan(plan: OnboardingVideoUploadPlan): void {
   for (const asset of plan.assets) {
-    log.info(asset.key)
+    log.info(asset.tag)
     log.info(asset.url)
+    log.info(asset.feedUrl)
   }
 }
 
-/** Uploads the rendered first-run demo video assets to immutable R2/CDN keys. */
+/** Uploads the onboarding video to its versioned release and the live feed. */
 export async function runOnboardingVideoUpload(
   rootDir: string,
   options: OnboardingVideoUploadOptions = {},
 ): Promise<void> {
   const plan = buildOnboardingVideoUploadPlan(rootDir)
   validateOnboardingVideoInputs(plan)
+  const repo = resolveRepo()
 
   log.header(`BrowserClaw onboarding video v${plan.version}`)
   printPlan(plan)
@@ -230,25 +217,35 @@ export async function runOnboardingVideoUpload(
     return
   }
 
-  const r2 = loadR2Config(rootDir)
-  const client = createR2Client(r2)
-  try {
-    if (options.force) {
-      log.warn('Skipping existing-object guard because --force was supplied')
-    } else {
-      await assertObjectsDoNotExist(client, r2, plan)
+  if (!options.force) {
+    const existing = releaseAssetNames(plan.tag, repo)
+    if (existing !== null && existing.length > 0) {
+      throw new Error(
+        [
+          `Release ${plan.tag} already has assets:`,
+          ...existing.map((name) => `- ${name}`),
+          '',
+          'Please bump the package version in packages/onboarding-video/package.json, or rerun with --force to overwrite intentionally.',
+        ].join('\n'),
+      )
     }
+  } else {
+    log.warn('Skipping existing-asset guard because --force was supplied')
+  }
 
-    for (const asset of plan.assets) {
-      log.step(`Uploading ${asset.relativePath}`)
-      await uploadFileToObject(client, r2, asset.key, asset.absolutePath, {
-        contentType: asset.contentType,
-      })
-      log.success(`Uploaded ${asset.key}`)
-      log.info(asset.url)
-    }
-  } finally {
-    client.destroy()
+  ensureRelease(plan.tag, repo, `Onboarding video v${plan.version}`)
+  for (const asset of plan.assets) {
+    log.step(`Uploading ${asset.relativePath}`)
+    uploadAsset(plan.tag, repo, asset.absolutePath, options.force === true)
+    log.success(`Uploaded ${asset.tag}/${asset.filename}`)
+    log.info(asset.url)
+  }
+
+  ensureRelease(FEED_TAG, repo, 'Onboarding media feed')
+  for (const asset of plan.assets) {
+    uploadAsset(FEED_TAG, repo, asset.absolutePath, true)
+    log.success(`Published ${FEED_TAG}/${asset.filename}`)
+    log.info(asset.feedUrl)
   }
 
   log.done('Onboarding video upload completed')
