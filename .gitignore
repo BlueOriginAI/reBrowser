@@ -35,10 +35,19 @@ gclient.json
 AGENTS.md
 **/resources/binaries/
 
-packages/browseros/build/tools/
-packages/browseros/build/extensions/
+packages/reBrowser/build/tools/
+packages/reBrowser/build/extensions/
 
 # AI SDK DevTools traces
 .devtools/
 .omc/
 .llm/
+/remocode-uploads/
+
+# Agent worktrees: local scratch checkouts, never commit.
+/.claude/worktrees/
+
+# Persistent native build assets: retained during cleanup; never commit.
+/.local-builds/
+# Chromium tree kept at its original depth so GN SDK paths stay valid.
+/chromium/

@@ -1,0 +1,13 @@
+{
+  "mode": "Built-in image_gen concept; precise SVG production refinement",
+  "prompt": "Use case: logo-brand. Design the NEW RemocodeBrowser macOS app icon in the same family as the supplied Remocode IDE and Remocode Bar references: coral orange rounded-square tile, bold off-white graphic, confident 45-degree chamfered geometry. The USER'S EXACT NEW DIRECTION is a circle logo cut out with coral orange and chamfered lines. Replace all letters and interior symbols with ONE abstract circular ring. The ring has an almost circular silhouette with subtly faceted/chamfered transitions, a generous circular negative-space center, thick balanced strokes, and two precise diagonal 45-degree cut gaps at the upper-right and lower-left. The cut ends are crisp parallel chamfered faces, giving the ring an architectural aperture/portal feeling. Minimal geometric symbol, not a letter C, not a globe, no meridians or equator, no R/B, no terminal, no cursor, no animal, no multicolor Chrome motif. Keep the visual weight and coral palette of the references: tile #E86F4C to #EB5F37 with an extremely subtle warm shift, glyph #FFFAF6. Optically centered, white ring about 52% of canvas diameter, tile about 82% of canvas with the same corner radius and padding as the IDE icon. Square 1024x1024, alpha transparent outside the tile. Flat crisp vector-like artwork, no texture/no specks/no bevel/no shadow/no mockup/no words/no watermarks. Produce one finished icon.",
+  "design": "Coral rounded-square tile; faceted white circular ring with two 45-degree cuts. No letters or globe.",
+  "masters": [
+    "icon-master.svg",
+    "logo-mark.svg"
+  ],
+  "versions": {
+    "frontend": "0.2.28.0",
+    "onboarding": "0.0.17"
+  }
+}

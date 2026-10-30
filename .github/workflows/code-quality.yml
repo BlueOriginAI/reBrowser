@@ -7,7 +7,7 @@ on:
       - epic/app-onboard
     paths:
       - ".github/workflows/code-quality.yml"
-      - "packages/browseros-agent/**"
+      - "packages/reBrowser-agent/**"
 
 jobs:
   biome:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
     permissions:
       contents: read
     steps:
@@ -27,7 +27,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: packages/browseros-agent/package.json
+          bun-version-file: packages/reBrowser-agent/package.json
 
       # Run Biome through the repo's own lint script (bunx @biomejs/biome) so CI
       # uses the exact same Biome as local `bun run lint`, instead of a version
@@ -40,7 +40,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
     permissions:
       contents: read
     steps:
@@ -55,7 +55,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: packages/browseros-agent/package.json
+          bun-version-file: packages/reBrowser-agent/package.json
 
       - name: Start Turbo remote cache (GitHub Actions cache)
         uses: rharkor/caching-for-turbo@2238fae6eb9a9936f92356f54cb3660200d105e7 # v2.5.1
@@ -82,7 +82,7 @@ jobs:
     timeout-minutes: 15
     defaults:
       run:
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
     permissions:
       contents: read
     steps:
@@ -94,7 +94,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: packages/browseros-agent/package.json
+          bun-version-file: packages/reBrowser-agent/package.json
 
       - name: Setup Biome
         uses: biomejs/setup-biome@v2
@@ -116,7 +116,7 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
     permissions:
       contents: read
     steps:
@@ -128,7 +128,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: packages/browseros-agent/package.json
+          bun-version-file: packages/reBrowser-agent/package.json
 
       - name: Setup Rust
         run: |
@@ -141,8 +141,8 @@ jobs:
           path: |
             ~/.cargo/registry
             ~/.cargo/git
-            packages/browseros-agent/target
-          key: ${{ runner.os }}-claw-api-cargo-${{ hashFiles('packages/browseros-agent/Cargo.lock') }}
+            packages/reBrowser-agent/target
+          key: ${{ runner.os }}-claw-api-cargo-${{ hashFiles('packages/reBrowser-agent/Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-claw-api-cargo-
 
@@ -157,7 +157,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
     permissions:
       contents: read
     steps:
@@ -169,7 +169,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: packages/browseros-agent/package.json
+          bun-version-file: packages/reBrowser-agent/package.json
 
       - name: Install dependencies
         run: bun ci

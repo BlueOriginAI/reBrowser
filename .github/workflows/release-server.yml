@@ -143,7 +143,7 @@ jobs:
 
       - name: Resolve release
         id: release
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
           EVENT_NAME: ${{ github.event_name }}
@@ -201,7 +201,7 @@ jobs:
               echo "No commits since $PREVIOUS_TAG." > "$changelog"
             fi
           fi
-          node packages/browseros-agent/scripts/release/cap-release-changelog.mjs \
+          node packages/reBrowser-agent/scripts/release/cap-release-changelog.mjs \
             --input "$changelog" \
             --output "$notes" \
             --max-entries 15 \
@@ -280,7 +280,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: packages/browseros-agent/package.json
+          bun-version-file: packages/reBrowser-agent/package.json
 
       - name: Install Wine
         run: |
@@ -293,19 +293,19 @@ jobs:
           wine --version
 
       - name: Install browseros-agent dependencies
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
         run: bun ci
 
       - name: Stamp release version for artifacts
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         run: uv run browseros release component stamp --component server --version "$VERSION"
 
       - name: Build and upload immutable server resources
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
         run: bun scripts/build/server.ts --target=all --upload --versioned-only
 
       - name: Attach zips to private draft
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -569,8 +569,8 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
-          package_json="packages/browseros-agent/apps/server/package.json"
-          lock="packages/browseros-agent/bun.lock"
+          package_json="packages/reBrowser-agent/apps/server/package.json"
+          lock="packages/reBrowser-agent/bun.lock"
           branch="chore-bump-server-v${VERSION}"
           git fetch origin "$DEFAULT_BRANCH" --no-tags
           git checkout -B "$DEFAULT_BRANCH" "origin/$DEFAULT_BRANCH"
@@ -582,7 +582,7 @@ jobs:
               exit 0
             fi
           fi
-          uv run --directory packages/browseros browseros release component stamp \
+          uv run --directory packages/reBrowser browseros release component stamp \
             --component server \
             --version "$VERSION"
           if git diff --quiet -- "$package_json" "$lock"; then exit 0; fi
@@ -592,7 +592,7 @@ jobs:
               pr_url="$(gh pr create --title "chore: bump server version to ${VERSION}" --body "Reflects the published agent-server/v${VERSION} resources." --base "$DEFAULT_BRANCH" --head "$branch")"
             fi
             head_sha="$(gh pr view "$pr_url" --json headRefOid --jq '.headRefOid')"
-            packages/browseros-agent/scripts/release/merge-release-pr.sh "$pr_url" "$head_sha"
+            packages/reBrowser-agent/scripts/release/merge-release-pr.sh "$pr_url" "$head_sha"
             exit 0
           fi
           git config user.name "github-actions[bot]"
@@ -603,4 +603,4 @@ jobs:
           head_sha="$(git rev-parse HEAD)"
           git push origin "$branch"
           pr_url="$(gh pr create --title "chore: bump server version to ${VERSION}" --body "Reflects the published agent-server/v${VERSION} resources." --base "$DEFAULT_BRANCH" --head "$branch")"
-          packages/browseros-agent/scripts/release/merge-release-pr.sh "$pr_url" "$head_sha"
+          packages/reBrowser-agent/scripts/release/merge-release-pr.sh "$pr_url" "$head_sha"

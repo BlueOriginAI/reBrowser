@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="packages/browseros/resources/browseros/icons/product_logo_192.png" alt="BrowserOS" width="96" />
+<img src="packages/reBrowser/resources/browseros/icons/product_logo_192.png" alt="BrowserOS" width="96" />
 
 <h1>BrowserOS</h1>
 

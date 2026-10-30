@@ -252,7 +252,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          uv run --project packages/browseros browseros ota server release \
+          uv run --project packages/reBrowser browseros ota server release \
             --version "$VERSION" \
             --release-sha "$RELEASE_SHA" \
             --channel alpha \
@@ -274,7 +274,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          uv run --project packages/browseros browseros ota server release \
+          uv run --project packages/reBrowser browseros ota server release \
             --version "$VERSION" \
             --release-sha "$RELEASE_SHA" \
             --channel alpha \
@@ -292,7 +292,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          uv run --project packages/browseros browseros ota server release \
+          uv run --project packages/reBrowser browseros ota server release \
             --version "$VERSION" \
             --release-sha "$RELEASE_SHA" \
             --channel alpha \
@@ -356,7 +356,7 @@ jobs:
             fi
             fragments+=(--fragment "$platform=$fragment")
           done
-          uv run --project packages/browseros browseros ota server assemble-appcast \
+          uv run --project packages/reBrowser browseros ota server assemble-appcast \
             --version "$VERSION" \
             --channel alpha \
             --product "$PRODUCT" \
@@ -369,14 +369,14 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          packages/browseros-agent/scripts/release/commit-update-snapshot.sh \
+          packages/reBrowser-agent/scripts/release/commit-update-snapshot.sh \
             "$DEFAULT_BRANCH" \
             "chore(release): snapshot ${PRODUCT} server alpha v${VERSION}" \
             "$SNAPSHOT_PATH"
 
       - name: Publish committed alpha appcast
         if: inputs.state_owner != 'suite'
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}

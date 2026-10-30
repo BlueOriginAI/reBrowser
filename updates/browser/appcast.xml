@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
   <channel>
-    <title>BrowserOS</title>
+    <title>reBrowser</title>
     <link>https://cdn.browseros.com/appcast.xml</link>
     <description>Most recent changes with links to updates.</description>
     <language>en</language>

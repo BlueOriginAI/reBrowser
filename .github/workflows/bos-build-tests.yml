@@ -5,11 +5,11 @@ on:
     branches:
       - main
     paths:
-      - "packages/browseros/bos_build/**"
-      - "packages/browseros/tools/vendor_uploads/**"
-      - "packages/browseros/chromium_files/products/**"
-      - "packages/browseros/pyproject.toml"
-      - "packages/browseros/uv.lock"
+      - "packages/reBrowser/bos_build/**"
+      - "packages/reBrowser/tools/vendor_uploads/**"
+      - "packages/reBrowser/chromium_files/products/**"
+      - "packages/reBrowser/pyproject.toml"
+      - "packages/reBrowser/uv.lock"
       - "tools/release_secrets/**"
       - ".github/scripts/macos-chromium-workspace.sh"
       - ".github/scripts/macos-signing-keychain.sh"
@@ -40,7 +40,7 @@ jobs:
       contents: read
     defaults:
       run:
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -67,7 +67,7 @@ jobs:
           uv run browseros product doctor
 
       - name: Run vendor_uploads tests
-        working-directory: packages/browseros/tools/vendor_uploads
+        working-directory: packages/reBrowser/tools/vendor_uploads
         run: uv run python -m unittest discover -s vendor_uploads -t . -p "*_test.py"
 
   windows-git-bootstrap:
@@ -84,5 +84,5 @@ jobs:
 
       - name: Verify Windows Git bootstrap
         shell: bash
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         run: uv run python -m unittest bos_build.ci_workflow_test -v

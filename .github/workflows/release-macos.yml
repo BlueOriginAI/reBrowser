@@ -281,7 +281,7 @@ jobs:
 
       - name: Install BrowserOS server dependencies
         if: steps.inputs.outputs.resource_mode == 'source' && steps.inputs.outputs.products == 'browseros'
-        working-directory: ${{ steps.inputs.outputs.browseros_repo }}/packages/browseros-agent
+        working-directory: ${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser-agent
         run: bun ci
 
       - name: Setup BrowserOS neo server toolchain
@@ -302,7 +302,7 @@ jobs:
 
       - name: Resolve browser version
         id: version
-        working-directory: ${{ steps.inputs.outputs.browseros_repo }}/packages/browseros
+        working-directory: ${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser
         run: |
           version="$(uv run python bos_build/scripts/bump_version.py --mode none)"
           echo "value=$version" >> "$GITHUB_OUTPUT"
@@ -314,7 +314,7 @@ jobs:
           VERSION: ${{ steps.version.outputs.value }}
         run: |
           set -euo pipefail
-          release_dir="$BROWSEROS_REPO/packages/browseros/releases/$VERSION"
+          release_dir="$BROWSEROS_REPO/packages/reBrowser/releases/$VERSION"
           if [ ! -d "$release_dir" ]; then
             exit 0
           fi
@@ -345,7 +345,7 @@ jobs:
         run: bash .github/scripts/macos-signing-keychain.sh setup
 
       - name: Build selected products
-        working-directory: ${{ steps.inputs.outputs.browseros_repo }}/packages/browseros
+        working-directory: ${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser
         env:
           BROWSEROS_BUILD_SOURCE_SHA: ${{ steps.sync.outputs.source_sha }}
           BROWSEROS_SERVER_RESOURCE_VERSION: ${{ steps.inputs.outputs.products == 'browseros' && inputs.server_version || '' }}
@@ -434,8 +434,8 @@ jobs:
         with:
           name: BrowserOS_v${{ steps.version.outputs.value }}_${{ steps.inputs.outputs.arch }}
           path: |
-            ${{ steps.inputs.outputs.browseros_repo }}/packages/browseros/releases/${{ steps.version.outputs.value }}/BrowserOS_*.dmg
-            !${{ steps.inputs.outputs.browseros_repo }}/packages/browseros/releases/${{ steps.version.outputs.value }}/BrowserOS_neo_*.dmg
+            ${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser/releases/${{ steps.version.outputs.value }}/BrowserOS_*.dmg
+            !${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser/releases/${{ steps.version.outputs.value }}/BrowserOS_neo_*.dmg
           retention-days: 14
           if-no-files-found: warn
           overwrite: true
@@ -445,7 +445,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: BrowserOS_neo_v${{ steps.version.outputs.value }}_${{ steps.inputs.outputs.arch }}
-          path: ${{ steps.inputs.outputs.browseros_repo }}/packages/browseros/releases/${{ steps.version.outputs.value }}/BrowserOS_neo_*.dmg
+          path: ${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser/releases/${{ steps.version.outputs.value }}/BrowserOS_neo_*.dmg
           retention-days: 14
           if-no-files-found: warn
           overwrite: true

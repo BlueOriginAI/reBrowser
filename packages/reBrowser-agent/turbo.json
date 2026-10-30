@@ -1,0 +1,42 @@
+{
+  "$schema": "https://turborepo.dev/schema.json",
+  "globalDependencies": [
+    "bun.lock",
+    "bunfig.toml",
+    "tsconfig.json",
+    "biome.json",
+    "Cargo.toml",
+    "Cargo.lock",
+    "turbo.json"
+  ],
+  "globalEnv": [
+    "CI",
+    "CLAW_MCP_CAPTURE_DIR",
+    "CLAW_MCP_SMOKE",
+    "DEFAULT_BRANCH",
+    "GITHUB_REPOSITORY",
+    "GITHUB_SERVER_URL",
+    "R2_UPLOAD_PREFIX",
+    "RELEASE_TAG"
+  ],
+  "globalPassThroughEnv": ["BROWSEROS_*", "GITHUB_OUTPUT", "NODE_ENV"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "inputs": ["$TURBO_DEFAULT$", ".env*"],
+      "outputs": ["dist/**", ".output/**", ".wxt/**", "build/**"]
+    },
+    "typecheck": {
+      "inputs": ["$TURBO_DEFAULT$", "tsconfig*.json"]
+    },
+    "test": {
+      "outputs": ["test-results/**", "coverage/**"]
+    },
+    "lint:rust": {
+      "cache": false
+    },
+    "test:rust": {
+      "cache": false
+    }
+  }
+}

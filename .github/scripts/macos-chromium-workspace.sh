@@ -90,7 +90,7 @@ default_version_file() {
   local script_dir repo_root
   script_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
   repo_root="$(cd "$script_dir/../.." && pwd -P)"
-  printf '%s/packages/browseros/CHROMIUM_VERSION\n' "$repo_root"
+  printf '%s/packages/reBrowser/CHROMIUM_VERSION\n' "$repo_root"
 }
 
 write_workspace_state() {

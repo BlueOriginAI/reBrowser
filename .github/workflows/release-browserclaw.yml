@@ -31,7 +31,7 @@ jobs:
 
       - name: Resolve release source and version
         id: release
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           DISPATCH_REF: ${{ github.ref }}
@@ -45,7 +45,7 @@ jobs:
           source_sha="$(git rev-parse HEAD)"
           test "$source_sha" = "$GITHUB_SHA"
           version="$(uv run python bos_build/scripts/bump_version.py --mode none)"
-          onboarding_version="$(jq -er '.version' "$GITHUB_WORKSPACE/packages/browseros-agent/apps/claw-onboard/package.json")"
+          onboarding_version="$(jq -er '.version' "$GITHUB_WORKSPACE/packages/reBrowser-agent/apps/claw-onboard/package.json")"
           {
             echo "onboarding_version=$onboarding_version"
             echo "source_sha=$source_sha"
@@ -167,7 +167,7 @@ jobs:
       - uses: astral-sh/setup-uv@v8.3.2
 
       - name: Create or refresh browser draft
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         env:
           GH_TOKEN: ${{ github.token }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}

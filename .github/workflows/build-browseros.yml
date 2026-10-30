@@ -237,11 +237,11 @@ jobs:
         if: inputs.resource-mode == 'source' && inputs.product == 'browseros'
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: packages/browseros-agent/package.json
+          bun-version-file: packages/reBrowser-agent/package.json
 
       - name: Install BrowserOS server dependencies
         if: inputs.resource-mode == 'source' && inputs.product == 'browseros'
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
         run: bun ci
 
       - name: Setup BrowserOS neo server toolchain
@@ -266,7 +266,7 @@ jobs:
         id: pin
         run: |
           set -euo pipefail
-          . packages/browseros/CHROMIUM_VERSION
+          . packages/reBrowser/CHROMIUM_VERSION
           version="$MAJOR.$MINOR.$BUILD.$PATCH"
 
           # Keep the checkout outside the workspace so actions/checkout
@@ -306,19 +306,19 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
           set -euo pipefail
-          uv run --project packages/browseros browseros source cache restore \
+          uv run --project packages/reBrowser browseros source cache restore \
             --key "${{ steps.pin.outputs.cache_key }}" \
             --root "$CHROMIUM_ROOT"
 
       - name: Ensure chromium checkout at pinned tag
         run: |
           set -euo pipefail
-          uv run --project packages/browseros browseros source ensure \
+          uv run --project packages/reBrowser browseros source ensure \
             --root "$CHROMIUM_ROOT" --step checkout \
             --repair-cached-depot-tools
 
       - name: Reset chromium tree (clean module)
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         run: |
           set -euo pipefail
           uv run browseros build --modules clean \
@@ -330,7 +330,7 @@ jobs:
       - name: Sync chromium dependencies (gclient)
         run: |
           set -euo pipefail
-          uv run --project packages/browseros browseros source ensure \
+          uv run --project packages/reBrowser browseros source ensure \
             --root "$CHROMIUM_ROOT" --step sync \
             --repair-cached-depot-tools
 
@@ -353,7 +353,7 @@ jobs:
           R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
           set -euo pipefail
-          uv run --project packages/browseros browseros source cache save \
+          uv run --project packages/reBrowser browseros source cache save \
             --key "${{ steps.pin.outputs.cache_key }}" \
             --root "$CHROMIUM_ROOT"
 
@@ -398,7 +398,7 @@ jobs:
           "CODE_SIGN_TOOL_PATH=$($tool.Directory.FullName)" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
 
       - name: Build ${{ inputs.product }}
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         env:
           BROWSEROS_BUILD_SOURCE_SHA: ${{ steps.source.outputs.sha }}
           BROWSEROS_SERVER_RESOURCE_VERSION: ${{ inputs.product == 'browseros' && inputs.server-version || '' }}
@@ -503,8 +503,8 @@ jobs:
           retention-days: 14
           compression-level: 0
           path: |
-            packages/browseros/releases/*/${{ steps.artifact_prefix.outputs.value }}_*.dmg
-            packages/browseros/releases/*/${{ steps.artifact_prefix.outputs.value }}_*.AppImage
-            packages/browseros/releases/*/${{ steps.artifact_prefix.outputs.value }}_*.deb
-            packages/browseros/releases/*/${{ steps.artifact_prefix.outputs.value }}_*_installer.exe
-            packages/browseros/releases/*/${{ steps.artifact_prefix.outputs.value }}_*_installer.zip
+            packages/reBrowser/releases/*/${{ steps.artifact_prefix.outputs.value }}_*.dmg
+            packages/reBrowser/releases/*/${{ steps.artifact_prefix.outputs.value }}_*.AppImage
+            packages/reBrowser/releases/*/${{ steps.artifact_prefix.outputs.value }}_*.deb
+            packages/reBrowser/releases/*/${{ steps.artifact_prefix.outputs.value }}_*_installer.exe
+            packages/reBrowser/releases/*/${{ steps.artifact_prefix.outputs.value }}_*_installer.zip

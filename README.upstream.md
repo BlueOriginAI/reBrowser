@@ -109,7 +109,7 @@ Every session is saved as a scrubbable video on your disk with a step-by-step ac
 <table>
 <tr>
 <td width="110" align="center" valign="middle">
-<img src="packages/browseros/resources/browseros/icons/product_logo_192.png" alt="" width="72" />
+<img src="packages/reBrowser/resources/browseros/icons/product_logo_192.png" alt="" width="72" />
 </td>
 <td valign="middle">
 <h3>BrowserOS, the AI browser for humans</h3>
@@ -152,12 +152,12 @@ Both browsers ship from this monorepo. Two main subsystems: the **browser** (Chr
 
 ```
 BrowserOS/
-├── packages/browseros/              # Chromium fork + build system (Python)
+├── packages/reBrowser/              # Chromium fork + build system (Python)
 │   ├── chromium_patches/            # Patches applied to Chromium source
 │   ├── build/                       # Build CLI and modules
 │   └── resources/                   # Icons, entitlements, signing
 │
-└── packages/browseros-agent/        # Agent platform (TypeScript / Rust / Go)
+└── packages/reBrowser-agent/        # Agent platform (TypeScript / Rust / Go)
     ├── apps/
     │   ├── claw-server-rust/        # BrowserOS neo backend: MCP endpoint + JSON API (Rust)
     │   ├── claw-app/                # BrowserOS neo dashboard extension (WXT + React)
@@ -189,21 +189,21 @@ BrowserOS/
 
 | Package | What it does |
 |---------|-------------|
-| [`packages/browseros`](packages/browseros/) | Chromium fork: patches, build system, signing |
-| [`apps/claw-server-rust`](packages/browseros-agent/apps/claw-server-rust/) | BrowserOS neo backend: MCP endpoint agents connect to, plus the API behind the dashboard |
-| [`apps/claw-app`](packages/browseros-agent/apps/claw-app/) | BrowserOS neo new-tab dashboard: watch, replay, and manage agent sessions |
-| [`apps/claw-onboard`](packages/browseros-agent/apps/claw-onboard/) | BrowserOS neo first-run onboarding |
-| [`apps/server`](packages/browseros-agent/apps/server/) | Bun server exposing the browser MCP tools and running the BrowserOS AI agent loop |
-| [`apps/app`](packages/browseros-agent/apps/app/) | BrowserOS extension: new tab, side panel chat, onboarding, settings |
-| [`apps/app-onboard`](packages/browseros-agent/apps/app-onboard/) | BrowserOS first-run onboarding |
-| [`apps/cli`](packages/browseros-agent/apps/cli/) | Go CLI: control BrowserOS from the terminal or AI coding agents |
+| [`packages/reBrowser`](packages/reBrowser/) | Chromium fork: patches, build system, signing |
+| [`apps/claw-server-rust`](packages/reBrowser-agent/apps/claw-server-rust/) | BrowserOS neo backend: MCP endpoint agents connect to, plus the API behind the dashboard |
+| [`apps/claw-app`](packages/reBrowser-agent/apps/claw-app/) | BrowserOS neo new-tab dashboard: watch, replay, and manage agent sessions |
+| [`apps/claw-onboard`](packages/reBrowser-agent/apps/claw-onboard/) | BrowserOS neo first-run onboarding |
+| [`apps/server`](packages/reBrowser-agent/apps/server/) | Bun server exposing the browser MCP tools and running the BrowserOS AI agent loop |
+| [`apps/app`](packages/reBrowser-agent/apps/app/) | BrowserOS extension: new tab, side panel chat, onboarding, settings |
+| [`apps/app-onboard`](packages/reBrowser-agent/apps/app-onboard/) | BrowserOS first-run onboarding |
+| [`apps/cli`](packages/reBrowser-agent/apps/cli/) | Go CLI: control BrowserOS from the terminal or AI coding agents |
 
 ### Contributing
 
 We'd love your help making BrowserOS neo and BrowserOS better. Start with the [Contributing Guide](CONTRIBUTING.md), which routes you to the right path.
 
-- **BrowserOS neo** (TypeScript, React, Rust): [setup guide](packages/browseros-agent/CONTRIBUTING.md). Around 15 minutes.
-- **BrowserOS** (TypeScript, React, Bun): [setup guide](packages/browseros-agent/CONTRIBUTING.BrowserOS.md). Around 15 minutes.
+- **BrowserOS neo** (TypeScript, React, Rust): [setup guide](packages/reBrowser-agent/CONTRIBUTING.md). Around 15 minutes.
+- **BrowserOS** (TypeScript, React, Bun): [setup guide](packages/reBrowser-agent/CONTRIBUTING.BrowserOS.md). Around 15 minutes.
 - **Browser** (C++, Python): requires ~100GB of disk. See the [root guide](CONTRIBUTING.md#browser-development).
 
 ## Credits

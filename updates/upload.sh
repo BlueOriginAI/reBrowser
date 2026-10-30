@@ -94,7 +94,7 @@ for selection in "${selections[@]}"; do
     esac
 done
 
-cd "$REPO_ROOT/packages/browseros"
+cd "$REPO_ROOT/packages/reBrowser"
 command=(uv run browseros release feeds publish-local "${keys[@]}")
 "${command[@]}"
 

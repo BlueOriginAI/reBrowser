@@ -141,7 +141,7 @@ jobs:
               echo "browseros release extensions ${args[*]}"
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
-            uv run --directory packages/browseros browseros \
+            uv run --directory packages/reBrowser browseros \
               release extensions "${args[@]}"
 
             if [ "$feed_channel" = "alpha" ]; then
@@ -169,7 +169,7 @@ jobs:
 
             # The merged snapshot is the durability barrier. A later R2 failure
             # is retryable; publishing before this returns would recreate drift.
-            packages/browseros-agent/scripts/release/commit-update-snapshot.sh \
+            packages/reBrowser-agent/scripts/release/commit-update-snapshot.sh \
               "$DEFAULT_BRANCH" \
               "chore(release): update extension ${feed_channel} feeds" \
               "${snapshot_paths[@]}"
@@ -178,7 +178,7 @@ jobs:
             if [ "$ALLOW_DOWNGRADE" = "true" ]; then
               publish_flags+=(--allow-downgrade)
             fi
-            uv run --directory packages/browseros browseros \
+            uv run --directory packages/reBrowser browseros \
               release feeds publish-local \
               "${feed_keys[@]}" \
               "${publish_flags[@]}"

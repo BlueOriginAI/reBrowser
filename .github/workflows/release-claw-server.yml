@@ -142,7 +142,7 @@ jobs:
 
       - name: Resolve release
         id: release
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
           EVENT_NAME: ${{ github.event_name }}
@@ -202,7 +202,7 @@ jobs:
             fi
           fi
 
-          node packages/browseros-agent/scripts/release/cap-release-changelog.mjs \
+          node packages/reBrowser-agent/scripts/release/cap-release-changelog.mjs \
             --input "$CHANGELOG_FILE" \
             --output "$NOTES_FILE" \
             --max-entries 15 \
@@ -261,7 +261,7 @@ jobs:
           cargo --version
 
       - name: Run server workspace tests
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
         run: cargo test --workspace --locked
 
   harness-integrations-test:
@@ -294,7 +294,7 @@ jobs:
 
       - name: Test native harness filesystem reconciliation
         shell: bash
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
         run: cargo test --locked -p harness-integrations
 
   build:
@@ -409,7 +409,7 @@ jobs:
               if metadata.get(field) != value:
                   raise SystemExit(f"Immutable R2 object binding mismatch for {key}: {field}")
 
-          path = Path("packages/browseros-agent/dist/prod/claw-server-rust") / name
+          path = Path("packages/reBrowser-agent/dist/prod/claw-server-rust") / name
           path.parent.mkdir(parents=True, exist_ok=True)
           path.write_bytes(data)
           with output.open("a") as handle:
@@ -432,13 +432,13 @@ jobs:
       - name: Stamp release version
         if: ${{ steps.recover.outputs.recovered != 'true' }}
         shell: bash
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         run: uv run browseros release component stamp --component claw-server-rust --version "$VERSION"
 
       - name: Build BrowserClaw server
         if: ${{ steps.recover.outputs.recovered != 'true' }}
         shell: bash
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
         env:
           CLAW_POSTHOG_KEY: ${{ secrets.CLAW_POSTHOG_KEY }}
           # Optional. Without it the server writes its redacted run-failure reports to a
@@ -470,7 +470,7 @@ jobs:
       - name: Verify stamped binary version
         if: ${{ steps.recover.outputs.recovered != 'true' }}
         shell: bash
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
         run: |
           set -euo pipefail
           BINARY_PATH="target/$RUST_TARGET/release/browseros-claw-server-rs$BINARY_EXT"
@@ -496,7 +496,7 @@ jobs:
           from pathlib import Path
 
           repo = Path(os.environ["GITHUB_WORKSPACE"])
-          agent = repo / "packages/browseros-agent"
+          agent = repo / "packages/reBrowser-agent"
           version = os.environ["VERSION"]
           target = os.environ["BROWSEROS_TARGET"]
           rust_target = os.environ["RUST_TARGET"]
@@ -566,7 +566,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          uv run --project packages/browseros python <<'PY'
+          uv run --project packages/reBrowser python <<'PY'
           import os
           import tempfile
           from pathlib import Path
@@ -992,8 +992,8 @@ jobs:
           VERSION: ${{ needs.prepare.outputs.version }}
         run: |
           set -euo pipefail
-          cargo_toml="packages/browseros-agent/apps/claw-server-rust/Cargo.toml"
-          lock="packages/browseros-agent/Cargo.lock"
+          cargo_toml="packages/reBrowser-agent/apps/claw-server-rust/Cargo.toml"
+          lock="packages/reBrowser-agent/Cargo.lock"
           branch="chore-bump-claw-server-rust-v${VERSION}"
 
           git fetch origin "$DEFAULT_BRANCH" --no-tags
@@ -1007,7 +1007,7 @@ jobs:
               exit 0
             fi
           fi
-          uv run --directory packages/browseros browseros release component stamp \
+          uv run --directory packages/reBrowser browseros release component stamp \
             --component claw-server-rust \
             --version "$VERSION"
           if git diff --quiet -- "$cargo_toml" "$lock"; then exit 0; fi
@@ -1022,7 +1022,7 @@ jobs:
                 --head "$branch")"
             fi
             head_sha="$(gh pr view "$pr_url" --json headRefOid --jq '.headRefOid')"
-            packages/browseros-agent/scripts/release/merge-release-pr.sh "$pr_url" "$head_sha"
+            packages/reBrowser-agent/scripts/release/merge-release-pr.sh "$pr_url" "$head_sha"
             exit 0
           fi
 
@@ -1038,4 +1038,4 @@ jobs:
             --body "Reflects the published claw-server/v${VERSION} resources." \
             --base "$DEFAULT_BRANCH" \
             --head "$branch")"
-          packages/browseros-agent/scripts/release/merge-release-pr.sh "$pr_url" "$head_sha"
+          packages/reBrowser-agent/scripts/release/merge-release-pr.sh "$pr_url" "$head_sha"

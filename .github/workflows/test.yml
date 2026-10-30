@@ -2,7 +2,7 @@ name: Tests
 
 # A discover job computes which suites a change touches (via Turbo) and runs
 # only those, so unaffected suites are never spun up. Suites map from affected
-# packages in packages/browseros-agent/ci/affected-suites.ts; a gate job rolls
+# packages in packages/reBrowser-agent/ci/affected-suites.ts; a gate job rolls
 # up pass/skip and the summary job posts the sticky per-suite table.
 on:
   pull_request:
@@ -18,7 +18,7 @@ on:
       - .github/workflows/reusable-build-macos-nightly.yml
       - .github/workflows/publish-server-ota.yml
       - .github/workflows/release-*.yml
-      - packages/browseros-agent/**
+      - packages/reBrowser-agent/**
   workflow_dispatch:
 
 permissions:
@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
     outputs:
       matrix: ${{ steps.affected.outputs.matrix }}
       has_any: ${{ steps.affected.outputs.has_any }}
@@ -53,7 +53,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: packages/browseros-agent/package.json
+          bun-version-file: packages/reBrowser-agent/package.json
 
       - name: Install dependencies
         run: bun ci
@@ -73,7 +73,7 @@ jobs:
     timeout-minutes: ${{ matrix.needs_rust && 45 || 20 }}
     defaults:
       run:
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
     strategy:
       fail-fast: false
       matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
@@ -85,7 +85,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: packages/browseros-agent/package.json
+          bun-version-file: packages/reBrowser-agent/package.json
 
       - name: Setup Rust
         if: matrix.needs_rust == true
@@ -99,7 +99,7 @@ jobs:
         if: matrix.needs_rust == true
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: packages/browseros-agent
+          workspaces: packages/reBrowser-agent
           # Without this the key embeds GITHUB_JOB, so the warm cache produced
           # on main by a differently named job could never be restored here.
           shared-key: browseros-agent
@@ -140,7 +140,7 @@ jobs:
         id: browseros-cache
         uses: actions/cache@v6.1.0
         with:
-          path: packages/browseros-agent/.ci/bin/BrowserOS.AppImage
+          path: packages/reBrowser-agent/.ci/bin/BrowserOS.AppImage
           key: ${{ steps.browseros-cache-key.outputs.key }}
 
       - name: Download BrowserOS
@@ -168,18 +168,18 @@ jobs:
           chmod +x .ci/bin/browseros
 
       - name: Create dev env file
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
         run: cp .env.development.example .env.development
 
       - name: Run ${{ matrix.suite }} tests
         id: test
         env:
-          BROWSEROS_BINARY: ${{ github.workspace }}/packages/browseros-agent/.ci/bin/browseros
+          BROWSEROS_BINARY: ${{ github.workspace }}/packages/reBrowser-agent/.ci/bin/browseros
           # The hidden-window APIs that required X11 have been retired. Use the
           # suite's headless default so native input does not depend on Xvfb focus.
           BROWSEROS_TEST_HEADLESS: "true"
           BROWSEROS_TEST_EXTRA_ARGS: --no-sandbox --disable-dev-shm-usage
-          BROWSEROS_JUNIT_PATH: ${{ github.workspace }}/packages/browseros-agent/${{ matrix.junit_path }}
+          BROWSEROS_JUNIT_PATH: ${{ github.workspace }}/packages/reBrowser-agent/${{ matrix.junit_path }}
         run: |
           set +e
           mkdir -p test-results
@@ -232,7 +232,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: junit-${{ matrix.suite }}
-          path: packages/browseros-agent/${{ matrix.junit_path }}
+          path: packages/reBrowser-agent/${{ matrix.junit_path }}
 
       - name: Summarize suite result
         if: always()

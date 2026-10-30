@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: packages/browseros-agent
+        working-directory: packages/reBrowser-agent
 
     steps:
       - name: Checkout code
@@ -20,7 +20,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: packages/browseros-agent/package.json
+          bun-version-file: packages/reBrowser-agent/package.json
 
       - name: Install dependencies
         run: bun ci

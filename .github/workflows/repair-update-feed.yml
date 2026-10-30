@@ -74,5 +74,5 @@ jobs:
           if [ "$PUBLISH" = "true" ]; then
             args+=(--publish)
           fi
-          uv run --directory packages/browseros browseros \
+          uv run --directory packages/reBrowser browseros \
             release feeds publish-local "${args[@]}"

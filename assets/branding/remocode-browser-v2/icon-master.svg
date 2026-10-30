@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+ <defs>
+  <linearGradient id="coral" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#E86F4C"/><stop offset="1" stop-color="#EB5F37"/></linearGradient>
+  <clipPath id="facets"><path d="M404 224H620L800 404V620L620 800H404L224 620V404Z"/></clipPath>
+  <mask id="cuts"><rect width="1024" height="1024" fill="white"/><circle cx="512" cy="512" r="186" fill="black"/><path d="M180 844L844 180" stroke="black" stroke-width="42"/></mask>
+ </defs>
+ <rect x="92" y="92" width="840" height="840" rx="175" fill="url(#coral)"/>
+ <circle cx="512" cy="512" r="296" fill="#FFFAF6" clip-path="url(#facets)" mask="url(#cuts)"/>
+</svg>

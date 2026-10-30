@@ -11,7 +11,7 @@ on:
     paths:
       - .github/workflows/turbo-cache-warm.yml
       - .cargo/config.toml
-      - packages/browseros-agent/**
+      - packages/reBrowser-agent/**
   schedule:
     # Weekly full warm to backstop GitHub's 7-day unused-cache eviction for
     # packages that rarely change (a cache read counts as access, so frequently
@@ -28,7 +28,7 @@ concurrency:
 
 defaults:
   run:
-    working-directory: packages/browseros-agent
+    working-directory: packages/reBrowser-agent
 
 jobs:
   warm:
@@ -45,7 +45,7 @@ jobs:
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
-          bun-version-file: packages/browseros-agent/package.json
+          bun-version-file: packages/reBrowser-agent/package.json
 
       - name: Start Turbo remote cache (GitHub Actions cache)
         uses: rharkor/caching-for-turbo@2238fae6eb9a9936f92356f54cb3660200d105e7 # v2.5.1
@@ -84,7 +84,7 @@ jobs:
       - name: Cache Rust build
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: packages/browseros-agent
+          workspaces: packages/reBrowser-agent
           # Must match the Tests workflow exactly. Without it the key embeds
           # GITHUB_JOB and this cache would be unreadable there.
           shared-key: browseros-agent

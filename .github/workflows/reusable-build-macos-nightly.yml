@@ -181,7 +181,7 @@ jobs:
           EXPECTED_VERSION: ${{ inputs.browser_version }}
         run: |
           set -euo pipefail
-          cd "$BROWSEROS_REPO/packages/browseros"
+          cd "$BROWSEROS_REPO/packages/reBrowser"
           version="$(uv run python bos_build/scripts/bump_version.py --mode none)"
           test "$version" = "$EXPECTED_VERSION"
 
@@ -191,7 +191,7 @@ jobs:
           VERSION: ${{ inputs.browser_version }}
         run: |
           set -euo pipefail
-          release_dir="$BROWSEROS_REPO/packages/browseros/releases/$VERSION"
+          release_dir="$BROWSEROS_REPO/packages/reBrowser/releases/$VERSION"
           if [ -d "$release_dir" ]; then
             find "$release_dir" -maxdepth 1 -type f -name 'BrowserOS_*.dmg' -delete
           fi
@@ -237,7 +237,7 @@ jobs:
           SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
         run: |
           set -euo pipefail
-          cd "$BROWSEROS_REPO/packages/browseros"
+          cd "$BROWSEROS_REPO/packages/reBrowser"
           uv run browseros build \
             --profile nightly-macos \
             --product "$PRODUCT" \
@@ -272,8 +272,8 @@ jobs:
         with:
           name: ${{ steps.inputs.outputs.artifact_name }}
           path: |
-            ${{ steps.inputs.outputs.browseros_repo }}/packages/browseros/releases/${{ inputs.browser_version }}/${{ steps.inputs.outputs.artifact_glob }}
-            ${{ steps.inputs.outputs.browseros_repo }}/packages/browseros/releases/${{ inputs.browser_version }}/release.json
+            ${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser/releases/${{ inputs.browser_version }}/${{ steps.inputs.outputs.artifact_glob }}
+            ${{ steps.inputs.outputs.browseros_repo }}/packages/reBrowser/releases/${{ inputs.browser_version }}/release.json
           retention-days: 14
           if-no-files-found: error
           overwrite: true

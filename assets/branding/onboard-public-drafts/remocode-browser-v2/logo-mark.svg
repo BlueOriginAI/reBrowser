@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+ <defs>
+  <clipPath id="facets"><path d="M404 224H620L800 404V620L620 800H404L224 620V404Z"/></clipPath>
+  <mask id="cuts"><rect width="1024" height="1024" fill="white"/><circle cx="512" cy="512" r="186" fill="black"/><path d="M180 844L844 180" stroke="black" stroke-width="42"/></mask>
+ </defs>
+ <circle cx="512" cy="512" r="296" fill="#EB633B" clip-path="url(#facets)" mask="url(#cuts)"/>
+</svg>

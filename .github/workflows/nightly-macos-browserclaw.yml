@@ -44,7 +44,7 @@ jobs:
 
       - name: Reconcile product transaction
         id: transaction
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         env:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
           GH_TOKEN: ${{ github.token }}
@@ -218,7 +218,7 @@ jobs:
 
       - name: Recover product transaction
         id: recovery
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         run: |
           set -euo pipefail
           record="$RUNNER_TEMP/release-suite.json"
@@ -269,7 +269,7 @@ jobs:
 
       - name: Render shared extension feeds with the selected product pin
         if: steps.recovery.outputs.state == 'open'
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         env:
           EXTENSION_VERSION: ${{ needs.transaction.outputs.browserclaw_version }}
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
@@ -285,7 +285,7 @@ jobs:
 
       - name: Reconcile and merge product state
         if: steps.recovery.outputs.state == 'open'
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         env:
           BASE_SHA: ${{ steps.baseline.outputs.sha }}
         run: |
@@ -319,7 +319,7 @@ jobs:
             --repo "$GITHUB_REPOSITORY"
 
       - name: Verify merged transaction and restore current committed feeds
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         run: |
           set -euo pipefail
           record="$RUNNER_TEMP/release-suite.json"
@@ -349,7 +349,7 @@ jobs:
             updates/server/appcast-claw-server.alpha.xml
 
       - name: Publish immutable signed browser artifact
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
@@ -363,7 +363,7 @@ jobs:
             --artifact-root "$RUNNER_TEMP/nightly-browserclaw"
 
       - name: Publish current committed product feeds
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         env:
           R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
           R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
@@ -379,7 +379,7 @@ jobs:
             --publish
 
       - name: Reconcile product rolling nightly release
-        working-directory: packages/browseros
+        working-directory: packages/reBrowser
         env:
           VERSION: ${{ needs.transaction.outputs.browser_version }}
         run: |

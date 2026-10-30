@@ -8,16 +8,16 @@ Both browsers ship from this one repo, and there are four places you can work. P
 
 | Path | You would work on | Stack | Cost to set up |
 |---|---|---|---|
-| **[BrowserOS neo](packages/browseros-agent/CONTRIBUTING.md)** | The cockpit new tab, the MCP surface agents connect to, session replay | TypeScript, React, Rust | ~15 minutes |
-| **[BrowserOS](packages/browseros-agent/CONTRIBUTING.BrowserOS.md)** | The side panel chat, the agent loop, scheduled tasks, settings | TypeScript, React, Bun | ~15 minutes |
+| **[BrowserOS neo](packages/reBrowser-agent/CONTRIBUTING.md)** | The cockpit new tab, the MCP surface agents connect to, session replay | TypeScript, React, Rust | ~15 minutes |
+| **[BrowserOS](packages/reBrowser-agent/CONTRIBUTING.BrowserOS.md)** | The side panel chat, the agent loop, scheduled tasks, settings | TypeScript, React, Bun | ~15 minutes |
 | **CLI** | Driving BrowserOS from a terminal or a coding agent | Go | ~5 minutes |
 | **Browser** | Chromium patches, the build system, platform features | C++, Python | ~100GB disk, hours |
 
-Most contributors start with BrowserOS neo or BrowserOS. Both live in `packages/browseros-agent` and share one toolchain, so setting up for one gets you most of the way to the other.
+Most contributors start with BrowserOS neo or BrowserOS. Both live in `packages/reBrowser-agent` and share one toolchain, so setting up for one gets you most of the way to the other.
 
 ## Before you start
 
-**Use Bun.** It is the only supported package manager and runtime for the agent monorepo. `packages/browseros-agent/package.json` pins the version and sets every alternative to `please-use-bun`, so npm, yarn and pnpm are rejected outright.
+**Use Bun.** It is the only supported package manager and runtime for the agent monorepo. `packages/reBrowser-agent/package.json` pins the version and sets every alternative to `please-use-bun`, so npm, yarn and pnpm are rejected outright.
 
 Install it by following [the Bun installation guide](https://bun.sh/docs/installation). CI installs the exact pinned version by reading that same `package.json`, so matching it locally keeps you on the same dependency resolution. Check yours with `bun --version`.
 
@@ -34,7 +34,7 @@ Building the Chromium fork is a different kind of work from everything above. On
 **Then build:**
 
 ```bash
-cd packages/browseros
+cd packages/reBrowser
 uv sync                                   # once
 cp .env.example .env                      # once, then fill in what you need
 
@@ -46,7 +46,7 @@ uv run browseros build --preset debug --product browserclaw --chromium-src /path
 uv run browseros build --preset release --show-plan
 ```
 
-Builds take one to three hours on modern hardware. `browseros build` produces one binary for one product on one platform; releasing is a separate workflow. For the full picture, read [`packages/browseros/bos_build/README.md`](packages/browseros/bos_build/README.md).
+Builds take one to three hours on modern hardware. `browseros build` produces one binary for one product on one platform; releasing is a separate workflow. For the full picture, read [`packages/reBrowser/bos_build/README.md`](packages/reBrowser/bos_build/README.md).
 
 ## Opening a pull request
 
@@ -58,7 +58,7 @@ Builds take one to three hours on modern hardware. `browseros build` produces on
 Run the checks before you push:
 
 ```bash
-cd packages/browseros-agent
+cd packages/reBrowser-agent
 bun run check     # lint, typecheck and fallow in one pass
 bun test          # the TypeScript suites
 ```
