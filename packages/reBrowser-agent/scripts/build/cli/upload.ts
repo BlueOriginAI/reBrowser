@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { writeFile } from 'node:fs/promises'
+import { mkdtemp, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -268,7 +268,8 @@ async function uploadCliRelease(
     checksumsContent: readFileSync(checksumsPath, 'utf-8'),
     repo,
   })
-  const manifestPath = join(tmpdir(), `browseros-cli-manifest-${version}.json`)
+  const feedDir = await mkdtemp(join(tmpdir(), 'browseros-cli-feed-'))
+  const manifestPath = join(feedDir, 'manifest.json')
   await writeFile(
     manifestPath,
     `${JSON.stringify(manifest, null, 2)}\n`,
@@ -280,7 +281,7 @@ async function uploadCliRelease(
   uploadAsset(FEED_TAG, repo, manifestPath)
   log.success(`Published ${FEED_TAG}/manifest.json`)
 
-  const versionTxtPath = join(tmpdir(), 'browseros-cli-version.txt')
+  const versionTxtPath = join(feedDir, 'version.txt')
   await writeFile(versionTxtPath, version, 'utf-8')
   uploadAsset(FEED_TAG, repo, versionTxtPath)
   log.success(`Published ${FEED_TAG}/version.txt`)
