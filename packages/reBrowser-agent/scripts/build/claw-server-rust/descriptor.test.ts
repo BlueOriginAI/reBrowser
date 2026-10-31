@@ -15,7 +15,7 @@ import { clawServerRustBuildProduct } from './descriptor'
 const agentRoot = resolve(import.meta.dir, '../../..')
 
 describe('BrowserClaw Rust build descriptor', () => {
-  it('matches the release artifact and R2 contract', () => {
+  it('matches the release artifact contract', () => {
     expect(clawServerRustBuildProduct).toMatchObject({
       packageDir: 'apps/claw-server-rust',
       versionSource: {
@@ -29,7 +29,6 @@ describe('BrowserClaw Rust build descriptor', () => {
       archiveFilesOnly: true,
       env: {
         requiredInlineEnvKeys: ['CLAW_POSTHOG_KEY'],
-        defaultR2UploadPrefix: 'claw-server-rust/prod-resources',
       },
     })
   })
@@ -49,13 +48,12 @@ describe('BrowserClaw Rust build descriptor', () => {
     expect(config.envVars.CLAW_POSTHOG_KEY).toBe('phc_browseros_ci')
   })
 
-  it('defaults to all five uploads and stages only the canonical skill', () => {
+  it('defaults to all five targets and stages only the canonical skill', () => {
     const args = parseBuildArgs([], clawServerRustBuildProduct)
     const manifest = loadManifest(
       resolve(agentRoot, clawServerRustBuildProduct.defaultManifestPath),
     )
 
-    expect(args.upload).toBe(true)
     expect(args.targets.map((target) => target.id)).toEqual(
       resolveTargets('all').map((target) => target.id),
     )

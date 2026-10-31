@@ -1,9 +1,4 @@
-import type {
-  BuildProductDescriptor,
-  BuildTarget,
-  R2Config,
-  TargetId,
-} from '../src'
+import type { BuildProductDescriptor, BuildTarget, TargetId } from '../src'
 
 export function testProduct(
   overrides: Partial<BuildProductDescriptor> = {},
@@ -24,8 +19,6 @@ export function testProduct(
         LOG_LEVEL: 'info',
         TEST_CONFIG_URL: 'https://test.invalid/config',
       },
-      defaultR2UploadPrefix: 'test-server/prod-resources',
-      defaultR2DownloadPrefix: 'artifacts/vendor',
     },
     ...overrides,
   }
@@ -49,13 +42,4 @@ export function testTarget(
     bunTarget: `bun-${id}`,
     ...overrides,
   }
-}
-
-export const fakeR2Config: R2Config = {
-  accountId: 'test',
-  accessKeyId: 'test',
-  secretAccessKey: 'test',
-  bucket: 'browseros-test',
-  downloadPrefix: 'artifacts/vendor',
-  uploadPrefix: 'server/prod-resources',
 }

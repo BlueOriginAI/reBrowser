@@ -49,14 +49,6 @@ on:
         description: "Immutable source commit"
         value: ${{ jobs.prepare.outputs.release_sha }}
     secrets:
-      R2_ACCOUNT_ID:
-        required: true
-      R2_ACCESS_KEY_ID:
-        required: true
-      R2_SECRET_ACCESS_KEY:
-        required: true
-      R2_BUCKET:
-        required: true
 
 permissions:
   contents: write
@@ -117,10 +109,6 @@ jobs:
           DEFAULT_BRANCH: ${{ github.event.repository.default_branch || 'main' }}
           EVENT_NAME: ${{ github.event_name }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           REF_NAME: ${{ github.ref_name }}
           REQUESTED_VERSION: ${{ inputs.version || '' }}
         run: |
@@ -132,7 +120,7 @@ jobs:
             --ref-name "$REF_NAME" \
             --requested-version "$REQUESTED_VERSION" \
             --release-ref HEAD \
-            --r2-allocations \
+            --resource-allocations \
             --repo "$GITHUB_REPOSITORY" \
             --github-output "$GITHUB_OUTPUT" \
             --github-summary "$GITHUB_STEP_SUMMARY"
@@ -208,10 +196,6 @@ jobs:
     env:
       VERSION: ${{ needs.prepare.outputs.version }}
       RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      R2_BUCKET: ${{ secrets.R2_BUCKET }}
       RELEASE_SHA: ${{ needs.prepare.outputs.release_sha }}
       NODE_ENV: production
     steps:
@@ -236,9 +220,9 @@ jobs:
         working-directory: packages/reBrowser
         run: uv run browseros release component stamp --component app-onboard --version "$VERSION"
 
-      - name: Publish onboarding resources to R2
+      - name: Build onboarding resources
         working-directory: packages/reBrowser-agent
-        run: bun scripts/build/app-onboard.ts --upload --versioned-only
+        run: bun scripts/build/app-onboard.ts
 
       - name: Attach onboarding zip to GitHub release
         working-directory: packages/reBrowser-agent
@@ -261,12 +245,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      AWS_EC2_METADATA_DISABLED: "true"
-      AWS_PAGER: ""
-      AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-      R2_BUCKET: ${{ secrets.R2_BUCKET }}
+      ALIAS_TAG: feed-resources-app-onboard
       RELEASE_SHA: ${{ needs.prepare.outputs.release_sha }}
       RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
       RESERVATION: ${{ needs.prepare.outputs.reservation }}
@@ -277,15 +256,9 @@ jobs:
           fetch-depth: 0
           ref: ${{ needs.prepare.outputs.release_sha }}
 
-      - name: Install AWS CLI
-        run: |
-          python3 -m pip install --user awscli
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
       - name: Verify prepared release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
         run: |
           set -euo pipefail
           release="$(gh release view "$RELEASE_TAG" --json isDraft,targetCommitish,assets)"
@@ -302,33 +275,17 @@ jobs:
               exit 1
             fi
           fi
-          name="browseros-app-onboard-resources.zip"
-          key="app-onboard/prod-resources/${VERSION}/${name}"
-          metadata="$(aws s3api head-object --endpoint-url "$R2_ENDPOINT" --region auto --bucket "$R2_BUCKET" --key "$key" --query Metadata --output json)"
-          if ! jq -e \
-            --arg component "app-onboard/prod-resources" \
-            --arg release_sha "$RELEASE_SHA" \
-            --arg target "universal" \
-            --arg version "$VERSION" \
-            '.["release-sha"] == $release_sha and .component == $component and .target == $target and .version == $version and ((.sha256 // "") | test("^[0-9a-f]{64}$"))' \
-            <<< "$metadata" >/dev/null; then
-            echo "::error::Invalid immutable R2 binding for $key"
-            exit 1
-          fi
-          artifact_dir="$(mktemp -d)"
-          canonical="$artifact_dir/r2-${name}"
-          aws s3api get-object --endpoint-url "$R2_ENDPOINT" --region auto --bucket "$R2_BUCKET" --key "$key" "$canonical" >/dev/null
-          canonical_sha="$(sha256sum "$canonical" | cut -d ' ' -f1)"
-          if [ "$canonical_sha" != "$(jq -r '.sha256' <<< "$metadata")" ]; then
-            echo "::error::Canonical R2 checksum does not match its binding for $key"
-            exit 1
-          fi
-          gh release download "$RELEASE_TAG" --pattern "$name" --dir "$artifact_dir"
-          draft_sha="$(sha256sum "$artifact_dir/$name" | cut -d ' ' -f1)"
-          if [ "$draft_sha" != "$canonical_sha" ]; then
-            echo "::error::Draft asset does not match canonical R2 object: $name"
-            exit 1
-          fi
+          artifact_dir="$RUNNER_TEMP/component-assets"
+          mkdir -p "$artifact_dir"
+          gh release download "$RELEASE_TAG" \
+            --pattern "browseros-app-onboard-resources.zip" \
+            --dir "$artifact_dir"
+          python3 scripts/ci/component_manifest.py \
+            --component app-onboard \
+            --version "$VERSION" \
+            --release-sha "$RELEASE_SHA" \
+            --assets-dir "$artifact_dir" \
+            --output "$artifact_dir/component-manifest.json"
 
       - name: Create annotated release tag
         run: |
@@ -355,26 +312,47 @@ jobs:
             gh release edit "$RELEASE_TAG" --draft=false --latest=false
           fi
 
-      - name: Copy versioned object to latest
+      - name: Publish live component resources
         env:
-          R2_ENDPOINT: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          name="browseros-app-onboard-resources.zip"
-          source="app-onboard/prod-resources/${VERSION}/${name}"
-          destination="app-onboard/prod-resources/latest/${name}"
-          aws s3api copy-object --endpoint-url "$R2_ENDPOINT" --region auto --bucket "$R2_BUCKET" --copy-source "$R2_BUCKET/$source" --metadata-directive COPY --key "$destination" >/dev/null
-          metadata="$(aws s3api head-object --endpoint-url "$R2_ENDPOINT" --region auto --bucket "$R2_BUCKET" --key "$destination" --query Metadata --output json)"
-          if ! jq -e \
-            --arg component "app-onboard/prod-resources" \
-            --arg release_sha "$RELEASE_SHA" \
-            --arg target "universal" \
-            --arg version "$VERSION" \
-            '.["release-sha"] == $release_sha and .component == $component and .target == $target and .version == $version and ((.sha256 // "") | test("^[0-9a-f]{64}$"))' \
-            <<< "$metadata" >/dev/null; then
-            echo "::error::Latest R2 binding was not preserved for $destination"
-            exit 1
+          artifact_dir="$RUNNER_TEMP/component-assets"
+          manifest="$artifact_dir/component-manifest.json"
+          gh release upload "$RELEASE_TAG" "$manifest" --clobber
+
+          alias_dir="$RUNNER_TEMP/alias-assets"
+          mkdir -p "$alias_dir"
+          if gh release view "$ALIAS_TAG" >/dev/null 2>&1; then
+            gh release download "$ALIAS_TAG" \
+              --pattern component-manifest.json --dir "$alias_dir" || true
           fi
+          if [ -f "$alias_dir/component-manifest.json" ]; then
+            current="$(jq -r '.version' "$alias_dir/component-manifest.json")"
+            if [ "$current" = "$VERSION" ]; then
+              if [ "$(jq -r '.release_sha' "$alias_dir/component-manifest.json")" != "$RELEASE_SHA" ]; then
+                echo "::error::$ALIAS_TAG already binds $VERSION to a different source"
+                exit 1
+              fi
+              echo "$ALIAS_TAG already points at $VERSION"
+              exit 0
+            fi
+            newest="$(printf '%s\n%s\n' "$VERSION" "$current" | sort -V | tail -n 1)"
+            if [ "$newest" != "$VERSION" ]; then
+              echo "$ALIAS_TAG is already newer at $current; leaving it unchanged"
+              exit 0
+            fi
+          fi
+
+          if ! gh release view "$ALIAS_TAG" >/dev/null 2>&1; then
+            gh release create "$ALIAS_TAG" \
+              --target "$RELEASE_SHA" \
+              --title "BrowserOS onboarding resources feed" \
+              --notes "Managed by the reBrowser release pipeline." \
+              --latest=false
+          fi
+          assets=("$artifact_dir"/*.zip "$manifest")
+          gh release upload "$ALIAS_TAG" "${assets[@]}" --clobber
 
       - name: Summarize onboarding resource keys
         run: |
@@ -383,8 +361,8 @@ jobs:
             echo
             echo "- Version: \`$VERSION\`"
             echo "- GitHub release: \`$RELEASE_TAG\`"
-            echo "- Latest: \`app-onboard/prod-resources/latest/browseros-app-onboard-resources.zip\`"
-            echo "- Versioned: \`app-onboard/prod-resources/${VERSION}/browseros-app-onboard-resources.zip\`"
+            echo "- Latest: \`https://github.com/${{ github.repository }}/releases/download/feed-resources-app-onboard/browseros-app-onboard-resources.zip\`"
+            echo "- Versioned: \`https://github.com/${{ github.repository }}/releases/download/app-onboard/v${VERSION}/browseros-app-onboard-resources.zip\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
   reflect-version:

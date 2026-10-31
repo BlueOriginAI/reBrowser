@@ -17,7 +17,7 @@ from .components import (
     resolve_standalone_version,
 )
 from .github import list_github_releases, list_pull_requests
-from .r2_allocations import discover_r2_component_allocation
+from .resource_allocations import discover_component_allocation
 from .suite import suite_allocation_record_from_pull_request
 
 
@@ -215,15 +215,13 @@ class GitComponentReleaseOperations:
         repo: str,
         remote: str = "origin",
         *,
-        r2_client=None,
-        r2_bucket: str = "",
+        probe_resources: bool = False,
     ) -> None:
         self.repo_root = repo_root.resolve()
         self.repo = repo
         self.remote = remote
         self.default_branch = ""
-        self.r2_client = r2_client
-        self.r2_bucket = r2_bucket
+        self.probe_resources = probe_resources
 
     def _git(self, *args: str, check: bool = True) -> str:
         result = subprocess.run(
@@ -430,12 +428,11 @@ class GitComponentReleaseOperations:
     def resource_allocation(
         self, component: str, version: str, source_sha: str
     ) -> AllocationRecord | None:
-        if self.r2_client is None:
+        if not self.probe_resources:
             return None
-        return discover_r2_component_allocation(
-            self.r2_client,
-            self.r2_bucket,
+        return discover_component_allocation(
             component,
             version,
             source_sha,
+            repo=self.repo,
         )

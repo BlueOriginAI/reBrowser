@@ -108,7 +108,6 @@ jobs:
       contents: read
     with:
       products: browserclaw
-      upload_to_r2: true
       resource_mode: published
       ref: ${{ needs.preflight.outputs.source_sha }}
       server_version: ${{ needs.server.outputs.version }}
@@ -126,7 +125,6 @@ jobs:
     with:
       products: browserclaw
       sign: true
-      upload_to_r2: true
       resource_mode: published
       ref: ${{ needs.preflight.outputs.source_sha }}
       server_version: ${{ needs.server.outputs.version }}
@@ -143,7 +141,6 @@ jobs:
     with:
       products: browserclaw
       arch: universal
-      upload_to_r2: true
       resource_mode: published
       ref: ${{ needs.preflight.outputs.source_sha }}
       server_version: ${{ needs.server.outputs.version }}

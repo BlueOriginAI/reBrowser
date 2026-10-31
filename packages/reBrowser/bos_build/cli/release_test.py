@@ -150,7 +150,6 @@ class FeedPublisherCliTest(unittest.TestCase):
 
     def test_publish_local_defaults_to_dry_run(self):
         with (
-            _configured_r2_env(),
             mock.patch.object(release_feeds, "FeedPublisher") as publisher,
         ):
             publisher.return_value.publish_staged.return_value = True
@@ -172,7 +171,6 @@ class FeedPublisherCliTest(unittest.TestCase):
 
     def test_publish_local_forwards_explicit_write_flags(self):
         with (
-            _configured_r2_env(),
             mock.patch.object(release_feeds, "FeedPublisher") as publisher,
         ):
             publisher.return_value.publish_staged.return_value = True
@@ -195,7 +193,6 @@ class FeedPublisherCliTest(unittest.TestCase):
 
     def test_publish_local_forwards_repair_flag_without_implying_publish(self):
         with (
-            _configured_r2_env(),
             mock.patch.object(release_feeds, "FeedPublisher") as publisher,
         ):
             publisher.return_value.publish_staged.return_value = True
@@ -217,7 +214,6 @@ class FeedPublisherCliTest(unittest.TestCase):
 
     def test_publish_local_forwards_repair_and_publish_independently(self):
         with (
-            _configured_r2_env(),
             mock.patch.object(release_feeds, "FeedPublisher") as publisher,
         ):
             publisher.return_value.publish_staged.return_value = True
@@ -240,7 +236,6 @@ class FeedPublisherCliTest(unittest.TestCase):
 
     def test_publish_local_failure_exits_nonzero(self):
         with (
-            _configured_r2_env(),
             mock.patch.object(release_feeds, "FeedPublisher") as publisher,
         ):
             publisher.return_value.publish_staged.return_value = False
@@ -318,19 +313,6 @@ class CreateReleaseContextTest(unittest.TestCase):
         self.assertEqual(ctx.product.id, "browseros")
 
 
-def _configured_r2_env():
-    return mock.patch.dict(
-        os.environ,
-        {
-            "R2_ACCOUNT_ID": "account",
-            "R2_ACCESS_KEY_ID": "key",
-            "R2_SECRET_ACCESS_KEY": "secret",
-            "R2_BUCKET": "bucket",
-        },
-        clear=False,
-    )
-
-
 def _github_metadata(product: str = "browserclaw"):
     prefix = "BrowserOS_neo" if product == "browserclaw" else "BrowserOS"
     filename = f"{prefix}_v0.49.0_x64_installer.exe"
@@ -375,7 +357,6 @@ class GithubCreateCliIntegrityTest(unittest.TestCase):
     @contextmanager
     def patches(self, metadata=None):
         with (
-            _configured_r2_env(),
             mock.patch.object(github_module, "check_gh_cli", return_value=True),
             mock.patch.object(
                 github_module,

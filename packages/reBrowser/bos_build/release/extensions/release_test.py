@@ -308,76 +308,169 @@ class ExtensionVersionResolutionTest(unittest.TestCase):
                 )
 
 
+class FakeCrxStore:
+    def __init__(self) -> None:
+        self.assets: dict[str, dict[str, bytes]] = {}
+        self.sidecars: dict[str, dict[str, dict]] = {}
+        self.urls: dict[str, tuple[str, str, str]] = {}
+
+    def put(self, spec, version: str, source_sha: str, data: bytes) -> None:
+        tag = f"extensions/v{version}"
+        name = spec.crx_filename(version)
+        self.assets.setdefault(tag, {})[name] = data
+        self.sidecars.setdefault(tag, {})[f"{name}.json"] = {
+            "binding-schema": "browseros-extension-crx-v1",
+            "extension": spec.name,
+            "version": version,
+            "source-sha": source_sha,
+            "sha256": hashlib.sha256(data).hexdigest(),
+            "size": len(data),
+        }
+        from ...lib.github_releases import release_asset_url
+
+        self.urls[release_asset_url(tag, f"{name}.json", "owner/repo")] = (
+            tag,
+            name,
+        )
+        self.urls[release_asset_url(tag, name, "owner/repo")] = (tag, name)
+
+    def fetch_json(self, url):
+        entry = self.urls.get(url)
+        if entry is None:
+            return None
+        tag, name = entry
+        return self.sidecars.get(tag, {}).get(f"{name}.json")
+
+    def download_asset(self, url, destination, **options):
+        tag, name = self.urls[url]
+        data = self.assets[tag][name]
+        expected = options.get("expected_sha256", "")
+        if expected and hashlib.sha256(data).hexdigest() != expected:
+            raise RuntimeError("Downloaded checksum mismatch")
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes(data)
+
+    def release_assets(self, tag, repo):
+        from ..github_store import ReleaseAssetError
+
+        if tag not in self.assets:
+            raise ReleaseAssetError(f"missing {tag}")
+        return {
+            name: {
+                "size": len(data),
+                "sha256": hashlib.sha256(data).hexdigest(),
+            }
+            for name, data in self.assets[tag].items()
+        }
+
+    def _register(self, tag: str, name: str) -> None:
+        from ...lib.github_releases import release_asset_url
+
+        self.urls[release_asset_url(tag, f"{name}.json", "owner/repo")] = (
+            tag,
+            name,
+        )
+        self.urls[release_asset_url(tag, name, "owner/repo")] = (tag, name)
+
+    def upload_immutable_asset(self, tag, repo, path, *, name=None, **options):
+        asset = name or path.name
+        self.assets.setdefault(tag, {})[asset] = path.read_bytes()
+        self._register(tag, asset)
+        return "uploaded"
+
+    def upload_json_asset(self, tag, repo, name, document, **options):
+        self.sidecars.setdefault(tag, {})[name] = document
+        return "uploaded"
+
+
+class _patched_crx_store:
+    def __init__(self, store: FakeCrxStore) -> None:
+        self.store = store
+        self.patchers = []
+
+    def __enter__(self):
+        for name in (
+            "fetch_json",
+            "download_asset",
+            "release_assets",
+            "upload_immutable_asset",
+            "upload_json_asset",
+        ):
+            patcher = patch(f"{MODULE}.{name}", getattr(self.store, name))
+            self.patchers.append(patcher)
+            patcher.start()
+        return self.store
+
+    def __exit__(self, *exc):
+        for patcher in reversed(self.patchers):
+            patcher.stop()
+
+
 class BoundCrxTest(unittest.TestCase):
     def setUp(self) -> None:
         self.spec = spec_by_name("browserclaw")
         self.version = "0.1.8.0"
-        self.key = self.spec.crx_key(self.version)
+        self.store = FakeCrxStore()
 
     def test_absent_crx_uploads_with_immutable_source_binding(self) -> None:
-        client = BoundCrxClient()
-
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / self.spec.crx_filename(self.version)
             path.write_bytes(b"first-build")
 
-            result = upload_bound_extension_crx(
-                client,
-                "browseros",
-                self.spec,
-                self.version,
-                SOURCE_SHA,
-                path,
-            )
-
-        self.assertEqual(result, "uploaded")
-        self.assertEqual(len(client.puts), 1)
-        self.assertEqual(
-            client.puts[0],
-            {
-                "Bucket": "browseros",
-                "Key": self.key,
-                "Body": b"first-build",
-                "ContentType": "application/x-chrome-extension",
-                "Metadata": _binding(
-                    "browserclaw", self.version, SOURCE_SHA, b"first-build"
-                ),
-                "IfNoneMatch": "*",
-            },
-        )
-
-    def test_post_upload_retry_materializes_canonical_attachment(self) -> None:
-        client = BoundCrxClient()
-        canonical = b"first-build"
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            path = Path(temp_dir) / self.spec.crx_filename(self.version)
-            path.write_bytes(canonical)
-            self.assertEqual(
-                upload_bound_extension_crx(
-                    client,
-                    "browseros",
+            with _patched_crx_store(self.store):
+                result = upload_bound_extension_crx(
                     self.spec,
                     self.version,
                     SOURCE_SHA,
                     path,
-                ),
-                "uploaded",
-            )
-            path.write_bytes(b"mtime-changed-rebuild")
+                    repo="owner/repo",
+                )
 
-            reused = materialize_bound_extension_crx(
-                client,
-                "browseros",
-                self.spec,
-                self.version,
-                SOURCE_SHA,
-                path,
-            )
+        self.assertEqual(result, "uploaded")
+        tag = f"extensions/v{self.version}"
+        self.assertEqual(
+            self.store.assets[tag][self.spec.crx_filename(self.version)],
+            b"first-build",
+        )
+        self.assertEqual(
+            self.store.sidecars[tag][f"{self.spec.crx_filename(self.version)}.json"],
+            {
+                "binding-schema": "browseros-extension-crx-v1",
+                "extension": "browserclaw",
+                "version": self.version,
+                "source-sha": SOURCE_SHA,
+                "sha256": hashlib.sha256(b"first-build").hexdigest(),
+                "size": len(b"first-build"),
+            },
+        )
+
+    def test_post_upload_retry_materializes_canonical_attachment(self) -> None:
+        canonical = b"first-build"
+        with tempfile.TemporaryDirectory() as temp_dir:
+            path = Path(temp_dir) / self.spec.crx_filename(self.version)
+            path.write_bytes(canonical)
+            with _patched_crx_store(self.store):
+                self.assertEqual(
+                    upload_bound_extension_crx(
+                        self.spec,
+                        self.version,
+                        SOURCE_SHA,
+                        path,
+                        repo="owner/repo",
+                    ),
+                    "uploaded",
+                )
+                path.write_bytes(b"mtime-changed-rebuild")
+                reused = materialize_bound_extension_crx(
+                    self.spec,
+                    self.version,
+                    SOURCE_SHA,
+                    path,
+                    repo="owner/repo",
+                )
 
             self.assertTrue(reused)
             self.assertEqual(path.read_bytes(), canonical)
-        self.assertEqual(len(client.puts), 1)
 
     def test_missing_or_mismatched_binding_fails_closed(self) -> None:
         for metadata in (
@@ -386,67 +479,66 @@ class BoundCrxTest(unittest.TestCase):
             _binding("agent", self.version, SOURCE_SHA, b"canonical"),
         ):
             with self.subTest(metadata=metadata):
-                client = BoundCrxClient()
-                client.objects[self.key] = (b"canonical", metadata)
+                store = FakeCrxStore()
+                tag = f"extensions/v{self.version}"
+                name = self.spec.crx_filename(self.version)
+                store.assets[tag] = {name: b"canonical"}
+                store.sidecars[tag] = {f"{name}.json": metadata}
+                from ...lib.github_releases import release_asset_url
+
+                store.urls[release_asset_url(tag, f"{name}.json", "owner/repo")] = (
+                    tag,
+                    name,
+                )
                 with tempfile.TemporaryDirectory() as temp_dir:
-                    path = Path(temp_dir) / self.spec.crx_filename(self.version)
-                    with self.assertRaisesRegex(RuntimeError, "binding"):
-                        materialize_bound_extension_crx(
-                            client,
-                            "browseros",
-                            self.spec,
-                            self.version,
-                            SOURCE_SHA,
-                            path,
-                        )
+                    path = Path(temp_dir) / name
+                    with _patched_crx_store(store):
+                        with self.assertRaisesRegex(RuntimeError, "binding"):
+                            materialize_bound_extension_crx(
+                                self.spec,
+                                self.version,
+                                SOURCE_SHA,
+                                path,
+                                repo="owner/repo",
+                            )
 
     def test_concurrent_creator_supplies_canonical_retry_asset(self) -> None:
         canonical = b"concurrent-build"
-        client = RacingBoundCrxClient(
-            canonical,
-            _binding("browserclaw", self.version, SOURCE_SHA, canonical),
-        )
+        self.store.put(self.spec, self.version, SOURCE_SHA, canonical)
 
         with tempfile.TemporaryDirectory() as temp_dir:
             path = Path(temp_dir) / self.spec.crx_filename(self.version)
             path.write_bytes(b"our-mtime-dependent-build")
-
-            result = upload_bound_extension_crx(
-                client,
-                "browseros",
-                self.spec,
-                self.version,
-                SOURCE_SHA,
-                path,
-            )
+            with _patched_crx_store(self.store):
+                result = upload_bound_extension_crx(
+                    self.spec,
+                    self.version,
+                    SOURCE_SHA,
+                    path,
+                    repo="owner/repo",
+                )
 
             self.assertEqual(result, "reused")
             self.assertEqual(path.read_bytes(), canonical)
-        self.assertEqual(len(client.puts), 1)
 
 
 class VerifyVersionedObjectsTest(unittest.TestCase):
-    def test_checks_every_selected_versioned_key(self) -> None:
-        client = BoundCrxClient()
+    def test_checks_every_selected_versioned_asset(self) -> None:
+        store = FakeCrxStore()
         for name in ("agent", "browserclaw"):
             spec = spec_by_name(name)
-            key = spec.crx_key("0.1.7.0")
-            data = f"{name}-crx".encode()
-            client.objects[key] = (
-                data,
-                _binding(name, "0.1.7.0", SOURCE_SHA, data),
-            )
+            store.put(spec, "0.1.7.0", SOURCE_SHA, f"{name}-crx".encode())
 
         with tempfile.TemporaryDirectory() as temp_dir:
             output_dir = Path(temp_dir)
-            keys = verify_versioned_crx_objects(
-                client,
-                "browseros",
-                "0.1.7.0",
-                ("agent", "browserclaw"),
-                SOURCE_SHA,
-                output_dir,
-            )
+            with _patched_crx_store(store):
+                assets = verify_versioned_crx_objects(
+                    "0.1.7.0",
+                    ("agent", "browserclaw"),
+                    SOURCE_SHA,
+                    output_dir,
+                    repo="owner/repo",
+                )
 
             self.assertEqual(
                 (output_dir / "agent-0.1.7.0.crx").read_bytes(),
@@ -457,59 +549,34 @@ class VerifyVersionedObjectsTest(unittest.TestCase):
                 b"browserclaw-crx",
             )
 
-        self.assertEqual(
-            keys,
-            (
-                "extensions/agent-0.1.7.0.crx",
-                "extensions/browserclaw-0.1.7.0.crx",
-            ),
-        )
-        self.assertEqual(
-            client.gets,
-            [
-                ("browseros", "extensions/agent-0.1.7.0.crx"),
-                ("browseros", "extensions/browserclaw-0.1.7.0.crx"),
-            ],
-        )
+        self.assertEqual(assets, ("agent-0.1.7.0.crx", "browserclaw-0.1.7.0.crx"))
 
     def test_missing_object_fails(self) -> None:
-        client = BoundCrxClient()
-
-        with self.assertRaisesRegex(RuntimeError, "agent-0.1.7.0.crx"):
-            verify_versioned_crx_objects(
-                client,
-                "browseros",
-                "0.1.7.0",
-                ("agent",),
-                SOURCE_SHA,
-            )
+        with _patched_crx_store(FakeCrxStore()):
+            with self.assertRaisesRegex(RuntimeError, "agent-0.1.7.0.crx"):
+                verify_versioned_crx_objects(
+                    "0.1.7.0",
+                    ("agent",),
+                    SOURCE_SHA,
+                    repo="owner/repo",
+                )
 
     def test_mismatched_source_binding_fails(self) -> None:
-        client = BoundCrxClient()
-        spec = spec_by_name("browserclaw")
-        key = spec.crx_key("0.1.7.0")
-        client.objects[key] = (
-            b"canonical",
-            _binding("browserclaw", "0.1.7.0", "b" * 40, b"canonical"),
-        )
+        store = FakeCrxStore()
+        store.put(spec_by_name("browserclaw"), "0.1.7.0", "b" * 40, b"canonical")
 
-        with self.assertRaisesRegex(RuntimeError, "binding mismatch"):
-            verify_versioned_crx_objects(
-                client,
-                "browseros",
-                "0.1.7.0",
-                ("browserclaw",),
-                SOURCE_SHA,
-            )
+        with _patched_crx_store(store):
+            with self.assertRaisesRegex(RuntimeError, "binding mismatch"):
+                verify_versioned_crx_objects(
+                    "0.1.7.0",
+                    ("browserclaw",),
+                    SOURCE_SHA,
+                    repo="owner/repo",
+                )
 
 
 def _ctx(has_r2=True, bucket="browseros"):
-    return cast(
-        Context,
-        SimpleNamespace(
-            env=SimpleNamespace(has_r2_config=lambda: has_r2, r2_bucket=bucket)
-        ),
-    )
+    return cast(Context, SimpleNamespace(env=SimpleNamespace()))
 
 
 class BuildPipelineTest(unittest.TestCase):
@@ -598,12 +665,6 @@ class ValidateTest(unittest.TestCase):
                 with self.assertRaisesRegex(ValidationError, "BROWSEROS_AGENT_V2_KEY"):
                     self._module().validate(_ctx())
 
-    def test_missing_r2_config_fails(self):
-        with patch.dict("os.environ", ALL_KEYS):
-            with patch(f"{MODULE}.find_chrome_binary", return_value="chrome"):
-                with self.assertRaisesRegex(ValidationError, "R2"):
-                    self._module().validate(_ctx(has_r2=False))
-
     def test_missing_browserclaw_build_env_names_the_variable(self):
         env = dict(ALL_KEYS)
         env.pop("VITE_CLAW_POSTHOG_KEY")
@@ -631,13 +692,10 @@ class ManifestUpdateUrlTest(unittest.TestCase):
         self.dist_path = Path("apps/claw-app/dist/chrome-mv3")
         self.expected_url = "https://github.com/BlueOriginAI/reBrowser/releases/download/feed-extensions/update-manifest.xml"
 
-    def test_in_feed_extension_without_update_url_fails(self):
-        with self.assertRaisesRegex(
-            RuntimeError, "browserclaw.*apps/claw-app/dist/chrome-mv3"
-        ):
-            _validate_manifest_update_url(
-                spec_by_name("browserclaw"), {}, self.dist_path
-            )
+    def test_fork_owned_extension_may_omit_update_url(self):
+        _validate_manifest_update_url(
+            spec_by_name("browserclaw"), {}, self.dist_path
+        )
 
     def test_in_feed_extension_with_wrong_update_url_fails(self):
         with self.assertRaisesRegex(
@@ -671,7 +729,6 @@ class ExecuteTest(unittest.TestCase):
             "build_extension_crx": MagicMock(),
             "materialize_bound_extension_crx": MagicMock(return_value=False),
             "upload_bound_extension_crx": MagicMock(return_value="uploaded"),
-            "get_r2_client": MagicMock(return_value="r2-client"),
             "find_chrome_binary": MagicMock(return_value="chrome-bin"),
         }
         self.mocks = {}
@@ -704,7 +761,6 @@ class ExecuteTest(unittest.TestCase):
         self.assertEqual(
             called,
             [
-                "get_r2_client",
                 "find_chrome_binary",
                 "materialize_bound_extension_crx",
                 "build_extension_crx",
@@ -725,8 +781,6 @@ class ExecuteTest(unittest.TestCase):
         self.assertTrue(build_kwargs["stamp_version"])
 
         self.mocks["upload_bound_extension_crx"].assert_called_once_with(
-            "r2-client",
-            "browseros",
             spec_by_name("agent"),
             "1.0.0",
             SOURCE_SHA,
@@ -758,13 +812,6 @@ class ExecuteTest(unittest.TestCase):
             "canary",
         )
 
-    def test_injected_r2_client_skips_factory(self):
-        self._module(("agent",), r2_client="prebuilt").execute(_ctx())
-        self.mocks["get_r2_client"].assert_not_called()
-        self.assertEqual(
-            self.mocks["upload_bound_extension_crx"].call_args.args[0], "prebuilt"
-        )
-
     def test_retry_materializes_canonical_crx_without_rebuilding(self):
         self.mocks["materialize_bound_extension_crx"].return_value = True
 
@@ -773,8 +820,6 @@ class ExecuteTest(unittest.TestCase):
         self.mocks["build_extension_crx"].assert_not_called()
         self.mocks["upload_bound_extension_crx"].assert_not_called()
         self.mocks["materialize_bound_extension_crx"].assert_called_once_with(
-            "r2-client",
-            "browseros",
             spec_by_name("browserclaw"),
             "1.0.0",
             SOURCE_SHA,

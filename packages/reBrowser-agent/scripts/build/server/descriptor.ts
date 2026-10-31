@@ -31,8 +31,6 @@ export const browserosServerBuildProduct: BuildProductDescriptor = {
     requiredInlineEnvKeys: REQUIRED_PROD_VARS,
     inlineEnvKeys: INLINED_ENV_VARS,
     ciInlineEnvDefaults: CI_INLINE_ENV_DEFAULTS,
-    defaultR2UploadPrefix: 'artifacts/server',
-    defaultR2DownloadPrefix: 'artifacts/vendor',
   },
   bundle: {
     external: ['node-pty'],

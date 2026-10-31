@@ -10,8 +10,6 @@ from typing import Optional
 import typer
 
 from ..lib.paths import get_package_root
-from ..lib.env import EnvConfig
-from ..lib.r2 import get_r2_client
 from ..lib.utils import log_error
 from ..release.suite import (
     GitHubSuiteBackend,
@@ -22,7 +20,7 @@ from ..release.suite import (
     reconcile_transaction,
 )
 from ..release.suite_artifact import (
-    R2ImmutableObjectBackend,
+    GitHubImmutableObjectBackend,
     publish_suite_browser_artifact,
 )
 from ..release.suite_rolling import (
@@ -147,17 +145,11 @@ def publish_browser_artifact(
     """Conditionally publish one signed suite artifact and its exact receipt."""
     try:
         record = SuiteRecord.from_path(record_path)
-        env = EnvConfig()
-        if not env.has_r2_config():
-            raise RuntimeError("R2 configuration not set")
-        client = get_r2_client(env)
-        if client is None:
-            raise RuntimeError("Failed to create R2 client")
         publication = publish_suite_browser_artifact(
             record,
             product,
             artifact_root,
-            R2ImmutableObjectBackend(client, env.r2_bucket),
+            GitHubImmutableObjectBackend(),
         )
         typer.echo(publication.to_json(), nl=False)
     except (OSError, RuntimeError, TypeError, ValueError, json.JSONDecodeError) as exc:

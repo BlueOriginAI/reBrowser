@@ -33,9 +33,6 @@ def _upload_ctx(
             browserclaw_server_resource_version=None,
             browseros_server_resource_version=None,
             bundled_product_extension_version=None,
-            r2_bucket="browseros",
-            r2_cdn_base_url="https://cdn.browseros.com",
-            has_r2_config=lambda: True,
         ),
         artifact_registry=ArtifactRegistry(),
         product=SimpleNamespace(
@@ -66,7 +63,7 @@ class UploadMetadataTest(unittest.TestCase):
             mock.patch("bos_build.steps.storage.upload.IS_WINDOWS", lambda: False),
             mock.patch.dict(
                 "os.environ",
-                {"BROWSEROS_DEFER_R2_UPLOAD": "1"},
+                {},
                 clear=False,
             ),
         ):
@@ -90,7 +87,7 @@ class UploadMetadataTest(unittest.TestCase):
             mock.patch("bos_build.steps.storage.upload.IS_WINDOWS", lambda: False),
             mock.patch.dict(
                 "os.environ",
-                {"BROWSEROS_DEFER_R2_UPLOAD": "1"},
+                {},
                 clear=False,
             ),
         ):
@@ -116,14 +113,13 @@ class UploadMetadataTest(unittest.TestCase):
         )
         self.assertEqual(release["artifacts"]["x64_deb"]["filename"], deb.name)
 
-    def test_deferred_upload_writes_exact_receipt_without_r2_mutation(self) -> None:
+    def test_deferred_upload_writes_exact_receipt_without_remote_mutation(self) -> None:
         with (
             tempfile.TemporaryDirectory() as tmp,
             mock.patch("bos_build.steps.storage.upload.IS_MACOS", lambda: True),
             mock.patch.dict(
                 "os.environ",
                 {
-                    "BROWSEROS_DEFER_R2_UPLOAD": "1",
                     "BROWSEROS_BUILD_SOURCE_SHA": "a" * 40,
                     "BROWSEROS_BUILD_RESERVATION_SHA": "b" * 40,
                 },

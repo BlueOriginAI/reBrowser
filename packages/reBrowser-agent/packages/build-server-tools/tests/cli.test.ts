@@ -1,48 +1,33 @@
 import { describe, expect, it } from 'bun:test'
 
-import { parseBuildArgs } from '../src'
+import { parseAssetBuildArgs, parseBuildArgs } from '../src'
 import { testProduct } from './helpers'
 
 describe('build CLI', () => {
-  it('uploads by default for server-compatible products', () => {
+  it('parses target and manifest defaults', () => {
     const args = parseBuildArgs(['--target=darwin-arm64'], testProduct())
 
-    expect(args.upload).toBe(true)
-  })
-
-  it('honors products that build local artifacts by default', () => {
-    const args = parseBuildArgs(
-      ['--target=darwin-arm64'],
-      testProduct({ defaultUpload: false }),
+    expect(args.targets.map((target) => target.id)).toEqual(['darwin-arm64'])
+    expect(args.manifestPath).toBe(
+      'scripts/build/config/test-server-resources.json',
     )
-
-    expect(args.upload).toBe(false)
+    expect(args.ci).toBe(false)
   })
 
-  it('lets --upload override a local-by-default product', () => {
-    const args = parseBuildArgs(
-      ['--target=darwin-arm64', '--upload'],
-      testProduct({ defaultUpload: false }),
-    )
+  it('supports --ci builds', () => {
+    const args = parseBuildArgs(['--ci'], testProduct())
 
-    expect(args.upload).toBe(true)
+    expect(args.ci).toBe(true)
   })
 
-  it('supports versioned-only uploads', () => {
-    const args = parseBuildArgs(
-      ['--target=darwin-arm64', '--versioned-only'],
-      testProduct(),
-    )
-
-    expect(args.versionedOnly).toBe(true)
-  })
-
-  it('rejects versioned-only without upload', () => {
+  it('rejects upload flags that no longer exist', () => {
     expect(() =>
-      parseBuildArgs(
-        ['--target=darwin-arm64', '--no-upload', '--versioned-only'],
-        testProduct(),
-      ),
-    ).toThrow('--versioned-only requires upload')
+      parseBuildArgs(['--target=darwin-arm64', '--upload'], testProduct()),
+    ).toThrow('unknown option')
+  })
+
+  it('parses asset build args', () => {
+    expect(parseAssetBuildArgs([])).toEqual({ ci: false })
+    expect(parseAssetBuildArgs(['--ci'])).toEqual({ ci: true })
   })
 })

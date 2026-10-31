@@ -7,7 +7,6 @@ export type EnvSection =
   | 'claw'
   | 'server'
   | 'build'
-  | 'upload'
   | 'sign'
 
 export interface EnvExampleEntry {
@@ -306,38 +305,6 @@ export const ENV_REGISTRY: readonly EnvKeySpec[] = [
     secret: false,
     schema: stringSchema,
     modes: { development: { value: 'true' } },
-  },
-  {
-    key: 'R2_ACCOUNT_ID',
-    section: 'upload',
-    description: 'R2 account ID for production artifact uploads.',
-    secret: true,
-    schema: stringSchema,
-    modes: { production: { value: '' } },
-  },
-  {
-    key: 'R2_ACCESS_KEY_ID',
-    section: 'upload',
-    description: 'R2 access key ID for production artifact uploads.',
-    secret: true,
-    schema: stringSchema,
-    modes: { production: { value: '' } },
-  },
-  {
-    key: 'R2_SECRET_ACCESS_KEY',
-    section: 'upload',
-    description: 'R2 secret access key for production artifact uploads.',
-    secret: true,
-    schema: stringSchema,
-    modes: { production: { value: '' } },
-  },
-  {
-    key: 'R2_BUCKET',
-    section: 'upload',
-    description: 'R2 bucket for production artifact uploads.',
-    secret: false,
-    schema: stringSchema,
-    modes: { production: { value: 'browseros' } },
   },
   {
     key: 'ESIGNER_USERNAME',

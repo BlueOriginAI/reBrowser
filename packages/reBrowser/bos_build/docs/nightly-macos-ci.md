@@ -17,7 +17,7 @@ gh workflow run nightly-macos-browserclaw.yml --ref main
 `.github/workflows/reusable-build-macos-nightly.yml` is named
 **Reusable: Build macOS nightly** and accepts only `workflow_call`. It retains the
 existing signed arm64 build, provisioning profiles, published resources, deferred
-R2 upload, and unconditional Chromium-workspace and signing-keychain cleanup.
+publication, and unconditional Chromium-workspace and signing-keychain cleanup.
 
 ## Product transaction
 
@@ -70,7 +70,7 @@ through state merge and publication. It writes only its server alpha appcast and
 the three shared extension snapshots. Rendering pins only the selected extension;
 unpinned entries carry their newer live or committed versions through
 `--baseline-root`. This preserves a sibling whose snapshot merge succeeded but
-whose R2 upload failed. Standalone extension publishers use the same boundary.
+whose feed publication failed. Standalone extension publishers use the same boundary.
 
 Final state composition keeps the checkout HEAD at Source SHA, restores the
 selected snapshots from current main, and passes that main SHA as

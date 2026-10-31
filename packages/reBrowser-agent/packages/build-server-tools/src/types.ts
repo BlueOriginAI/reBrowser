@@ -21,18 +21,7 @@ export interface BuildTarget {
 export interface BuildArgs {
   targets: BuildTarget[]
   manifestPath: string
-  upload: boolean
-  versionedOnly: boolean
   ci: boolean
-}
-
-export interface R2Config {
-  accountId: string
-  accessKeyId: string
-  secretAccessKey: string
-  bucket: string
-  downloadPrefix: string
-  uploadPrefix: string
 }
 
 export interface BuildEnvSpec {
@@ -41,8 +30,6 @@ export interface BuildEnvSpec {
   ciInlineEnvDefaults?: Record<string, string>
   ciInlineEnvOverrides?: Record<string, string>
   inlineEnvOverrides?: Record<string, string>
-  defaultR2UploadPrefix: string
-  defaultR2DownloadPrefix?: string
 }
 
 export interface BundleOptions {
@@ -66,7 +53,6 @@ export interface ResourceBuildProductDescriptor extends ProductBuildSpec {
   stagedBinaryBaseName: string
   archiveBaseName: string
   defaultManifestPath: string
-  defaultUpload?: boolean
   includeArtifactIdentity?: boolean
   archiveFilesOnly?: boolean
   expectedArtifactFiles?: (target: BuildTarget) => readonly string[]
@@ -83,12 +69,9 @@ export interface AssetBuildProductDescriptor extends ProductBuildSpec {
   assetsDir: string
   distRoot: string
   archiveBaseName: string
-  defaultUpload?: boolean
 }
 
 export interface AssetBuildArgs {
-  upload: boolean
-  versionedOnly: boolean
   ci: boolean
 }
 
@@ -102,12 +85,13 @@ export interface BuildConfig {
   version: string
   envVars: Record<string, string>
   processEnv: NodeJS.ProcessEnv
-  r2?: R2Config
 }
 
-export interface R2ResourceSource {
-  type: 'r2'
-  key: string
+export interface UrlResourceSource {
+  type: 'url'
+  url: string
+  /** Zip member to extract when the URL points at an archive. */
+  member?: string
 }
 
 export interface LocalResourceSource {
@@ -115,7 +99,7 @@ export interface LocalResourceSource {
   path: string
 }
 
-export type ResourceSource = R2ResourceSource | LocalResourceSource
+export type ResourceSource = UrlResourceSource | LocalResourceSource
 
 export interface ResourceRule {
   name: string
@@ -163,6 +147,4 @@ export interface StagedArtifact {
 export interface UploadResult {
   targetId: TargetId
   zipPath: string
-  latestR2Key?: string
-  versionR2Key?: string
 }

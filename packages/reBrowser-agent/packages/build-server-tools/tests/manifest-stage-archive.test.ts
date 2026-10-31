@@ -1,24 +1,18 @@
 import { afterEach, describe, expect, it } from 'bun:test'
 import { execFileSync } from 'node:child_process'
-import { createHash } from 'node:crypto'
 import { mkdir, mkdtemp, readFile, rm, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { S3Client } from '@aws-sdk/client-s3'
 
 import {
-  archiveAndUploadArtifacts,
   archiveArtifacts,
   getTargetRules,
   loadManifest,
   type ResourceRule,
-  recoverVersionedTargets,
   stageCompiledArtifact,
   stagedBinaryName,
-  stageTargetArtifact,
-  uploadImmutableFileToObject,
 } from '../src'
-import { fakeR2Config, testProduct, testTarget } from './helpers'
+import { testProduct, testTarget } from './helpers'
 
 describe('resource manifest and artifact staging', () => {
   let tempDir: string | null = null
@@ -30,7 +24,7 @@ describe('resource manifest and artifact staging', () => {
     }
   })
 
-  it('parses local and R2 resource rules and treats missing filters as all-target', async () => {
+  it('parses local and URL resource rules and treats missing filters as all-target', async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'build-server-tools-'))
     const manifestPath = join(tempDir, 'manifest.json')
     await writeFile(
@@ -45,7 +39,10 @@ describe('resource manifest and artifact staging', () => {
           },
           {
             name: 'Linux tool',
-            source: { type: 'r2', key: 'tool-linux-x64' },
+            source: {
+              type: 'url',
+              url: 'https://example.test/tool-linux-x64',
+            },
             destination: 'resources/bin/tool',
             os: ['linux'],
             arch: ['x64'],
@@ -84,7 +81,7 @@ describe('resource manifest and artifact staging', () => {
         resources: [
           {
             name: 'Bad OS',
-            source: { type: 'r2', key: 'tool' },
+            source: { type: 'url', url: 'https://example.test/tool' },
             destination: 'resources/bin/tool',
             os: ['plan9'],
           },
@@ -147,14 +144,14 @@ describe('resource manifest and artifact staging', () => {
       [],
       tempDir,
       {
-        component: 'claw-server-rust/prod-resources',
+        component: 'browseros-claw-server-rust-resources',
         releaseSha,
       },
     )
 
     const metadata = JSON.parse(await readFile(artifact.metadataPath, 'utf8'))
     expect(metadata).toMatchObject({
-      component: 'claw-server-rust/prod-resources',
+      component: 'browseros-claw-server-rust-resources',
       version: '1.2.3',
       target: 'darwin-arm64',
       releaseSha,
@@ -203,94 +200,53 @@ describe('resource manifest and artifact staging', () => {
     ).rejects.toThrow('outside artifact root')
   })
 
-  it('downloads R2 resources with the configured prefix and executable bit', async () => {
+  it('downloads URL resources and extracts a zip member with executable mode', async () => {
     tempDir = await mkdtemp(join(tmpdir(), 'build-server-tools-'))
     const sourceRoot = join(tempDir, 'source')
-    const distRoot = join(tempDir, 'dist')
     const binaryPath = join(tempDir, 'compiled')
-    const product = testProduct({ distRoot })
-    const requests: string[] = []
-    await writeFile(binaryPath, 'server')
-
-    const artifact = await stageTargetArtifact(
-      product,
-      binaryPath,
-      testTarget(),
-      [bunRule],
-      sourceRoot,
-      {
-        send: async (command: { input?: { Key?: string } }) => {
-          requests.push(command.input?.Key ?? '')
-          return {
-            Body: {
-              transformToByteArray: async () =>
-                new TextEncoder().encode('#!/bin/sh\n'),
-            },
-          }
-        },
-      } as unknown as S3Client,
-      fakeR2Config,
-      '0.0.0-test',
-    )
-
-    const bunPath = join(artifact.resourcesDir, 'bin/third_party/bun')
-    expect(requests).toEqual([
-      'artifacts/vendor/third_party/bun/bun-darwin-arm64',
-    ])
-    expect(await readFile(bunPath, 'utf8')).toBe('#!/bin/sh\n')
-    expect((await stat(bunPath)).mode & 0o111).not.toBe(0)
-  })
-
-  it('archives with the descriptor archive base name and uploads latest plus version keys', async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'build-server-tools-'))
-    const distRoot = join(tempDir, 'dist')
-    const binaryPath = join(tempDir, 'compiled')
-    const product = testProduct({
-      distRoot,
-      archiveBaseName: 'browseros-claw-server-resources',
+    const zipRoot = join(tempDir, 'zip')
+    await mkdir(join(zipRoot, 'bun-darwin-arm64'), { recursive: true })
+    await writeFile(join(zipRoot, 'bun-darwin-arm64/bun'), 'bun-binary')
+    execFileSync('zip', ['-q', '-r', join(tempDir, 'bun.zip'), '.'], {
+      cwd: zipRoot,
     })
-    const uploadedKeys: string[] = []
-    await writeFile(binaryPath, 'server')
-    const artifact = await stageCompiledArtifact(
-      product,
-      binaryPath,
-      testTarget(),
-      '0.0.0-test',
-    )
+    const zipBytes = await readFile(join(tempDir, 'bun.zip'))
 
-    const archiveResults = await archiveArtifacts(
-      [artifact],
-      product.archiveBaseName,
-    )
-    expect(archiveResults[0]?.zipPath).toBe(
-      join(distRoot, 'browseros-claw-server-resources-darwin-arm64.zip'),
-    )
-
-    const uploadResults = await archiveAndUploadArtifacts(
-      [artifact],
-      '0.0.0-test',
-      {
-        send: async (command: { input?: { Key?: string } }) => {
-          if (command.constructor.name === 'GetObjectCommand') {
-            throw Object.assign(new Error('missing'), {
-              $metadata: { httpStatusCode: 404 },
-            })
-          }
-          uploadedKeys.push(command.input?.Key ?? '')
-          return {}
+    const server = Bun.serve({
+      port: 0,
+      fetch() {
+        return new Response(zipBytes)
+      },
+    })
+    try {
+      const product = testProduct({ distRoot: join(tempDir, 'dist') })
+      await writeFile(binaryPath, 'server')
+      const rule: ResourceRule = {
+        name: 'Bun',
+        source: {
+          type: 'url',
+          url: `http://127.0.0.1:${server.port}/bun.zip`,
+          member: 'bun-darwin-arm64/bun',
         },
-      } as unknown as S3Client,
-      fakeR2Config,
-      true,
-      product.archiveBaseName,
-    )
+        destination: 'resources/bin/third_party/bun',
+        executable: true,
+      }
 
-    expect(uploadedKeys).toEqual([
-      'server/prod-resources/0.0.0-test/browseros-claw-server-resources-darwin-arm64.zip',
-      'server/prod-resources/latest/browseros-claw-server-resources-darwin-arm64.zip',
-    ])
-    expect(uploadResults[0]?.versionR2Key).toBe(uploadedKeys[0])
-    expect(uploadResults[0]?.latestR2Key).toBe(uploadedKeys[1])
+      const artifact = await stageCompiledArtifact(
+        product,
+        binaryPath,
+        testTarget('darwin-arm64'),
+        '0.0.0-test',
+        [rule],
+        sourceRoot,
+      )
+
+      const staged = join(artifact.resourcesDir, 'bin/third_party/bun')
+      expect(await readFile(staged, 'utf8')).toBe('bun-binary')
+      expect((await stat(staged)).mode & 0o111).not.toBe(0)
+    } finally {
+      server.stop(true)
+    }
   })
 
   it('can archive only files for workflow-compatible member lists', async () => {
@@ -322,242 +278,6 @@ describe('resource manifest and artifact staging', () => {
       'resources/bin/test_server',
     ])
   })
-
-  it('does not overwrite a versioned object with different bytes', async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'build-server-tools-'))
-    const filePath = join(tempDir, 'artifact.zip')
-    await writeFile(filePath, 'new bytes')
-    const client = {
-      send: async (command: { input?: { Key?: string } }) => {
-        if (command.constructor.name === 'GetObjectCommand') {
-          return {
-            Body: {
-              transformToByteArray: async () =>
-                new TextEncoder().encode('different bytes'),
-            },
-          }
-        }
-        throw new Error(`Unexpected write to ${command.input?.Key ?? ''}`)
-      },
-    } as unknown as S3Client
-
-    await expect(
-      uploadImmutableFileToObject(
-        client,
-        fakeR2Config,
-        'server/prod-resources/0.0.0-test/artifact.zip',
-        filePath,
-      ),
-    ).rejects.toThrow('immutable R2 object already exists with different bytes')
-  })
-
-  it('reuses an immutable versioned object with identical bytes', async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'build-server-tools-'))
-    const filePath = join(tempDir, 'artifact.zip')
-    await writeFile(filePath, 'same bytes')
-    const commands: string[] = []
-    const client = {
-      send: async (command: { constructor: { name: string } }) => {
-        commands.push(command.constructor.name)
-        return {
-          Body: {
-            transformToByteArray: async () =>
-              new TextEncoder().encode('same bytes'),
-          },
-        }
-      },
-    } as unknown as S3Client
-
-    const result = await uploadImmutableFileToObject(
-      client,
-      fakeR2Config,
-      'server/prod-resources/0.0.0-test/artifact.zip',
-      filePath,
-    )
-
-    expect(result).toBe('reused')
-    expect(commands).toEqual(['GetObjectCommand'])
-  })
-
-  it('recovers the canonical object after conditional upload races', async () => {
-    for (const status of [409, 412]) {
-      tempDir = await mkdtemp(join(tmpdir(), 'build-server-tools-'))
-      const filePath = join(tempDir, `artifact-${status}.zip`)
-      await writeFile(filePath, 'our build')
-      const canonical = Buffer.from(`canonical ${status}`)
-      let gets = 0
-      const client = {
-        send: async (command: { constructor: { name: string } }) => {
-          if (command.constructor.name === 'GetObjectCommand') {
-            gets += 1
-            if (gets === 1) {
-              throw Object.assign(new Error('missing'), {
-                $metadata: { httpStatusCode: 404 },
-              })
-            }
-            return {
-              Body: { transformToByteArray: async () => canonical },
-              Metadata: {
-                component: 'server/prod-resources',
-                'release-sha': 'source-sha',
-                version: '0.0.0-test',
-                target: 'linux-x64',
-                sha256: createHash('sha256').update(canonical).digest('hex'),
-              },
-            }
-          }
-          throw Object.assign(new Error('conditional race'), {
-            $metadata: { httpStatusCode: status },
-          })
-        },
-      } as unknown as S3Client
-
-      const result = await uploadImmutableFileToObject(
-        client,
-        fakeR2Config,
-        'server/prod-resources/0.0.0-test/artifact.zip',
-        filePath,
-        {
-          identity: {
-            component: 'server/prod-resources',
-            releaseSha: 'source-sha',
-            target: 'linux-x64',
-            version: '0.0.0-test',
-          },
-        },
-      )
-
-      expect(result).toBe('recovered')
-      expect(await readFile(filePath)).toEqual(canonical)
-    }
-  })
-
-  it('recovers uploaded targets and uploads only missing targets', async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'build-server-tools-'))
-    const firstRoot = join(tempDir, 'first')
-    const secondRoot = join(tempDir, 'second')
-    await mkdir(firstRoot, { recursive: true })
-    await mkdir(secondRoot, { recursive: true })
-    await writeFile(join(firstRoot, 'server'), 'first retry build')
-    await writeFile(join(secondRoot, 'server'), 'second build')
-    const canonical = Buffer.from('first canonical upload')
-    const putKeys: string[] = []
-    const client = {
-      send: async (command: {
-        constructor: { name: string }
-        input?: { Key?: string; Metadata?: Record<string, string> }
-      }) => {
-        const key = command.input?.Key ?? ''
-        if (command.constructor.name === 'GetObjectCommand') {
-          if (key.includes('darwin-arm64')) {
-            return {
-              Body: { transformToByteArray: async () => canonical },
-              Metadata: {
-                component: 'server/prod-resources',
-                'release-sha': 'source-sha',
-                version: '0.0.0-test',
-                target: 'darwin-arm64',
-                sha256: createHash('sha256').update(canonical).digest('hex'),
-              },
-            }
-          }
-          throw Object.assign(new Error('missing'), {
-            $metadata: { httpStatusCode: 404 },
-          })
-        }
-        putKeys.push(key)
-        expect(command.input?.Metadata).toMatchObject({
-          component: 'server/prod-resources',
-          'release-sha': 'source-sha',
-          version: '0.0.0-test',
-          target: 'linux-x64',
-        })
-        expect(command.input?.Metadata?.sha256).toMatch(/^[0-9a-f]{64}$/)
-        return {}
-      },
-    } as unknown as S3Client
-
-    const results = await archiveAndUploadArtifacts(
-      [
-        {
-          target: testTarget('darwin-arm64'),
-          rootDir: firstRoot,
-          resourcesDir: firstRoot,
-          metadataPath: join(firstRoot, 'metadata.json'),
-        },
-        {
-          target: testTarget('linux-x64'),
-          rootDir: secondRoot,
-          resourcesDir: secondRoot,
-          metadataPath: join(secondRoot, 'metadata.json'),
-        },
-      ],
-      '0.0.0-test',
-      client,
-      fakeR2Config,
-      true,
-      'artifact',
-      { versionedOnly: true, releaseSha: 'source-sha' },
-    )
-
-    expect(putKeys).toEqual([
-      'server/prod-resources/0.0.0-test/artifact-linux-x64.zip',
-    ])
-    const recoveredResult = results[0]
-    if (!recoveredResult) throw new Error('Missing recovered target result')
-    expect(await readFile(recoveredResult.zipPath)).toEqual(canonical)
-  })
-
-  it('skips builds for targets already recovered from immutable R2', async () => {
-    tempDir = await mkdtemp(join(tmpdir(), 'build-server-tools-'))
-    const product = testProduct({ distRoot: join(tempDir, 'dist') })
-    const canonical = Buffer.from('canonical darwin artifact')
-    const client = {
-      send: async (command: {
-        constructor: { name: string }
-        input?: { Key?: string }
-      }) => {
-        const key = command.input?.Key ?? ''
-        if (command.constructor.name !== 'GetObjectCommand') {
-          throw new Error(`Unexpected command: ${command.constructor.name}`)
-        }
-        if (!key.includes('darwin-arm64')) {
-          throw Object.assign(new Error('missing'), {
-            $metadata: { httpStatusCode: 404 },
-          })
-        }
-        return {
-          Body: { transformToByteArray: async () => canonical },
-          Metadata: {
-            component: 'server/prod-resources',
-            'release-sha': 'source-sha',
-            version: '0.0.0-test',
-            target: 'darwin-arm64',
-            sha256: createHash('sha256').update(canonical).digest('hex'),
-          },
-        }
-      },
-    } as unknown as S3Client
-
-    const recovery = await recoverVersionedTargets(
-      product,
-      [testTarget('darwin-arm64'), testTarget('linux-x64')],
-      '0.0.0-test',
-      'source-sha',
-      client,
-      fakeR2Config,
-    )
-
-    expect(recovery.targetsToBuild.map((target) => target.id)).toEqual([
-      'linux-x64',
-    ])
-    expect(recovery.recoveredResults.map((result) => result.targetId)).toEqual([
-      'darwin-arm64',
-    ])
-    const recovered = recovery.recoveredResults[0]
-    if (!recovered) throw new Error('Missing recovered target')
-    expect(await readFile(recovered.zipPath)).toEqual(canonical)
-  })
 })
 
 const migrationRule: ResourceRule = {
@@ -568,16 +288,4 @@ const migrationRule: ResourceRule = {
   },
   destination: 'resources/db/migrations',
   recursive: true,
-}
-
-const bunRule: ResourceRule = {
-  name: 'Bun - macOS ARM64',
-  source: {
-    type: 'r2',
-    key: 'third_party/bun/bun-darwin-arm64',
-  },
-  destination: 'resources/bin/third_party/bun',
-  os: ['macos'],
-  arch: ['arm64'],
-  executable: true,
 }

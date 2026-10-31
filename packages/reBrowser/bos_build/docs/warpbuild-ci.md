@@ -108,8 +108,7 @@ Smoke test the platform whose runner configuration changed:
 gh workflow run release-linux.yml -f products=browseros -f upload_to_r2=false
 gh workflow run release-windows.yml \
   -f products=browserclaw \
-  -f sign=false \
-  -f upload_to_r2=false
+  -f sign=false
 ```
 
 Then watch its build job leave `queued` within ~5 minutes (`gh run watch`).
@@ -161,7 +160,7 @@ The reusable workflow performs the per-platform recipe:
     build artifacts with 14-day retention.
 
 Source mode never downloads server, onboarding, or product-extension resources
-from R2; the only downloaded build input is the prepared GitHub artifact.
+from GitHub Releases; the only downloaded build input is the prepared GitHub artifact.
 Published mode deliberately retains the `download_resources` provider.
 
 The `release-ci` profile is the release preset minus `clean`/`git_setup`
@@ -189,12 +188,10 @@ publishes a cache under the current policy.
   `actions/cache` with no size cap (entries expire 7 days after last use).
   Restore-keys fall back to the previous pin's cache, then the script
   fast-forwards `src` with a single-tag fetch.
-- **Windows — R2 tarball** (`browseros source cache`): WarpCache does not
-  support Windows runners and `actions/cache` caps at 10 GB/repo. The tree
-  is zstd-tarred (~25-30 GB) into `ci-cache/chromium/` in the existing R2
-  bucket using the same `R2_*` secrets the build already needs for
-  `download_resources`. R2 has zero egress fees. Missing credentials or a
-  cache miss degrade to a cold checkout, never a failure.
+- **Windows — cold checkout**: WarpCache does not support Windows runners and
+  `actions/cache` caps at 10 GB/repo, far below the ~25-30 GB synced tree, so
+  Windows runs a cold checkout on every build. The lane remains correct; only
+  the checkout cost is not cached.
 
 Expected timings (32-core linux/windows, M4 Pro mac):
 
@@ -215,7 +212,7 @@ separate platform or cache charges. Current signed macOS release and nightly
 builds run on the self-hosted Mac Mini.
 
 Azure BYOC does not support WarpBuild snapshot runners. Keep checkout
-acceleration on WarpCache for Linux and the R2 tarball for Windows; do not add
+acceleration on WarpCache for Linux/macOS and a cold checkout for Windows; do not add
 `snapshot.key` runner syntax or `WarpBuilds/snapshot-save` to these lanes.
 
 ### Future optimizations (not yet wired)
@@ -231,14 +228,12 @@ acceleration on WarpCache for Linux and the R2 tarball for Windows; do not add
 ```bash
 # BrowserOS Linux build from intentionally published component resources.
 gh workflow run release-linux.yml \
-  -f products=browseros \
-  -f upload_to_r2=false
+  -f products=browseros
 
-# BrowserClaw unsigned Windows verification without R2 upload.
+# BrowserClaw unsigned Windows verification without release publication.
 gh workflow run release-windows.yml \
   -f products=browserclaw \
-  -f sign=false \
-  -f upload_to_r2=false
+  -f sign=false
 
 # Full releases publish components before building the native matrices.
 gh workflow run release-browseros.yml --ref main
@@ -253,8 +248,7 @@ ID. Successful lanes from an earlier rerun attempt remain valid.
 
 The first run per platform is the cache warm-up; expect cold timings. If a
 pin bump lands, the next run is cold again for that version. To force a fresh
-checkout, bump the `v2` in the cache key (workflow) — for Windows also delete
-the old object under `ci-cache/chromium/` in R2.
+checkout, bump the `v2` in the cache key (workflow).
 
 ## Troubleshooting: depot_tools cannot read global Git config
 
@@ -282,7 +276,7 @@ reintroducing HOME-resolution ambiguity.
 
 ## Troubleshooting: cached depot_tools appears all-dirty
 
-The Windows cache-policy migration failure occurs after R2 restore and the
+The Windows cache-policy migration failure occurs after a cache restore and the
 Chromium clean step. `gclient.bat` starts, prints `Updating depot_tools...`,
 then Git reports `Your local changes to the following files would be
 overwritten by checkout` for most depot_tools files, followed by `Aborting`

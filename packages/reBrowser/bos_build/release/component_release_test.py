@@ -304,22 +304,7 @@ class ComponentAllocationDiscoveryTest(unittest.TestCase):
 
         self.assertEqual(version, "0.0.126.7")
 
-    def test_r2_retry_uses_requested_source_with_older_release_history(self) -> None:
-        key = "artifacts/server/0.0.130/browseros-server-resources-linux-x64.zip"
-        client = mock.MagicMock()
-        client.list_objects_v2.return_value = {
-            "Contents": [{"Key": key}],
-            "IsTruncated": False,
-        }
-        client.head_object.return_value = {
-            "Metadata": {
-                "component": "artifacts/server",
-                "release-sha": SOURCE_SHA,
-                "sha256": "a" * 64,
-                "target": "linux-x64",
-                "version": "0.0.130",
-            }
-        }
+    def test_resource_probe_uses_the_requested_source(self) -> None:
         releases = [
             {
                 "tagName": "agent-server/v0.0.130",
@@ -332,12 +317,19 @@ class ComponentAllocationDiscoveryTest(unittest.TestCase):
                 "targetCommitish": "2" * 40,
             },
         ]
+        allocation = AllocationRecord(
+            component="server",
+            version="0.0.130",
+            kind="resource",
+            source_sha=SOURCE_SHA,
+            reference="agent-server/v0.0.130",
+            reusable=True,
+        )
         with tempfile.TemporaryDirectory() as tmp:
             operations = GitComponentReleaseOperations(
                 Path(tmp),
                 "browseros-ai/BrowserOS",
-                r2_client=client,
-                r2_bucket="browseros",
+                probe_resources=True,
             )
             with (
                 mock.patch.object(operations, "_git", return_value=""),
@@ -355,17 +347,23 @@ class ComponentAllocationDiscoveryTest(unittest.TestCase):
                     "bos_build.release.component_release.list_github_releases",
                     return_value=releases,
                 ),
+                mock.patch(
+                    "bos_build.release.component_release.discover_component_allocation",
+                    return_value=allocation,
+                ) as discover,
             ):
                 operations.allocations("server")
                 resource = operations.resource_allocation(
                     "server", "0.0.130", SOURCE_SHA
                 )
 
-        self.assertIsNotNone(resource)
-        assert resource is not None
-        self.assertTrue(resource.reusable)
-        self.assertEqual(resource.source_sha, SOURCE_SHA)
-        client.head_object.assert_called_once_with(Bucket="browseros", Key=key)
+        self.assertEqual(resource, allocation)
+        discover.assert_called_once_with(
+            "server",
+            "0.0.130",
+            SOURCE_SHA,
+            repo="browseros-ai/BrowserOS",
+        )
 
     def test_open_browser_candidate_is_discovered_as_a_reservation(self) -> None:
         candidate = CandidateRecord(

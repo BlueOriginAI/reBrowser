@@ -66,6 +66,4 @@ BROWSERCLAW_SERVER_BUNDLE = ServerBundle(
     source_component="claw-server-rust",
     runtime_binary_name="reBrowser-server",
     required_in_chromium_output=False,
-    unsigned_artifact_prefix="claw-server-rust/prod-resources",
-    unsigned_artifact_base_name="browseros-claw-server-rust-resources",
 )

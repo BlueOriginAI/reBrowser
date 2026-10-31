@@ -14,10 +14,10 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Callable, Iterable
 
-from ..lib.env import EnvConfig
-from ..lib.r2 import get_r2_client
+from ..lib.github_releases import github_repo, release_asset_url
 from .feeds.render import GUPDATE_NS, render_update_manifest
 from .feeds.spec import EXTENSIONS, extension_by_name
+from .github_store import ensure_published_release, upload_immutable_asset
 from .resource_pins import (
     COMPONENT_RESOURCE_FAMILY,
     RESOURCE_FAMILIES,
@@ -87,85 +87,28 @@ def _sha256(content: bytes) -> str:
     return hashlib.sha256(content).hexdigest()
 
 
-def _read_body(response: dict, key: str) -> bytes:
-    body = response.get("Body")
-    if body is None or not hasattr(body, "read"):
-        raise RuntimeError(f"R2 object {key} returned no readable body")
-    try:
-        return body.read()
-    finally:
-        close = getattr(body, "close", None)
-        if close:
-            close()
-
-
-def _verify_r2_object(
-    client,
-    bucket: str,
-    key: str,
-    expected: bytes,
-    binding: dict[str, str],
-) -> None:
-    try:
-        response = client.get_object(Bucket=bucket, Key=key)
-        actual = _read_body(response, key)
-    except Exception as error:
-        raise RuntimeError(f"Failed to verify R2 object {key}: {error}") from error
-    if actual != expected:
-        raise RuntimeError(
-            f"R2 object verification failed for {key}: "
-            f"expected sha256 {_sha256(expected)}, got {_sha256(actual)}"
-        )
-    metadata = response.get("Metadata", {})
-    mismatches = {
-        name: {"expected": value, "actual": metadata.get(name)}
-        for name, value in binding.items()
-        if metadata.get(name) != value
-    }
-    if mismatches:
-        raise RuntimeError(f"R2 object binding mismatch for {key}: {mismatches}")
-
-
-def _is_precondition_failure(error: Exception) -> bool:
-    response = getattr(error, "response", {})
-    code = str(response.get("Error", {}).get("Code", ""))
-    status = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
-    return code in {
-        "409",
-        "412",
-        "Conflict",
-        "ConditionalRequestConflict",
-        "PreconditionFailed",
-    } or status in {409, 412}
-
-
-def _upload_immutable(
-    client,
-    bucket: str,
-    key: str,
+def _publish_plan_asset(
+    tag: str,
+    repo: str,
     path: Path,
-    binding: dict[str, str],
-) -> None:
+    name: str,
+    title: str,
+) -> str:
     content = path.read_bytes()
-    expected_binding = {**binding, "sha256": _sha256(content)}
+    sha256 = _sha256(content)
     try:
-        client.put_object(
-            Bucket=bucket,
-            Key=key,
-            Body=content,
-            ContentType=(
-                "application/json" if path.suffix == ".json" else "application/xml"
-            ),
-            Metadata=expected_binding,
-            IfNoneMatch="*",
+        ensure_published_release(tag, repo, title)
+        upload_immutable_asset(
+            tag,
+            repo,
+            path,
+            name=name,
+            expected_sha256=sha256,
+            title=title,
         )
     except Exception as error:
-        if not _is_precondition_failure(error):
-            raise RuntimeError(
-                f"Failed to create immutable R2 object {key}: {error}"
-            ) from error
-        _verify_r2_object(client, bucket, key, content, expected_binding)
-    _verify_r2_object(client, bucket, key, content, expected_binding)
+        raise RuntimeError(f"Failed to publish release plan asset {tag}/{name}: {error}")
+    return release_asset_url(tag, name, repo)
 
 
 def _default_http_head(url: str) -> int:
@@ -359,10 +302,9 @@ def _validated_resource_pins(
             raise ValueError(f"invalid resource targets for {name}")
         for target, item in objects.items():
             if (
-                item.key != family.version_key(pin.version, target)
-                or not item.etag
+                item.filename != family.filename(target)
                 or item.size < 0
-                or (item.sha256 and not re.fullmatch(r"[0-9a-f]{64}", item.sha256))
+                or not re.fullmatch(r"[0-9a-f]{64}", item.sha256)
                 or (item.release_sha and not _SHA_RE.fullmatch(item.release_sha))
             ):
                 raise ValueError(f"invalid resource object for {name}/{target}")
@@ -387,9 +329,8 @@ def create_release_plan(
     extension_name: str,
     bundled_manifest_path: Path | None,
     output_dir: Path,
-    client,
-    bucket: str,
-    cdn_base_url: str,
+    repo: str = "",
+    publish: bool = True,
     http_head: Callable[[str], int] = _default_http_head,
     resource_pins: dict[str, ResourcePin] | None = None,
 ) -> PlanResult:
@@ -402,29 +343,6 @@ def create_release_plan(
         raise ValueError(f"invalid run id: {run_id}")
     if not _RUN_ID_RE.fullmatch(run_attempt) or len(run_attempt) > 10:
         raise ValueError(f"invalid run attempt: {run_attempt}")
-    if any(ord(character) < 32 or ord(character) == 127 for character in cdn_base_url):
-        raise ValueError("CDN base URL must not contain control characters")
-    if "\\" in cdn_base_url or not _HTTPS_ORIGIN_RE.fullmatch(cdn_base_url):
-        raise ValueError("CDN base URL must be a credential-free HTTPS origin")
-    cdn = urllib.parse.urlsplit(cdn_base_url)
-    if (
-        cdn.scheme != "https"
-        or not cdn.hostname
-        or cdn.username is not None
-        or cdn.password is not None
-        or cdn.query
-        or cdn.fragment
-        or cdn.path not in {"", "/"}
-    ):
-        raise ValueError("CDN base URL must be a credential-free HTTPS origin")
-    try:
-        port = cdn.port
-    except ValueError as error:
-        raise ValueError("CDN base URL has an invalid port") from error
-    cdn_base_url = f"https://{cdn.hostname.lower()}"
-    if port is not None:
-        cdn_base_url += f":{port}"
-
     selected = _validated_components(product, source_sha, components)
     by_name = {component.name: component for component in selected}
     extension_components = set(by_name).intersection(_EXTENSION_COMPONENT.values())
@@ -443,23 +361,23 @@ def create_release_plan(
         for component in selected
         if component.name in COMPONENT_RESOURCE_FAMILY
     }
+    repository = repo or github_repo()
     if resource_pins is None:
         resource_pins = resolve_resource_pins(
-            client,
-            bucket,
             prepared_resources,
+            repo=repository,
         )
     resource_pins = _validated_resource_pins(resource_pins, prepared_resources)
     resource_versions = {
         name: resource_pins[name].version for name in sorted(resource_pins)
     }
 
-    prefix = f"release-plans/{product}/{source_sha}/run-{run_id}-attempt-{run_attempt}"
-    if "latest" in prefix.lower():
-        raise ValueError("release plan key cannot contain latest")
-    plan_key = f"{prefix}/release-plan.json"
-    manifest_key = f"{prefix}/bundled-manifest.xml"
-    manifest_url = f"{cdn_base_url}/{manifest_key}"
+    tag = f"release-plans/{product}/run-{run_id}-attempt-{run_attempt}"
+    if "latest" in tag.lower():
+        raise ValueError("release plan tag cannot contain latest")
+    plan_key = f"{tag}/release-plan.json"
+    manifest_key = f"{tag}/bundled-manifest.xml"
+    manifest_url = release_asset_url(tag, "bundled-manifest.xml", repository)
     selected_extension_version = ""
 
     if extension_name:
@@ -495,7 +413,7 @@ def create_release_plan(
             },
             "release_plan": {
                 "key": plan_key,
-                "url": f"{cdn_base_url}/{plan_key}",
+                "url": release_asset_url(tag, "release-plan.json", repository),
             },
         },
         "product": product,
@@ -511,32 +429,24 @@ def create_release_plan(
     plan_path = output_dir / "release-plan.json"
     plan_path.write_bytes(plan_bytes)
 
-    binding = {
-        "object-schema": "browseros-release-plan-v2",
-        "plan-key": plan_key,
-        "product": product,
-        "run-attempt": run_attempt,
-        "run-id": run_id,
-        "source-sha": source_sha,
-    }
-    _upload_immutable(
-        client,
-        bucket,
-        manifest_key,
-        manifest_path,
-        {**binding, "object-kind": "bundled-manifest"},
-    )
-    _upload_immutable(
-        client,
-        bucket,
-        plan_key,
-        plan_path,
-        {**binding, "object-kind": "release-plan"},
-    )
-
-    plan_url = f"{cdn_base_url}/{plan_key}"
-    _verify_url(manifest_url, http_head)
-    _verify_url(plan_url, http_head)
+    plan_url = release_asset_url(tag, "release-plan.json", repository)
+    if publish:
+        manifest_url = _publish_plan_asset(
+            tag,
+            repository,
+            manifest_path,
+            "bundled-manifest.xml",
+            f"Release plan {tag}",
+        )
+        plan_url = _publish_plan_asset(
+            tag,
+            repository,
+            plan_path,
+            "release-plan.json",
+            f"Release plan {tag}",
+        )
+        _verify_url(manifest_url, http_head)
+        _verify_url(plan_url, http_head)
     return PlanResult(
         plan_path=plan_path,
         plan_key=plan_key,
@@ -602,15 +512,8 @@ def main() -> None:
     parser.add_argument("--bundled-manifest", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--github-output", type=Path)
-    parser.add_argument("--cdn-base-url", default="https://cdn.browseros.com")
+    parser.add_argument("--repo", default="")
     args = parser.parse_args()
-
-    env = EnvConfig()
-    if not env.has_r2_config():
-        raise RuntimeError("R2 configuration not set")
-    client = get_r2_client(env)
-    if client is None:
-        raise RuntimeError("Failed to create R2 client")
 
     result = create_release_plan(
         product=args.product,
@@ -622,9 +525,7 @@ def main() -> None:
         extension_name=args.extension_name,
         bundled_manifest_path=args.bundled_manifest,
         output_dir=args.output_dir,
-        client=client,
-        bucket=env.r2_bucket,
-        cdn_base_url=args.cdn_base_url,
+        repo=args.repo,
     )
     if args.github_output:
         _write_github_output(args.github_output, result)

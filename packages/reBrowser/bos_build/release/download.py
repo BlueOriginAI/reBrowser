@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download module - Download release artifacts from CDN"""
+"""Download module - Download release artifacts from GitHub Releases"""
 
 import sys
 import tempfile
@@ -28,11 +28,11 @@ OS_NAME_MAP = {
 
 
 class DownloadModule(Step):
-    """Download release artifacts from CDN"""
+    """Download release artifacts from GitHub Releases"""
 
     produces = []
     requires = []
-    description = "Download release artifacts from CDN"
+    description = "Download release artifacts from GitHub Releases"
 
     def __init__(self, os_filter: Optional[str] = None, output_dir: Optional[Path] = None):
         self.os_filter = os_filter

@@ -16,7 +16,6 @@
     "DEFAULT_BRANCH",
     "GITHUB_REPOSITORY",
     "GITHUB_SERVER_URL",
-    "R2_UPLOAD_PREFIX",
     "RELEASE_TAG"
   ],
   "globalPassThroughEnv": ["BROWSEROS_*", "GITHUB_OUTPUT", "NODE_ENV"],

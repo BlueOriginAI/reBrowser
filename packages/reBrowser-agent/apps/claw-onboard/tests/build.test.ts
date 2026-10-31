@@ -8,15 +8,6 @@ import {
 } from '../../../packages/build-server-tools/src'
 import { clawOnboardBuildProduct } from '../../../scripts/build/claw-onboard/descriptor'
 
-const R2_ENV_KEYS = [
-  'R2_ACCOUNT_ID',
-  'R2_ACCESS_KEY_ID',
-  'R2_SECRET_ACCESS_KEY',
-  'R2_BUCKET',
-  'R2_UPLOAD_PREFIX',
-  'R2_DOWNLOAD_PREFIX',
-] as const
-
 const EXPECTED_RESOURCE_FILES = [
   'index.html',
   'app.js',
@@ -42,11 +33,7 @@ describe('claw onboard resources build', () => {
   )
 
   function buildEnv(): NodeJS.ProcessEnv {
-    const env = snapshotProcessEnv()
-    for (const key of R2_ENV_KEYS) {
-      delete env[key]
-    }
-    return env
+    return snapshotProcessEnv()
   }
 
   afterAll(() => {
@@ -64,54 +51,17 @@ describe('claw onboard resources build', () => {
     assert.strictEqual(config.version, pkg.version)
   })
 
-  it('uploads by default while preserving local-only modes', () => {
-    assert.strictEqual(
-      parseAssetBuildArgs([], clawOnboardBuildProduct).upload,
-      true,
-    )
-    assert.strictEqual(
-      parseAssetBuildArgs(['--no-upload'], clawOnboardBuildProduct).upload,
-      false,
-    )
-    assert.strictEqual(
-      parseAssetBuildArgs(['--ci'], clawOnboardBuildProduct).upload,
-      false,
-    )
+  it('parses CI mode for asset builds', () => {
+    assert.strictEqual(parseAssetBuildArgs([]).ci, false)
+    assert.strictEqual(parseAssetBuildArgs(['--ci']).ci, true)
   })
 
-  it('uses the claw-onboard R2 upload prefix by default and allows env override', () => {
-    const originalEnv = snapshotProcessEnv()
-    try {
-      setProcessEnv('R2_ACCOUNT_ID', 'test')
-      setProcessEnv('R2_ACCESS_KEY_ID', 'test')
-      setProcessEnv('R2_SECRET_ACCESS_KEY', 'test')
-      setProcessEnv('R2_BUCKET', 'test')
-      deleteProcessEnv('R2_UPLOAD_PREFIX')
-
-      const defaultConfig = loadBuildConfig(rootDir, clawOnboardBuildProduct, {
-        requireR2: true,
-      })
-      assert.strictEqual(
-        defaultConfig.r2?.uploadPrefix,
-        'claw-onboard/prod-resources',
-      )
-
-      setProcessEnv('R2_UPLOAD_PREFIX', 'custom/onboard')
-      const overrideConfig = loadBuildConfig(rootDir, clawOnboardBuildProduct, {
-        requireR2: true,
-      })
-      assert.strictEqual(overrideConfig.r2?.uploadPrefix, 'custom/onboard')
-    } finally {
-      restoreProcessEnv(originalEnv)
-    }
-  })
-
-  it('builds the universal resources artifact without R2 credentials', async () => {
+  it('builds the universal resources artifact', async () => {
     rmSync(zipPath, { force: true })
     const pkg = await Bun.file(versionPkgPath).json()
     const expectedVersion: string = pkg.version
 
-    const build = Bun.spawn(['bun', buildScript, '--no-upload'], {
+    const build = Bun.spawn(['bun', buildScript], {
       cwd: rootDir,
       stdout: 'pipe',
       stderr: 'pipe',
@@ -183,16 +133,4 @@ async function collectProcess(process: CollectableProcess) {
 
 function snapshotProcessEnv(): NodeJS.ProcessEnv {
   return { ...process.env }
-}
-
-function setProcessEnv(key: string, value: string): void {
-  process.env[key] = value
-}
-
-function deleteProcessEnv(key: string): void {
-  delete process.env[key]
-}
-
-function restoreProcessEnv(env: NodeJS.ProcessEnv): void {
-  process.env = env
 }

@@ -102,8 +102,8 @@ uv run browseros build --profile nightly-ci --chromium-src "$CHROMIUM_ROOT/src"
 ```
 
 Checkout and sync are split because `clean` must run between them: it deletes
-the hook-managed toolchains that sync then restores. On runners without
-WarpCache, `browseros source cache restore|save` handles the R2 checkout cache.
+the hook-managed toolchains that sync then restores. Runners without WarpCache
+perform a cold checkout.
 
 ## Concurrency
 

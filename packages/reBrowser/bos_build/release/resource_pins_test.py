@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Tests for immutable browser resource pin resolution."""
+"""Tests for resolving component resource manifests from GitHub Releases."""
 
 import unittest
 
-from .resource_pins import (
+from bos_build.release.resource_pins import (
     RESOURCE_FAMILIES,
     resolve_resource_pins,
     verify_prepared_resource_pin,
@@ -11,242 +11,172 @@ from .resource_pins import (
 
 
 SOURCE_SHA = "a" * 40
+OTHER_SHA = "b" * 40
 
 
-class FakeR2Client:
-    def __init__(self) -> None:
-        self.objects: dict[str, dict] = {}
-        self.head_reads: dict[str, int] = {}
-        self.replacements: dict[str, tuple[int, dict]] = {}
-
-    def add_family(
-        self,
-        family,
-        version: str,
-        *,
-        metadata: bool,
-        release_sha: str = SOURCE_SHA,
-        marker: str | None = None,
-    ) -> None:
-        marker = marker or version
-        for target in family.targets:
-            values = self._values(
-                family, target, version, release_sha, marker, metadata
-            )
-            self.objects[family.version_key(version, target)] = values
-            self.objects[family.latest_key(target)] = values
-
-    def replace_after_head(self, key: str, read_number: int, values: dict) -> None:
-        self.replacements[key] = (read_number, values)
-
-    def head_object(self, *, Bucket, Key):
-        del Bucket
-        reads = self.head_reads.get(Key, 0) + 1
-        self.head_reads[Key] = reads
-        replacement = self.replacements.get(Key)
-        if replacement and reads >= replacement[0]:
-            self.objects[Key] = replacement[1]
-        return dict(self.objects[Key])
-
-    def list_objects_v2(self, *, Bucket, Prefix, ContinuationToken=None):
-        del Bucket, ContinuationToken
-        return {
-            "IsTruncated": False,
-            "Contents": [
-                {
-                    "Key": key,
-                    "ETag": value["ETag"],
-                    "Size": value["ContentLength"],
-                }
-                for key, value in sorted(self.objects.items())
-                if key.startswith(Prefix)
-            ],
+def manifest(family, version="0.0.9", release_sha=SOURCE_SHA, targets=None):
+    entries = {}
+    for target in family.targets:
+        entries[target] = {
+            "filename": family.filename(target),
+            "sha256": "1" * 64,
+            "size": 100,
         }
-
-    @staticmethod
-    def _values(family, target, version, release_sha, marker, metadata):
-        binding = {}
-        if metadata:
-            binding = {
-                "component": family.component,
-                "release-sha": release_sha,
-                "sha256": marker[0].encode().hex().ljust(64, "0")[:64],
-                "target": target,
-                "version": version,
-            }
-        identity = f"{family.name}:{target}:{marker}"
-        return {
-            "ETag": f'"{identity}"',
-            "ContentLength": len(identity),
-            "Metadata": binding,
-        }
+    entries.update(targets or {})
+    return {
+        "schema": "browseros-component-manifest-v1",
+        "component": family.component,
+        "version": version,
+        "release_tag": family.tag(version),
+        "release_sha": release_sha,
+        "targets": entries,
+    }
 
 
 class ResourcePinsTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = FakeR2Client()
+        self.families = {family.name: family for family in RESOURCE_FAMILIES}
 
-    def add_all(self, *, metadata: bool) -> None:
-        for index, family in enumerate(RESOURCE_FAMILIES, start=1):
-            self.client.add_family(family, f"0.0.{index}", metadata=metadata)
+    def _fetcher(self, documents, calls=None):
+        def fetch(component, version, repo):
+            if calls is not None:
+                calls.append((component, version, repo))
+            return documents.get((component, version))
 
-    def resolve(self, prepared=None, attempts=1):
-        return resolve_resource_pins(
-            self.client,
-            "browseros",
-            prepared or {},
-            attempts=attempts,
-            sleep=lambda _: None,
+        return fetch
+
+    def test_resolves_every_live_family_manifest(self) -> None:
+        documents = {
+            (family.component, None): manifest(family) for family in RESOURCE_FAMILIES
+        }
+        calls = []
+
+        pins = resolve_resource_pins(
+            {},
+            repo="owner/repo",
+            fetch=self._fetcher(documents, calls),
+            attempts=1,
         )
 
-    def test_resolves_complete_metadata_bindings(self) -> None:
-        self.add_all(metadata=True)
-
-        pins = self.resolve()
-
+        self.assertEqual(set(pins), set(self.families))
+        for family in RESOURCE_FAMILIES:
+            pin = pins[family.name]
+            self.assertEqual(pin.version, "0.0.9")
+            self.assertEqual(
+                {item.target for item in pin.objects}, set(family.targets)
+            )
+            for item in pin.objects:
+                self.assertEqual(item.filename, family.filename(item.target))
+                self.assertEqual(item.sha256, "1" * 64)
+                self.assertEqual(item.release_sha, SOURCE_SHA)
         self.assertEqual(
-            {name: pin.version for name, pin in pins.items()},
-            {
-                "browseros_server": "0.0.1",
-                "browserclaw_server": "0.0.2",
-                "browserclaw_onboard": "0.0.3",
-                "browseros_onboard": "0.0.4",
-            },
+            calls,
+            [(family.component, None, "owner/repo") for family in RESOURCE_FAMILIES],
         )
+
+    def test_prepared_family_uses_its_exact_version_and_source(self) -> None:
+        documents = {
+            (family.component, None): manifest(family) for family in RESOURCE_FAMILIES
+        }
+        server = self.families["browseros_server"]
+        documents[(server.component, "0.0.10")] = manifest(
+            server, version="0.0.10", release_sha=OTHER_SHA
+        )
+
+        pins = resolve_resource_pins(
+            {"browseros_server": ("0.0.10", OTHER_SHA)},
+            fetch=self._fetcher(documents),
+            attempts=1,
+        )
+
+        self.assertEqual(pins["browseros_server"].version, "0.0.10")
         self.assertTrue(
             all(
-                item.sha256 and item.release_sha
-                for pin in pins.values()
-                for item in pin.objects
+                item.release_sha == OTHER_SHA
+                for item in pins["browseros_server"].objects
             )
         )
 
-    def test_legacy_scan_requires_one_version_matching_every_alias(self) -> None:
-        self.add_all(metadata=False)
-        family = RESOURCE_FAMILIES[0]
-        self.client.add_family(family, "0.0.9", metadata=False, marker="different")
-        for target in family.targets:
-            self.client.objects[family.latest_key(target)] = self.client.objects[
-                family.version_key("0.0.1", target)
-            ]
+    def test_prepared_source_mismatch_fails_closed(self) -> None:
+        server = self.families["browseros_server"]
+        documents = {(server.component, "0.0.10"): manifest(server, "0.0.10")}
 
-        pins = self.resolve()
+        with self.assertRaises(RuntimeError):
+            resolve_resource_pins(
+                {"browseros_server": ("0.0.10", OTHER_SHA)},
+                fetch=self._fetcher(documents),
+                attempts=1,
+            )
 
-        self.assertEqual(pins[family.name].version, "0.0.1")
-        self.assertTrue(all(not item.sha256 for item in pins[family.name].objects))
+    def test_missing_manifest_fails_after_retries(self) -> None:
+        attempts = []
 
-    def test_prepared_component_uses_exact_objects_without_reading_latest(self) -> None:
-        self.add_all(metadata=True)
-        family = RESOURCE_FAMILIES[0]
-        self.client.add_family(family, "0.0.8", metadata=True)
-        before = {
-            key: self.client.head_reads.get(key, 0)
-            for key in (family.latest_key(target) for target in family.targets)
+        def fetch(component, version, repo):
+            attempts.append(component)
+            return None
+
+        with self.assertRaises(RuntimeError):
+            resolve_resource_pins({}, fetch=fetch, attempts=2, sleep=lambda _: None)
+        self.assertEqual(attempts, ["server", "server"])
+
+    def test_target_skew_is_rejected(self) -> None:
+        documents = {
+            (family.component, None): manifest(family) for family in RESOURCE_FAMILIES
         }
+        server = self.families["browseros_server"]
+        skewed = manifest(server)
+        del skewed["targets"]["windows-x64"]
+        documents[(server.component, None)] = skewed
 
-        pins = self.resolve({family.name: ("0.0.8", SOURCE_SHA)})
+        with self.assertRaises(RuntimeError):
+            resolve_resource_pins(
+                {}, fetch=self._fetcher(documents), attempts=1
+            )
 
-        self.assertEqual(pins[family.name].version, "0.0.8")
-        self.assertEqual(
-            before,
-            {
-                key: self.client.head_reads.get(key, 0)
-                for key in (family.latest_key(target) for target in family.targets)
-            },
-        )
+    def test_transient_manifest_failure_is_retried(self) -> None:
+        server = self.families["browseros_server"]
+        attempts = {"count": 0}
 
-    def test_rejects_cross_target_version_skew(self) -> None:
-        self.add_all(metadata=True)
-        family = RESOURCE_FAMILIES[0]
-        target = family.targets[-1]
-        self.client.objects[family.latest_key(target)] = FakeR2Client._values(
-            family, target, "0.0.9", SOURCE_SHA, "0.0.9", True
-        )
+        def fetch(component, version, repo):
+            if component == server.component:
+                attempts["count"] += 1
+                if attempts["count"] == 1:
+                    raise RuntimeError("network")
+                return manifest(server)
+            family = next(
+                item for item in RESOURCE_FAMILIES if item.component == component
+            )
+            return manifest(family)
 
-        with self.assertRaisesRegex(RuntimeError, "version-skewed"):
-            self.resolve()
+        pins = resolve_resource_pins({}, fetch=fetch, attempts=2, sleep=lambda _: None)
 
-    def test_rejects_mixed_legacy_and_bound_aliases(self) -> None:
-        self.add_all(metadata=False)
-        family = RESOURCE_FAMILIES[1]
-        target = family.targets[0]
-        self.client.objects[family.latest_key(target)] = FakeR2Client._values(
-            family, target, "0.0.2", SOURCE_SHA, "0.0.2", True
-        )
+        self.assertEqual(attempts["count"], 2)
+        self.assertIn("browseros_server", pins)
 
-        with self.assertRaisesRegex(RuntimeError, "mixed bindings"):
-            self.resolve()
-
-    def test_rejects_ambiguous_legacy_match(self) -> None:
-        self.add_all(metadata=False)
-        family = RESOURCE_FAMILIES[2]
-        self.client.add_family(family, "0.0.9", metadata=False, marker="0.0.3")
-
-        with self.assertRaisesRegex(RuntimeError, "match 2 versions"):
-            self.resolve()
-
-    def test_retries_when_alias_changes_during_snapshot(self) -> None:
-        self.add_all(metadata=True)
-        family = RESOURCE_FAMILIES[2]
-        target = family.targets[0]
-        replacement = FakeR2Client._values(
-            family, target, "0.0.3", SOURCE_SHA, "0.0.3", True
-        )
-        replacement["ETag"] = '"changed-once"'
-        replacement["ContentLength"] = 99
-        self.client.objects[family.version_key("0.0.3", target)] = replacement
-        self.client.replace_after_head(family.latest_key(target), 2, replacement)
-
-        pins = self.resolve(attempts=2)
-
-        self.assertEqual(pins[family.name].objects[0].etag, '"changed-once"')
-        self.assertGreaterEqual(self.client.head_reads[family.latest_key(target)], 3)
-
-    def test_prepared_binding_must_match_source(self) -> None:
-        self.add_all(metadata=True)
-        family = RESOURCE_FAMILIES[1]
-
-        with self.assertRaisesRegex(RuntimeError, "source binding mismatch"):
-            self.resolve({family.name: ("0.0.2", "b" * 40)})
-
-    def test_verifies_one_prepared_family_without_reading_latest(self) -> None:
-        family = RESOURCE_FAMILIES[0]
-        self.client.add_family(family, "0.0.8", metadata=True)
+    def test_verify_prepared_checks_source_binding(self) -> None:
+        server = self.families["browseros_server"]
+        documents = {(server.component, "0.0.10"): manifest(server, "0.0.10")}
 
         pin = verify_prepared_resource_pin(
-            self.client,
-            "browseros",
-            family.name,
-            "0.0.8",
+            "browseros_server",
+            "0.0.10",
             SOURCE_SHA,
+            fetch=self._fetcher(documents),
         )
 
-        self.assertEqual(pin.version, "0.0.8")
-        self.assertEqual(
-            {item.key for item in pin.objects},
-            {
-                family.version_key("0.0.8", target)
-                for target in family.targets
-            },
-        )
-        self.assertFalse(
-            any("/latest/" in key for key in self.client.head_reads)
-        )
-
-    def test_single_prepared_family_rejects_binding_mismatch(self) -> None:
-        family = RESOURCE_FAMILIES[1]
-        self.client.add_family(family, "0.0.8", metadata=True)
-        target = family.targets[0]
-        key = family.version_key("0.0.8", target)
-        self.client.objects[key]["Metadata"]["sha256"] = "invalid"
-
-        with self.assertRaisesRegex(RuntimeError, "invalid sha256 binding"):
+        self.assertEqual(pin.version, "0.0.10")
+        with self.assertRaises(RuntimeError):
             verify_prepared_resource_pin(
-                self.client,
-                "browseros",
-                family.name,
-                "0.0.8",
-                SOURCE_SHA,
+                "browseros_server",
+                "0.0.10",
+                OTHER_SHA,
+                fetch=self._fetcher(documents),
+            )
+
+    def test_unknown_prepared_family_is_rejected(self) -> None:
+        with self.assertRaises(ValueError):
+            resolve_resource_pins(
+                {"nope": ("0.0.1", SOURCE_SHA)}, attempts=1
             )
 
 

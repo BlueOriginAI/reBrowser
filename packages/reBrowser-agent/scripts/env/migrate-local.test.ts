@@ -43,7 +43,7 @@ describe('migrateLocalEnv', () => {
       expect.arrayContaining([
         expect.objectContaining({
           key: 'R2_UPLOAD_PREFIX',
-          reason: 'retired to code constants',
+          reason: 'retired; artifacts use GitHub Releases',
         }),
         expect.objectContaining({
           key: 'UNKNOWN_LOCAL_KEY',
@@ -106,7 +106,7 @@ describe('migrateLocalEnv', () => {
     )
   })
 
-  test('warns loudly when retired R2 prefixes differ from code defaults', async () => {
+  test('warns loudly when retired R2 keys still carry values', async () => {
     const rootDir = requireTempRoot(tempRoot)
     await writeFixture(rootDir, 'apps/server/.env.production', {
       R2_UPLOAD_PREFIX: 'custom/server',
@@ -117,27 +117,32 @@ describe('migrateLocalEnv', () => {
     })
 
     const plan = buildLocalEnvMigration(rootDir)
+    const uploadWarning = plan.dropped.find(
+      (entry) =>
+        entry.key === 'R2_UPLOAD_PREFIX' &&
+        entry.sourceFile === join(rootDir, 'apps/server/.env.production'),
+    )
+    const downloadWarning = plan.dropped.find(
+      (entry) => entry.key === 'R2_DOWNLOAD_PREFIX',
+    )
+    const cliUpload = plan.dropped.find(
+      (entry) =>
+        entry.key === 'R2_UPLOAD_PREFIX' &&
+        entry.sourceFile === join(rootDir, 'apps/cli/.env.production'),
+    )
 
-    expect(plan.dropped).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({
-          key: 'R2_UPLOAD_PREFIX',
-          warning: expect.stringContaining(
-            'RETIRED PREFIX WARNING: R2_UPLOAD_PREFIX=custom/server',
-          ),
-        }),
-        expect.objectContaining({
-          key: 'R2_DOWNLOAD_PREFIX',
-          warning: expect.stringContaining(
-            'RETIRED PREFIX WARNING: R2_DOWNLOAD_PREFIX=custom/vendor',
-          ),
-        }),
-        expect.objectContaining({
-          key: 'R2_UPLOAD_PREFIX',
-          sourceFile: join(rootDir, 'apps/cli/.env.production'),
-          warning: undefined,
-        }),
-      ]),
+    expect(uploadWarning?.warning).toContain(
+      'RETIRED ENV WARNING: R2_UPLOAD_PREFIX from',
+    )
+    expect(downloadWarning?.warning).toContain(
+      'RETIRED ENV WARNING: R2_DOWNLOAD_PREFIX from',
+    )
+    expect(cliUpload).toMatchObject({
+      key: 'R2_UPLOAD_PREFIX',
+      sourceFile: join(rootDir, 'apps/cli/.env.production'),
+    })
+    expect(cliUpload?.warning).toContain(
+      'RETIRED ENV WARNING: R2_UPLOAD_PREFIX from',
     )
   })
 
@@ -166,7 +171,7 @@ describe('migrateLocalEnv', () => {
   test('dry-run returns the plan without writing root env files', async () => {
     const rootDir = requireTempRoot(tempRoot)
     await writeFixture(rootDir, 'apps/server/.env.production', {
-      R2_BUCKET: 'custom-bucket',
+      LOG_LEVEL: 'custom-level',
     })
 
     const result = migrateLocalEnv({ rootDir, dryRun: true })
@@ -175,7 +180,7 @@ describe('migrateLocalEnv', () => {
     expect(result.wrote).toEqual([])
     expect(result.refused).toEqual([])
     expect(existsSync(join(rootDir, '.env.production'))).toBe(false)
-    expect(production?.content).toContain('R2_BUCKET=custom-bucket')
+    expect(production?.content).toContain('LOG_LEVEL=custom-level')
   })
 })
 

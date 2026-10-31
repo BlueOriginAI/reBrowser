@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Tests for immutable full-release plans."""
 
-import io
 import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 from .feeds.render import extract_enclosure_urls, extract_manifest_versions
 from .feeds.spec import EXTENSIONS, extension_by_name
+from ..lib import github_releases
 from .plan import Component, PlanResult, _write_github_output, create_release_plan
 from .resource_pins import RESOURCE_FAMILIES, ResourceObjectPin, ResourcePin
 
@@ -16,50 +17,16 @@ from .resource_pins import RESOURCE_FAMILIES, ResourceObjectPin, ResourcePin
 SOURCE_SHA = "a" * 40
 
 
-class PreconditionFailedError(Exception):
-    def __init__(self) -> None:
-        self.response = {
-            "Error": {"Code": "PreconditionFailed"},
-            "ResponseMetadata": {"HTTPStatusCode": 412},
-        }
-
-
-class ConditionalConflictError(Exception):
-    def __init__(self) -> None:
-        self.response = {
-            "Error": {"Code": "ConditionalRequestConflict"},
-            "ResponseMetadata": {"HTTPStatusCode": 409},
-        }
-
-
-class FakeR2Client:
+class FakePlanPublisher:
     def __init__(self) -> None:
         self.objects: dict[str, bytes] = {}
-        self.metadata: dict[str, dict[str, str]] = {}
-        self.puts: list[dict[str, object]] = []
-        self.gets: list[str] = []
+        self.uploads: list[tuple[str, str, bytes]] = []
 
-    def put_object(self, **kwargs):
-        self.puts.append(kwargs)
-        key = str(kwargs["Key"])
-        if key in self.objects:
-            raise PreconditionFailedError()
-        self.objects[key] = bytes(kwargs["Body"])
-        self.metadata[key] = dict(kwargs["Metadata"])
-
-    def get_object(self, *, Bucket, Key):
-        del Bucket
-        self.gets.append(Key)
-        return {
-            "Body": io.BytesIO(self.objects[Key]),
-            "Metadata": self.metadata[Key],
-        }
-
-
-class ConflictR2Client(FakeR2Client):
-    def put_object(self, **kwargs):
-        self.puts.append(kwargs)
-        raise ConditionalConflictError()
+    def publish(self, tag: str, repo: str, path: Path, name: str, title: str) -> str:
+        data = path.read_bytes()
+        self.objects[name] = data
+        self.uploads.append((tag, name, data))
+        return github_releases.release_asset_url(tag, name, repo)
 
 
 def bundled_manifest(versions: dict[str, str] | None = None) -> str:
@@ -107,10 +74,9 @@ def resource_pins(components: list[Component]) -> dict[str, ResourcePin]:
             tuple(
                 ResourceObjectPin(
                     target=target,
-                    key=family.version_key(version, target),
-                    etag=f'"{family.name}-{target}"',
+                    filename=family.filename(target),
                     size=index,
-                    sha256="",
+                    sha256="1" * 64,
                     release_sha=component.source_sha if component else "",
                 )
                 for target in family.targets
@@ -121,7 +87,7 @@ def resource_pins(components: list[Component]) -> dict[str, ResourcePin]:
 
 class ReleasePlanTest(unittest.TestCase):
     def setUp(self) -> None:
-        self.client = FakeR2Client()
+        self.publisher = FakePlanPublisher()
         self.probed: list[str] = []
 
     def probe(self, url: str) -> int:
@@ -139,7 +105,6 @@ class ReleasePlanTest(unittest.TestCase):
         source_sha: str = SOURCE_SHA,
         run_id: str = "30418029456",
         run_attempt: str = "2",
-        cdn_base_url: str = "https://cdn.browseros.com",
         include_manifest: bool = True,
     ):
         selected_components = components or []
@@ -147,22 +112,24 @@ class ReleasePlanTest(unittest.TestCase):
         if include_manifest:
             manifest_path = root / "input-bundled-manifest.xml"
             manifest_path.write_text(manifest or bundled_manifest(), encoding="utf-8")
-        return create_release_plan(
-            product=product,
-            browser_version="0.49.0",
-            source_sha=source_sha,
-            run_id=run_id,
-            run_attempt=run_attempt,
-            components=selected_components,
-            extension_name=extension_name if manifest is not None else "",
-            bundled_manifest_path=manifest_path,
-            output_dir=root / "output",
-            client=self.client,
-            bucket="browseros",
-            cdn_base_url=cdn_base_url,
-            http_head=self.probe,
-            resource_pins=resource_pins(selected_components),
-        )
+        with mock.patch(
+            "bos_build.release.plan._publish_plan_asset",
+            side_effect=self.publisher.publish,
+        ):
+            return create_release_plan(
+                product=product,
+                browser_version="0.49.0",
+                source_sha=source_sha,
+                run_id=run_id,
+                run_attempt=run_attempt,
+                components=selected_components,
+                extension_name=extension_name if manifest is not None else "",
+                bundled_manifest_path=manifest_path,
+                output_dir=root / "output",
+                repo="BlueOriginAI/reBrowser",
+                http_head=self.probe,
+                resource_pins=resource_pins(selected_components),
+            )
 
     def test_selected_extension_preserves_other_pins_and_overrides_one(self) -> None:
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -198,7 +165,7 @@ class ReleasePlanTest(unittest.TestCase):
                 urls,
             )
             self.assertNotIn("latest", result.manifest_url)
-            self.assertEqual(self.client.objects[result.manifest_key], manifest_bytes)
+            self.assertEqual(self.publisher.objects["bundled-manifest.xml"], manifest_bytes)
             self.assertIn(result.manifest_url, self.probed)
 
     def test_skipped_extension_emits_an_immutable_manifest_snapshot(self) -> None:
@@ -219,7 +186,7 @@ class ReleasePlanTest(unittest.TestCase):
                 extract_manifest_versions(result.manifest_path.read_text()),
                 extract_manifest_versions(bundled_manifest()),
             )
-            self.assertEqual(len(self.client.objects), 2)
+            self.assertEqual(len(self.publisher.objects), 2)
             for extension in EXTENSIONS:
                 self.assertIn(
                     extension.crx_url(
@@ -252,21 +219,12 @@ class ReleasePlanTest(unittest.TestCase):
             self.assertEqual(first_result.plan_key, second_result.plan_key)
             self.assertEqual(first_bytes, second_result.plan_path.read_bytes())
             self.assertEqual(first_manifest, second_result.manifest_path.read_bytes())
-            self.assertTrue(all(put["IfNoneMatch"] == "*" for put in self.client.puts))
-            self.assertTrue(
-                all(
-                    put["Metadata"]["source-sha"] == SOURCE_SHA
-                    for put in self.client.puts
-                )
+            self.assertEqual(
+                [name for _, name, _ in self.publisher.uploads],
+                ["bundled-manifest.xml", "release-plan.json"] * 2,
             )
             self.assertTrue(
-                all("sha256" in put["Metadata"] for put in self.client.puts)
-            )
-            self.assertTrue(
-                all(
-                    put["Metadata"]["object-schema"] == "browseros-release-plan-v2"
-                    for put in self.client.puts
-                )
+                all(tag.startswith("release-plans/browseros/") for tag, _, _ in self.publisher.uploads)
             )
 
     def test_plan_records_every_resource_pin(self) -> None:
@@ -291,38 +249,6 @@ class ReleasePlanTest(unittest.TestCase):
                 },
                 result.resource_versions,
             )
-
-    def test_retry_rejects_same_bytes_with_conflicting_binding(self) -> None:
-        with (
-            tempfile.TemporaryDirectory() as first,
-            tempfile.TemporaryDirectory() as second,
-        ):
-            result = self.create(Path(first))
-            self.client.metadata[result.plan_key]["source-sha"] = "b" * 40
-
-            with self.assertRaisesRegex(RuntimeError, "binding mismatch"):
-                self.create(Path(second))
-
-    def test_conditional_409_rereads_and_reuses_the_winner(self) -> None:
-        with (
-            tempfile.TemporaryDirectory() as first,
-            tempfile.TemporaryDirectory() as second,
-        ):
-            self.create(Path(first))
-            conflict = ConflictR2Client()
-            conflict.objects = dict(self.client.objects)
-            conflict.metadata = {
-                key: dict(metadata) for key, metadata in self.client.metadata.items()
-            }
-            self.client = conflict
-
-            result = self.create(Path(second))
-
-            self.assertEqual(
-                result.plan_path.read_bytes(),
-                conflict.objects[result.plan_key],
-            )
-            self.assertGreaterEqual(conflict.gets.count(result.plan_key), 2)
 
     def test_retry_attempt_changes_identity_and_object_keys(self) -> None:
         with (
@@ -556,56 +482,6 @@ class ReleasePlanTest(unittest.TestCase):
                             "agent-extension",
                             "0.0.124.0",
                             "ext-agent/v0.0.124.0",
-                            SOURCE_SHA,
-                        )
-                    ],
-                    manifest=bundled_manifest(),
-                )
-
-    def test_cdn_base_url_must_be_a_safe_https_origin(self) -> None:
-        invalid = (
-            "http://cdn.browseros.com",
-            "https://user:secret@cdn.browseros.com",
-            "https://cdn.browseros.com/release-plans",
-            "https://cdn.browseros.com?token=secret",
-            "https://cdn.browseros.com#fragment",
-            "https:///missing-host",
-            "https://cdn.browseros.com\rINJECTED=1",
-            "https://cdn.browseros.com\nINJECTED=1",
-            "https://cdn.browseros.com\tpath",
-            "https://cdn.browseros.com\\evil",
-        )
-        for url in invalid:
-            with self.subTest(url=url), tempfile.TemporaryDirectory() as temp_dir:
-                with self.assertRaisesRegex(ValueError, "CDN base URL"):
-                    self.create(Path(temp_dir), cdn_base_url=url)
-
-    def test_run_identity_length_and_component_version_shapes_are_bounded(self) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            with self.assertRaisesRegex(ValueError, "run id"):
-                self.create(Path(temp_dir), run_id="1" * 21)
-        with tempfile.TemporaryDirectory() as temp_dir:
-            with self.assertRaisesRegex(ValueError, "invalid version"):
-                self.create(
-                    Path(temp_dir),
-                    components=[
-                        Component(
-                            "browseros-server",
-                            "0.0.22.0",
-                            "agent-server/v0.0.22.0",
-                            SOURCE_SHA,
-                        )
-                    ],
-                )
-        with tempfile.TemporaryDirectory() as temp_dir:
-            with self.assertRaisesRegex(ValueError, "invalid version"):
-                self.create(
-                    Path(temp_dir),
-                    components=[
-                        Component(
-                            "agent-extension",
-                            "0.0.124",
-                            "ext-agent/v0.0.124",
                             SOURCE_SHA,
                         )
                     ],

@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       feed:
-        description: "Tracked appcast to validate against live R2"
+        description: "Tracked appcast to validate against the live feed"
         required: true
         type: choice
         options:
@@ -21,7 +21,7 @@ on:
           - appcast-claw-server.xml
           - appcast-claw-server.alpha.xml
       publish:
-        description: "Write to R2 after validation and backup (unchecked = dry run)"
+        description: "Publish to GitHub Releases after validation and backup (unchecked = dry run)"
         required: false
         type: boolean
         default: false
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
-      contents: read
+      contents: write
 
     steps:
       - name: Checkout tracked feed source
@@ -59,12 +59,9 @@ jobs:
       - name: Publish tracked appcast
         env:
           FEED: ${{ inputs.feed }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PUBLISH: ${{ inputs.publish }}
           REPAIR_INVALID_LIVE: ${{ inputs.repair_invalid_live }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
           set -euo pipefail
           args=("$FEED")

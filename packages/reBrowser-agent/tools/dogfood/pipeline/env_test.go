@@ -16,11 +16,11 @@ func TestWriteProductionEnvFile(t *testing.T) {
 			Server: map[string]string{
 				"NODE_ENV":   "production",
 				"LOG_LEVEL":  "debug",
-				"R2_BUCKET":  "server-bucket",
+				"POSTHOG_API_KEY": "phc_server",
 				"SHARED_KEY": "server",
 			},
 			CLI: map[string]string{
-				"R2_BUCKET":  "cli-bucket",
+				"POSTHOG_API_KEY": "phc_cli",
 				"SHARED_KEY": "cli",
 			},
 		},
@@ -35,20 +35,19 @@ func TestWriteProductionEnvFile(t *testing.T) {
 	assertContains(t, path, "BROWSEROS_CONFIG_URL=https://llm.browseros.com/api/browseros-server/config\n")
 	assertContains(t, path, "LOG_LEVEL=debug\n")
 	assertContains(t, path, "NODE_ENV=production\n")
-	assertContains(t, path, "POSTHOG_API_KEY=\n")
-	assertContains(t, path, "R2_BUCKET=server-bucket\n")
+	assertContains(t, path, "POSTHOG_API_KEY=phc_server\n")
 	assertContains(t, path, "SHARED_KEY=server\n")
-	assertNotContains(t, path, "R2_UPLOAD_PREFIX")
-	assertNotContains(t, path, "R2_DOWNLOAD_PREFIX")
+	assertNotContains(t, path, "R2_")
+	assertNotContains(t, path, "R2_SECRET_ACCESS_KEY")
 }
 
-func TestWriteProductionEnvFileKeepsCLIDefaultWhenServerDefaultIsEmpty(t *testing.T) {
+func TestWriteProductionEnvFileWritesServerDefaults(t *testing.T) {
 	root := t.TempDir()
 	if err := WriteProductionEnvFile(root, config.Config{}); err != nil {
 		t.Fatal(err)
 	}
 
-	assertContains(t, filepath.Join(root, ".env.production"), "R2_BUCKET=browseros\n")
+	assertContains(t, filepath.Join(root, ".env.production"), "NODE_ENV=production\n")
 }
 
 func TestWriteProductionEnvFileWritesServerOnlyEmptyValues(t *testing.T) {

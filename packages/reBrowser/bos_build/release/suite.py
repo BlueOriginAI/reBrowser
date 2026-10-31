@@ -1487,7 +1487,7 @@ class GitHubSuiteBackend:
             incoming = (state_root / relative).read_bytes()
             # A standalone publisher can commit a newer snapshot before its
             # component manifest reflects that version. Guard committed state
-            # here as well as live R2, before the PR can overwrite the snapshot.
+            # here as well as the live feed, before the PR can overwrite the snapshot.
             if relative.endswith(".xml"):
                 current_text = destination.read_text()
                 incoming_text = incoming.decode("utf-8")

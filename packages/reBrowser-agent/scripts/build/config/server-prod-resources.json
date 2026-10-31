@@ -3,8 +3,9 @@
     {
       "name": "Bun - macOS ARM64",
       "source": {
-        "type": "r2",
-        "key": "third_party/bun/bun-darwin-arm64"
+        "type": "url",
+        "url": "https://github.com/oven-sh/bun/releases/download/bun-v1.4.2/bun-darwin-aarch64.zip",
+        "member": "bun-darwin-aarch64/bun"
       },
       "destination": "resources/bin/third_party/bun",
       "os": ["macos"],
@@ -14,8 +15,9 @@
     {
       "name": "Bun - macOS x64",
       "source": {
-        "type": "r2",
-        "key": "third_party/bun/bun-darwin-x64"
+        "type": "url",
+        "url": "https://github.com/oven-sh/bun/releases/download/bun-v1.4.2/bun-darwin-x64.zip",
+        "member": "bun-darwin-x64/bun"
       },
       "destination": "resources/bin/third_party/bun",
       "os": ["macos"],
@@ -25,8 +27,9 @@
     {
       "name": "Bun - Linux ARM64",
       "source": {
-        "type": "r2",
-        "key": "third_party/bun/bun-linux-arm64"
+        "type": "url",
+        "url": "https://github.com/oven-sh/bun/releases/download/bun-v1.4.2/bun-linux-aarch64.zip",
+        "member": "bun-linux-aarch64/bun"
       },
       "destination": "resources/bin/third_party/bun",
       "os": ["linux"],
@@ -36,8 +39,9 @@
     {
       "name": "Bun - Linux x64 baseline",
       "source": {
-        "type": "r2",
-        "key": "third_party/bun/bun-linux-x64-baseline"
+        "type": "url",
+        "url": "https://github.com/oven-sh/bun/releases/download/bun-v1.4.2/bun-linux-x64-baseline.zip",
+        "member": "bun-linux-x64-baseline/bun"
       },
       "destination": "resources/bin/third_party/bun",
       "os": ["linux"],
@@ -47,8 +51,9 @@
     {
       "name": "Bun - Windows x64 baseline",
       "source": {
-        "type": "r2",
-        "key": "third_party/bun/bun-windows-x64-baseline.exe"
+        "type": "url",
+        "url": "https://github.com/oven-sh/bun/releases/download/bun-v1.4.2/bun-windows-x64-baseline.zip",
+        "member": "bun-windows-x64-baseline/bun.exe"
       },
       "destination": "resources/bin/third_party/bun.exe",
       "os": ["windows"],

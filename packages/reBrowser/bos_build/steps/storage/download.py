@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Download module for fetching build resources from Cloudflare R2"""
+"""Download module for fetching build resources from GitHub Releases"""
 
 import hashlib
 import json
@@ -19,74 +19,45 @@ from ...lib.utils import (
     get_platform,
 )
 
-from ...lib.r2 import (
-    BOTO3_AVAILABLE,
-    get_r2_client,
-    download_file_from_r2,
-)
+from ...lib.github_assets import download_asset
+from ...lib.github_assets import fetch_component_manifest
+from ...lib.github_releases import component_resource_url, github_repo
 
 ARTIFACT_ZIP_DOWNLOAD = "artifact_zip"
 ARTIFACT_METADATA_NAME = "artifact-metadata.json"
 COPY_CHUNK_SIZE = 1024 * 1024
-RESOURCE_VERSION_FAMILIES = (
-    (("artifacts", "server"), "browseros_server_resource_version"),
-    (
-        ("claw-server-rust", "prod-resources"),
-        "browserclaw_server_resource_version",
-    ),
-    (
-        ("claw-onboard", "prod-resources"),
-        "onboarding_resource_version",
-    ),
+RESOURCE_VERSION_FAMILIES = {
+    "server": "browseros_server_resource_version",
+    "claw-server-rust": "browserclaw_server_resource_version",
+    "claw-onboard": "onboarding_resource_version",
     # One build bakes one onboarding component, so both families read the same
-    # per-build version; the product-gated download key decides which applies.
-    (
-        ("app-onboard", "prod-resources"),
-        "onboarding_resource_version",
-    ),
-)
+    # per-build version; the product-gated download operation decides which applies.
+    "app-onboard": "onboarding_resource_version",
+}
 
 
-def resolve_resource_key(r2_key: str, context: Context) -> str:
-    """Resolve a latest resource key to an exact release version."""
-    parts = r2_key.split("/")
+def resource_version_for(component: str, context: Context) -> str:
+    """Return the pinned component version for one build, if any."""
+    attribute = RESOURCE_VERSION_FAMILIES.get(component)
+    return getattr(context.env, attribute, "") if attribute else ""
 
-    for prefix, env_property in RESOURCE_VERSION_FAMILIES:
-        version = getattr(context.env, env_property)
-        if not version or tuple(parts[: len(prefix)]) != prefix:
-            continue
 
-        expected_prefix = "/".join((*prefix, "latest"))
-        if len(parts) <= len(prefix) + 1:
-            raise ValueError(
-                f"Malformed resource key {r2_key!r}; expected "
-                f"{expected_prefix}/<artifact>"
-            )
-        if parts[len(prefix)] != "latest":
-            raise ValueError(
-                f"Malformed resource key {r2_key!r}; expected latest selector"
-            )
-
-        artifact_parts = parts[len(prefix) + 1 :]
-        if any(part in ("", ".", "..") for part in artifact_parts):
-            raise ValueError(
-                f"Malformed resource key {r2_key!r}; expected "
-                f"{expected_prefix}/<artifact>"
-            )
-        if (
-            version != version.strip()
-            or version in (".", "..")
-            or "/" in version
-            or "\\" in version
-        ):
-            raise ValueError(
-                f"Invalid resource version override {version!r}; "
-                "expected one safe path component"
-            )
-
-        return "/".join((*prefix, version, *artifact_parts))
-
-    return r2_key
+def resolve_component_manifest(
+    component: str,
+    context: Context,
+    *,
+    repo: str | None = None,
+    fetch=fetch_component_manifest,
+) -> dict:
+    """Fetch the component resource manifest pinned by the build, if any."""
+    version = resource_version_for(component, context)
+    document = fetch(component, version or None, repo or github_repo())
+    if document is None:
+        channel = version or "live"
+        raise RuntimeError(
+            f"No {channel} resource manifest for component {component}"
+        )
+    return document
 
 
 def extract_artifact_zip(archive_path: Path, destination: Path) -> list[Path]:
@@ -283,10 +254,11 @@ def managed_binary_families(config_path: Path) -> set[str]:
 
 @step("download_resources", phase="prep")
 class DownloadResourcesModule(Step):
-    """Download resources from Cloudflare R2 before build
+    """Download build resources from GitHub Releases before build
 
-    This module downloads binaries and other resources from R2 that are
-    required for the build but not stored in the repository.
+    This module downloads binaries and other resources from immutable component
+    release assets that are required for the build but not stored in the
+    repository.
 
     Behavior:
         - Always clears existing files and re-downloads (ensures latest)
@@ -296,20 +268,9 @@ class DownloadResourcesModule(Step):
 
     produces = []
     requires = []
-    description = "Download resources from Cloudflare R2"
+    description = "Download resources from GitHub Releases"
 
     def validate(self, context: Context) -> None:
-        if not BOTO3_AVAILABLE:
-            raise ValidationError(
-                "boto3 library not installed - run: pip install boto3"
-            )
-
-        if not context.env.has_r2_config():
-            raise ValidationError(
-                "R2 configuration not set. Required env vars: "
-                "R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY"
-            )
-
         config_path = context.get_download_resources_config()
         if not config_path.exists():
             raise ValidationError(
@@ -317,7 +278,8 @@ class DownloadResourcesModule(Step):
             )
 
     def execute(self, context: Context) -> None:
-        log_info("\nDownloading resources from R2...")
+        self._context = context
+        log_info("\nDownloading resources from GitHub Releases...")
 
         config_path = context.get_download_resources_config()
         with open(config_path, "r") as f:
@@ -336,14 +298,8 @@ class DownloadResourcesModule(Step):
 
         log_info(f"Downloading {len(filtered_ops)} resource(s)...")
 
-        client = get_r2_client(context.env)
-        if not client:
-            raise RuntimeError("Failed to create R2 client")
-
-        bucket = context.env.r2_bucket
-
+        manifests: dict[str, dict] = {}
         for op in filtered_ops:
-            op = {**op, "r2_key": resolve_resource_key(op["r2_key"], context)}
             name = op.get("name", "Unnamed")
             destination = op["destination"]
             dest_path = context.root_dir / destination
@@ -355,37 +311,68 @@ class DownloadResourcesModule(Step):
                 _clear_destination(dest_path)
                 log_info(f"    Cleared existing: {dest_path.name}")
 
-            self._download_operation(client, bucket, op, dest_path)
+            self._download_operation(op, dest_path, manifests)
 
-        log_success(f"Downloaded {len(filtered_ops)} resource(s) from R2")
+        log_success(f"Downloaded {len(filtered_ops)} resource(s)")
+
+    def _manifest(self, component: str, manifests: dict[str, dict]) -> dict:
+        if component not in manifests:
+            manifests[component] = resolve_component_manifest(component, self._context)
+        return manifests[component]
 
     def _download_operation(
-        self, client, bucket: str, operation: dict[str, Any], dest_path: Path
+        self,
+        operation: dict[str, Any],
+        dest_path: Path,
+        manifests: dict[str, dict],
     ) -> None:
         download_type = operation.get("download_type", "file")
-        r2_key = operation["r2_key"]
 
         if download_type == ARTIFACT_ZIP_DOWNLOAD:
-            self._download_artifact_zip(client, bucket, r2_key, dest_path)
+            component = operation.get("component")
+            asset = operation.get("asset")
+            if not isinstance(component, str) or not isinstance(asset, str):
+                raise RuntimeError(
+                    "Artifact downloads require 'component' and 'asset'"
+                )
+            manifest = self._manifest(component, manifests)
+            entry = next(
+                (
+                    item
+                    for item in manifest["targets"].values()
+                    if item["filename"] == asset
+                ),
+                None,
+            )
+            if entry is None:
+                raise RuntimeError(
+                    f"Component {component} manifest has no asset {asset}"
+                )
+            url = component_resource_url(
+                component,
+                str(manifest["version"]),
+                asset,
+            )
+            with tempfile.TemporaryDirectory() as temp_dir:
+                archive_path = Path(temp_dir) / "artifact.zip"
+                download_asset(
+                    url,
+                    archive_path,
+                    expected_sha256=str(entry["sha256"]),
+                    expected_size=int(entry["size"]),
+                )
+                extracted_paths = extract_artifact_zip(archive_path, dest_path)
+            log_info(f"    Extracted {len(extracted_paths)} artifact file(s)")
             return
 
-        if not download_file_from_r2(client, r2_key, dest_path, bucket):
-            raise RuntimeError(f"Failed to download: {operation.get('name', r2_key)}")
+        url = operation.get("url")
+        if not isinstance(url, str) or not url:
+            raise RuntimeError("File downloads require a 'url'")
+        download_asset(url, dest_path)
 
         if operation.get("executable", False):
             dest_path.chmod(dest_path.stat().st_mode | 0o755)
             log_info("    Set executable permissions")
-
-    def _download_artifact_zip(
-        self, client, bucket: str, r2_key: str, dest_path: Path
-    ) -> None:
-        with tempfile.TemporaryDirectory() as temp_dir:
-            archive_path = Path(temp_dir) / "artifact.zip"
-            if not download_file_from_r2(client, r2_key, archive_path, bucket):
-                raise RuntimeError(f"Failed to download artifact zip: {r2_key}")
-
-            extracted_paths = extract_artifact_zip(archive_path, dest_path)
-            log_info(f"    Extracted {len(extracted_paths)} artifact file(s)")
 
     def _filter_operations(
         self,

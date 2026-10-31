@@ -72,7 +72,7 @@ def _assert_server_bundles_aligned(root_dir: Path, product_id: str) -> None:
             f"!= darwin-x64 version {x64_version!r} "
             f"(generated {x64_meta.get('generatedAt', 'unknown')}). "
             "Re-run with resource downloads enabled so both arch bundles "
-            "refresh from R2."
+            "refresh from GitHub Releases."
         )
 
 

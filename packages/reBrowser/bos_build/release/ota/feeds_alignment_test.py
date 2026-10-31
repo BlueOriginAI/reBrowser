@@ -48,8 +48,8 @@ class BundleDerivationTest(unittest.TestCase):
         module = ServerOTAModule(version="0.0.9", channel="alpha")
 
         self.assertEqual(
-            module.artifact_key("darwin-arm64"),
-            "artifacts/server/0.0.9/browseros-server-resources-darwin-arm64.zip",
+            module.artifact_filename("darwin-arm64"),
+            "browseros-server-resources-darwin-arm64.zip",
         )
         self.assertEqual(
             module.zip_filename("darwin_arm64"),
@@ -62,8 +62,8 @@ class BundleDerivationTest(unittest.TestCase):
         )
 
         self.assertEqual(
-            module.artifact_key("darwin-arm64"),
-            "claw-server-rust/prod-resources/0.0.9/browseros-claw-server-rust-resources-darwin-arm64.zip",
+            module.artifact_filename("darwin-arm64"),
+            "browseros-claw-server-rust-resources-darwin-arm64.zip",
         )
         self.assertEqual(
             module.zip_filename("darwin_arm64"),
@@ -110,7 +110,6 @@ class BundleDerivationTest(unittest.TestCase):
                 env=SimpleNamespace(
                     macos_certificate_name="cert",
                     code_sign_tool_path="tool",
-                    has_r2_config=lambda: True,
                 )
             ),
         )
@@ -126,7 +125,6 @@ class BundleDerivationTest(unittest.TestCase):
                 env=SimpleNamespace(
                     macos_certificate_name="cert",
                     code_sign_tool_path="tool",
-                    has_r2_config=lambda: True,
                 )
             ),
         )

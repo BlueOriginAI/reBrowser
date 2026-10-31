@@ -6,7 +6,6 @@ on:
       - main
     paths:
       - "packages/reBrowser/bos_build/**"
-      - "packages/reBrowser/tools/vendor_uploads/**"
       - "packages/reBrowser/chromium_files/products/**"
       - "packages/reBrowser/pyproject.toml"
       - "packages/reBrowser/uv.lock"
@@ -65,10 +64,6 @@ jobs:
           # no-checkout regression test for --show-plan.
           uv run browseros build --preset release --show-plan
           uv run browseros product doctor
-
-      - name: Run vendor_uploads tests
-        working-directory: packages/reBrowser/tools/vendor_uploads
-        run: uv run python -m unittest discover -s vendor_uploads -t . -p "*_test.py"
 
   windows-git-bootstrap:
     name: Windows Git bootstrap / Git Bash + native Git

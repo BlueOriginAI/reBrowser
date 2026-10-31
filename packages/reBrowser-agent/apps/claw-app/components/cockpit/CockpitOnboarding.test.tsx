@@ -32,7 +32,7 @@ describe('CockpitOnboarding', () => {
     // youtube embed (blocked from the extension origin).
     expect(html).toContain('<video')
     expect(html.toLowerCase()).not.toContain('autoplay')
-    expect(html).toContain('onboarding-recording/video.mp4')
+    expect(html).toContain('feed-onboarding/first-run-demo.mp4')
     expect(html).not.toContain('youtube-nocookie.com/embed')
     expect(html).toContain('Hand off your first task')
     expect(html).toContain('Copy task')
@@ -45,7 +45,7 @@ describe('CockpitOnboarding', () => {
 
   it('first-run: retires the single setup demo and the numbered step strip', () => {
     const html = render('first-run')
-    expect(html).not.toContain('first-run-demo.mp4')
+    expect(html).not.toContain('cdn.browseros.com')
     expect(html).not.toContain('Install BrowserClaw as an MCP.')
     expect(html).not.toContain('Watch it here.')
   })

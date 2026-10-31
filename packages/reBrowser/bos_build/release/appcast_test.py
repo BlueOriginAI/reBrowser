@@ -70,7 +70,7 @@ class AppcastModuleTest(unittest.TestCase):
             Context,
             SimpleNamespace(
                 release_version=version,
-                env=SimpleNamespace(has_r2_config=lambda: True),
+                env=SimpleNamespace(),
             ),
         )
 

@@ -99,7 +99,6 @@ function warnDemotedEnv(resolved: ResolvedEnv): void {
 
 export interface LoadBuildConfigOptions {
   ci?: boolean
-  requireR2?: boolean
 }
 
 export function loadBuildConfig(
@@ -144,47 +143,5 @@ export function loadBuildConfig(
     processEnv,
   }
 
-  if (options.requireR2 && !options.ci) {
-    const r2 = requireProductR2Env(product, resolved)
-    config.r2 = {
-      accountId: r2.R2_ACCOUNT_ID,
-      accessKeyId: r2.R2_ACCESS_KEY_ID,
-      secretAccessKey: r2.R2_SECRET_ACCESS_KEY,
-      bucket: r2.R2_BUCKET,
-      downloadPrefix:
-        process.env.R2_DOWNLOAD_PREFIX ??
-        product.env.defaultR2DownloadPrefix ??
-        '',
-      uploadPrefix:
-        process.env.R2_UPLOAD_PREFIX ?? product.env.defaultR2UploadPrefix,
-    }
-  }
-
   return config
-}
-
-function requireProductR2Env(
-  product: ProductBuildSpec,
-  resolved: ResolvedEnv,
-): Record<
-  'R2_ACCOUNT_ID' | 'R2_ACCESS_KEY_ID' | 'R2_SECRET_ACCESS_KEY' | 'R2_BUCKET',
-  string
-> {
-  try {
-    return requireEnv(resolved, [
-      'R2_ACCOUNT_ID',
-      'R2_ACCESS_KEY_ID',
-      'R2_SECRET_ACCESS_KEY',
-      'R2_BUCKET',
-    ]) as Record<
-      | 'R2_ACCOUNT_ID'
-      | 'R2_ACCESS_KEY_ID'
-      | 'R2_SECRET_ACCESS_KEY'
-      | 'R2_BUCKET',
-      string
-    >
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    throw new Error(`${product.label}: ${message}`)
-  }
 }

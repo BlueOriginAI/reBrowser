@@ -55,11 +55,9 @@ describe('compiled resource orchestration', () => {
       stagedBinaryBaseName: 'test-rust',
       archiveBaseName: 'test-rust-resources',
       defaultManifestPath: 'resources.json',
-      defaultUpload: false,
       env: {
         requiredInlineEnvKeys: [],
         inlineEnvKeys: [],
-        defaultR2UploadPrefix: 'test-rust/prod-resources',
       },
     }
     const calls: Parameters<ProductCompiler>[] = []
@@ -136,12 +134,10 @@ describe('compiled resource orchestration', () => {
       stagedBinaryBaseName: 'test-rust',
       archiveBaseName: 'test-rust-resources',
       defaultManifestPath: 'resources.json',
-      defaultUpload: false,
       includeArtifactIdentity: true,
       env: {
         requiredInlineEnvKeys: [],
         inlineEnvKeys: [],
-        defaultR2UploadPrefix: 'test-rust/prod-resources',
       },
     }
     const compiler: ProductCompiler = async () => {

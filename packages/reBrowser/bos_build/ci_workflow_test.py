@@ -393,7 +393,6 @@ class ChromiumBuildWorkflowTest(unittest.TestCase):
         for phase in (
             "Resolve chromium pin and paths",
             "Restore chromium checkout (WarpCache)",
-            "Restore chromium checkout (R2)",
             "Ensure chromium checkout at pinned tag",
             "Reset chromium tree (clean module)",
             "Sync chromium dependencies (gclient)",
@@ -747,7 +746,7 @@ class ChromiumBuildWorkflowTest(unittest.TestCase):
                 }
             )
 
-            # R2 extraction restores working bytes independently of Git's
+            # Cached extraction restores working bytes independently of Git's
             # index stat cache. Rewriting the legacy bytes models that cache
             # boundary and forces native Git to inspect their line endings.
             (depot_tools / tracked.name).write_bytes(cached_bytes)
@@ -1005,7 +1004,6 @@ class ReleaseIntegrityWorkflowTest(unittest.TestCase):
                     )
                     self.assertEqual(job["with"]["products"], config["product"])
                     self.assertEqual(job["with"]["resource_mode"], "published")
-                    self.assertIs(job["with"]["upload_to_r2"], True)
                     self.assertEqual(
                         job["with"]["ref"],
                         "${{ needs.preflight.outputs.source_sha }}",
@@ -1158,7 +1156,7 @@ class ReleaseIntegrityWorkflowTest(unittest.TestCase):
                 self.assertIn("component|suite", validate["run"])
                 self.assertIn("inputs.state_owner != 'suite'", reflect["if"])
 
-    def test_server_latest_aliases_reconcile_monotonically_inside_retained_lock(self):
+    def test_server_live_aliases_reconcile_monotonically_inside_retained_lock(self):
         expected_groups = {
             "release-server.yml": "release-server",
             "release-claw-server.yml": "release-claw-server-rust",
@@ -1166,152 +1164,20 @@ class ReleaseIntegrityWorkflowTest(unittest.TestCase):
         for workflow_name, group in expected_groups.items():
             workflow = self.load_workflow(workflow_name)
             latest = self.named_step(
-                workflow, "finalize", "Copy versioned objects to latest"
+                workflow, "finalize", "Publish live component resources"
             )
             script = latest["run"]
             with self.subTest(workflow=workflow_name):
                 self.assertEqual(workflow["concurrency"]["group"], group)
                 self.assertFalse(workflow["concurrency"]["cancel-in-progress"])
                 self.assertNotIn("if", latest)
-                self.assertIn("current_version", script)
+                self.assertIn("ALIAS_TAG", script)
+                self.assertIn("component-manifest.json", script)
                 self.assertIn("sort -V", script)
                 self.assertIn("already newer", script)
-                self.assertIn("already matches version, source, and checksum", script)
-                self.assertIn("conflicts at version", script)
-                self.assertIn(
-                    'test("^(0|[1-9][0-9]*)[.](0|[1-9][0-9]*)[.](0|[1-9][0-9]*)$"))',
-                    script,
-                )
-                self.assertIn("copy-object", script)
-                self.assertLess(
-                    script.index("already newer"), script.index("copy-object")
-                )
-
-    def test_server_latest_alias_behavior_covers_missing_older_same_and_newer(self):
-        fake_aws = r"""#!/usr/bin/env python3
-import hashlib
-import json
-import os
-import sys
-from pathlib import Path
-
-
-def option(name):
-    return sys.argv[sys.argv.index(name) + 1]
-
-
-operation = sys.argv[2]
-key = option("--key")
-state = Path(os.environ["FAKE_AWS_STATE"])
-targets = ("darwin-arm64", "darwin-x64", "linux-arm64", "linux-x64", "windows-x64")
-target = next(value for value in targets if key.endswith(f"-{value}.zip"))
-component = "artifacts/server" if key.startswith("artifacts/server/") else "claw-server-rust/prod-resources"
-marker = state / target
-
-if operation == "copy-object":
-    marker.touch()
-    with (state / "copies").open("a", encoding="utf-8") as stream:
-        stream.write(key + "\n")
-    print("{}")
-    raise SystemExit(0)
-
-if operation != "head-object":
-    raise SystemExit(f"unexpected fake aws operation: {operation}")
-
-is_latest = "/latest/" in key
-if is_latest and not marker.exists() and os.environ["FAKE_DEST_VERSION"] == "missing":
-    print("An error occurred (404) when calling HeadObject: Not Found", file=sys.stderr)
-    raise SystemExit(44)
-
-if is_latest and not marker.exists():
-    version = os.environ["FAKE_DEST_VERSION"]
-    release_sha = os.environ["FAKE_DEST_SOURCE"]
-    checksum = os.environ["FAKE_DEST_CHECKSUM"]
-    if checksum == "exact":
-        checksum = hashlib.sha256(target.encode()).hexdigest()
-else:
-    version = os.environ["VERSION"]
-    release_sha = os.environ["RELEASE_SHA"]
-    checksum = hashlib.sha256(target.encode()).hexdigest()
-print(json.dumps({
-    "ContentLength": 100,
-    "Metadata": {
-        "component": component,
-        "target": target,
-        "version": version,
-        "release-sha": release_sha,
-        "sha256": checksum,
-    },
-}))
-"""
-        cases = (
-            ("missing", "9" * 40, "f" * 64, 5, True),
-            ("0.0.1", "9" * 40, "f" * 64, 5, True),
-            ("1.2.3", "1" * 40, "exact", 0, True),
-            ("9.0.0", "9" * 40, "f" * 64, 0, True),
-            ("1.2.3", "9" * 40, "exact", 0, False),
-            ("1.2.3", "1" * 40, "f" * 64, 0, False),
-        )
-        for workflow_name in ("release-server.yml", "release-claw-server.yml"):
-            script = self.named_step(
-                self.load_workflow(workflow_name),
-                "finalize",
-                "Copy versioned objects to latest",
-            )["run"]
-            for (
-                destination_version,
-                destination_source,
-                destination_checksum,
-                copy_count,
-                succeeds,
-            ) in cases:
-                with (
-                    self.subTest(
-                        workflow=workflow_name,
-                        destination_version=destination_version,
-                        destination_source=destination_source,
-                    ),
-                    tempfile.TemporaryDirectory() as temp_dir,
-                ):
-                    temp_root = Path(temp_dir)
-                    fake_bin = temp_root / "bin"
-                    fake_bin.mkdir()
-                    aws = fake_bin / "aws"
-                    aws.write_text(fake_aws, encoding="utf-8")
-                    aws.chmod(0o755)
-                    state = temp_root / "state"
-                    state.mkdir()
-                    environment = {
-                        **os.environ,
-                        "PATH": f"{fake_bin}{os.pathsep}{os.environ['PATH']}",
-                        "FAKE_AWS_STATE": str(state),
-                        "FAKE_DEST_VERSION": destination_version,
-                        "FAKE_DEST_SOURCE": destination_source,
-                        "FAKE_DEST_CHECKSUM": destination_checksum,
-                        "R2_ENDPOINT": "https://r2.invalid",
-                        "R2_BUCKET": "bucket",
-                        "RELEASE_SHA": "1" * 40,
-                        "VERSION": "1.2.3",
-                    }
-                    result = subprocess.run(
-                        [git_bash_path(), "-c", script],
-                        cwd=REPO_ROOT,
-                        env=environment,
-                        capture_output=True,
-                        text=True,
-                    )
-                    self.assertEqual(
-                        result.returncode == 0,
-                        succeeds,
-                        msg=result.stdout + result.stderr,
-                    )
-                    copies = state / "copies"
-                    copied = (
-                        copies.read_text(encoding="utf-8").splitlines()
-                        if copies.exists()
-                        else []
-                    )
-                    self.assertEqual(len(copied), copy_count)
+                self.assertIn("already points at", script)
+                self.assertIn("gh release upload", script)
+                self.assertNotIn("aws s3", script)
 
     def test_server_ota_hands_assembled_snapshot_to_suite_owner(self):
         workflow = self.load_workflow("publish-server-ota.yml")
@@ -1354,7 +1220,7 @@ print(json.dumps({
             1,
         )
 
-    def test_component_resolvers_include_immutable_r2_allocations(self):
+    def test_component_resolvers_include_immutable_resource_allocations(self):
         jobs = (
             ("release-server.yml", "prepare", "Resolve release"),
             ("release-claw-server.yml", "prepare", "Resolve release"),
@@ -1366,14 +1232,14 @@ print(json.dumps({
             workflow = self.load_workflow(workflow_name)
             step = self.named_step(workflow, job_name, step_name)
             with self.subTest(workflow=workflow_name):
-                self.assertIn("--r2-allocations", step["run"])
+                self.assertIn("--resource-allocations", step["run"])
                 for name in (
                     "R2_ACCOUNT_ID",
                     "R2_ACCESS_KEY_ID",
                     "R2_SECRET_ACCESS_KEY",
                     "R2_BUCKET",
                 ):
-                    self.assertEqual(step["env"][name], f"${{{{ secrets.{name} }}}}")
+                    self.assertNotIn(name, step.get("env", {}))
 
     def test_feed_snapshot_writers_share_a_retained_queue(self):
         jobs = (
@@ -1913,7 +1779,6 @@ class ProductNightlyWorkflowTest(unittest.TestCase):
             build["env"]["BROWSEROS_BUILD_RESERVATION_SHA"],
             "${{ inputs.reservation_sha }}",
         )
-        self.assertEqual(build["env"]["BROWSEROS_DEFER_R2_UPLOAD"], "1")
         self.assertEqual(
             build["env"]["ONBOARDING_RESOURCE_VERSION"],
             "${{ inputs.onboarding_version }}",
@@ -2941,7 +2806,7 @@ class RepairUpdateFeedWorkflowTest(unittest.TestCase):
             },
         )
         job = self.workflow["jobs"]["repair"]
-        self.assertEqual(job["permissions"], {"contents": "read"})
+        self.assertEqual(job["permissions"], {"contents": "write"})
         checkout = next(
             step
             for step in job["steps"]

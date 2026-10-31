@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'bun:test'
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { browserosServerBuildProduct } from '../build/server/descriptor'
 
 const repoRoot = resolve(import.meta.dir, '../../../..')
 const workflow = readFileSync(
@@ -67,18 +66,13 @@ describe('release-server workflow', () => {
 
   it('builds and attaches every immutable versioned artifact first', () => {
     const build = section('  build-publish:', '  finalize:')
-    expect(browserosServerBuildProduct.env.defaultR2UploadPrefix).toBe(
-      'artifacts/server',
-    )
-    expect(build).toContain(
-      'bun scripts/build/server.ts --target=all --upload --versioned-only',
-    )
+    expect(build).toContain('bun scripts/build/server.ts --target=all')
     expect(build).toContain('RELEASE_SHA:')
     expect(build).toContain('Expected 5 server resource zips')
     expect(build).toContain(
       `gh release upload "$RELEASE_TAG" "${dollar}{assets[@]}" --clobber`,
     )
-    expect(build).not.toContain('artifacts/server/latest/')
+    expect(build).not.toContain('--upload')
     expect(build).toContain(
       'browseros release component stamp --component server',
     )
@@ -88,19 +82,17 @@ describe('release-server workflow', () => {
   it('finalizes only after verifying assets and versioned objects', () => {
     const finalize = section('  finalize:', '  publish-ota:')
     expect(finalize).toContain('Expected 5 draft assets')
-    expect(finalize).toContain(
-      `key="artifacts/server/${dollar}{VERSION}/${dollar}{name}"`,
-    )
-    expect(finalize).toContain('--arg component "artifacts/server"')
-    expect(finalize).toContain('aws s3api get-object')
+    expect(finalize).toContain('scripts/ci/component_manifest.py')
+    expect(finalize).toContain('component-manifest.json')
     expect(finalize).toContain('gh release download "$RELEASE_TAG"')
-    expect(finalize).toContain('sha256sum')
-    expect(finalize).toContain('Draft asset does not match canonical R2 object')
-    expect(finalize).toContain('--metadata-directive COPY')
+    expect(finalize).toContain(
+      `gh release upload "$ALIAS_TAG" "${dollar}{assets[@]}" --clobber`,
+    )
+    expect(finalize).not.toContain('aws s3api')
     const verifyIndex = finalize.indexOf('Verify prepared release')
     const tagIndex = finalize.indexOf('git tag -a "$RELEASE_TAG"')
     const publishIndex = finalize.indexOf('--draft=false')
-    const latestIndex = finalize.indexOf('Copy versioned objects to latest')
+    const latestIndex = finalize.indexOf('Publish live component resources')
     expect(verifyIndex).toBeGreaterThanOrEqual(0)
     expect(tagIndex).toBeGreaterThan(verifyIndex)
     expect(latestIndex).toBeGreaterThan(tagIndex)

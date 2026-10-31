@@ -39,21 +39,16 @@ describe('ENV_REGISTRY', () => {
       'LOG_LEVEL',
       'BROWSEROS_AI_SDK_DEVTOOLS',
       'BROWSEROS_TEST_HEADLESS',
-      'R2_ACCOUNT_ID',
-      'R2_ACCESS_KEY_ID',
-      'R2_SECRET_ACCESS_KEY',
-      'R2_BUCKET',
       'ESIGNER_USERNAME',
       'ESIGNER_PASSWORD',
       'ESIGNER_TOTP_SECRET',
       'ESIGNER_CREDENTIAL_ID',
     ])
-    expect(ENV_REGISTRY.map((spec) => spec.key)).not.toContain(
-      'R2_UPLOAD_PREFIX',
-    )
-    expect(ENV_REGISTRY.map((spec) => spec.key)).not.toContain(
-      'R2_DOWNLOAD_PREFIX',
-    )
+    expect(
+      ENV_REGISTRY.map((spec) => spec.key).filter((key) =>
+        key.startsWith('R2_'),
+      ),
+    ).toEqual([])
   })
 
   test('registers the Claw analytics production contract and eSigner inputs', () => {
@@ -168,9 +163,7 @@ describe('generateEnvExample', () => {
     expect(production).toContain('\nESIGNER_PASSWORD=\n')
     expect(production).toContain('\nESIGNER_TOTP_SECRET=\n')
     expect(production).toContain('\nESIGNER_CREDENTIAL_ID=\n')
-    expect(production.indexOf('# --- sign ---')).toBeGreaterThan(
-      production.indexOf('# --- upload ---'),
-    )
+    expect(production).not.toContain('R2_')
   })
 
   test.each([

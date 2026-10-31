@@ -12,7 +12,6 @@ from ..core.context import Context
 from ..core.runner import StepExecutionError, run as run_steps
 from ..lib.notify import slack_subscriber
 from ..lib.paths import get_package_root
-from ..lib.r2 import get_r2_client
 from ..lib.utils import log_error
 from ..release.extensions.release import (
     build_pipeline,
@@ -148,16 +147,10 @@ def verify(
     source_sha: str = typer.Option(..., "--source-sha"),
     output_dir: Optional[Path] = typer.Option(None, "--output-dir"),
 ):
-    """Verify that selected versioned CRX objects exist in R2."""
+    """Verify that selected versioned CRX assets exist on GitHub Releases."""
     try:
         names = extension_names(name)
-        ctx = _create_context(version)
-        client = get_r2_client(ctx.env)
-        if client is None:
-            raise RuntimeError("Failed to create R2 client")
         verify_versioned_crx_objects(
-            client,
-            ctx.env.r2_bucket,
             version,
             names,
             source_sha,

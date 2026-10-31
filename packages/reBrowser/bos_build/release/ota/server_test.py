@@ -2,7 +2,6 @@
 """Tests for immutable and idempotent server OTA payload generation."""
 
 import hashlib
-import io
 import json
 import tempfile
 import unittest
@@ -15,6 +14,7 @@ from unittest import mock
 from ...core.context import Context
 from ..feeds.render import ExistingAppcast, SignedArtifact, render_server_appcast
 from ..feeds.spec import server_feed
+from ..github_store import ReleaseAssetError
 from ..resource_pins import ResourceObjectPin, ResourcePin
 from . import server as ota_server
 from .common import SERVER_PLATFORMS
@@ -22,13 +22,7 @@ from .server import ServerOTAModule
 
 
 SOURCE_SHA = "a" * 40
-
-
-class _PreconditionFailure(Exception):
-    response = {
-        "Error": {"Code": "PreconditionFailed"},
-        "ResponseMetadata": {"HTTPStatusCode": 412},
-    }
+OTHER_SHA = "b" * 40
 
 
 def _complete_appcast(version: str = "0.0.9") -> str:
@@ -64,7 +58,7 @@ class LiveReleaseReuseTest(unittest.TestCase):
         self.ctx = cast(
             Context,
             SimpleNamespace(
-                env=SimpleNamespace(r2_bucket="browseros"),
+                env=SimpleNamespace(),
                 artifact_registry=self.registry,
             ),
         )
@@ -118,11 +112,9 @@ class LiveReleaseReuseTest(unittest.TestCase):
             platform_filter="linux_x64",
             release_sha=SOURCE_SHA,
         )
-        client = object()
         pin = ResourcePin("browseros_server", "0.0.9", ())
 
         with (
-            mock.patch.object(ota_server, "get_r2_client", return_value=client),
             mock.patch.object(
                 ota_server,
                 "verify_prepared_resource_pin",
@@ -135,13 +127,7 @@ class LiveReleaseReuseTest(unittest.TestCase):
         ):
             module.execute(self.ctx)
 
-        verify.assert_called_once_with(
-            client,
-            "browseros",
-            "browseros_server",
-            "0.0.9",
-            SOURCE_SHA,
-        )
+        verify.assert_called_once_with("browseros_server", "0.0.9", SOURCE_SHA)
         reuse.assert_called_once_with(self.ctx)
         download.assert_not_called()
 
@@ -166,24 +152,18 @@ class ImmutableSourceDownloadTest(unittest.TestCase):
             output.writestr("artifact-metadata.json", json.dumps(metadata))
             output.writestr("resources/bin/browseros-server", server)
         self.data = self.archive.read_bytes()
-        self.key = "artifacts/server/0.0.9/browseros-server-resources-linux-x64.zip"
         self.pin = ResourcePin(
             "browseros_server",
             "0.0.9",
             (
                 ResourceObjectPin(
                     target="linux-x64",
-                    key=self.key,
-                    etag='"etag"',
+                    filename="browseros-server-resources-linux-x64.zip",
                     size=len(self.data),
                     sha256=hashlib.sha256(self.data).hexdigest(),
                     release_sha=SOURCE_SHA,
                 ),
             ),
-        )
-        self.ctx = cast(
-            Context,
-            SimpleNamespace(env=SimpleNamespace(r2_bucket="browseros")),
         )
         self.module = ServerOTAModule(
             version="0.0.9",
@@ -191,29 +171,30 @@ class ImmutableSourceDownloadTest(unittest.TestCase):
             release_sha=SOURCE_SHA,
         )
 
-    def test_downloads_the_pinned_versioned_object_and_checks_checksum(self):
-        def download(_client, key, destination, bucket):
-            self.assertEqual(key, self.key)
-            self.assertEqual(bucket, "browseros")
+    def test_downloads_the_pinned_versioned_asset_and_checks_checksum(self):
+        calls = []
+
+        def download(url, destination, **options):
+            calls.append((url, options))
             destination.parent.mkdir(parents=True, exist_ok=True)
             destination.write_bytes(self.data)
-            return True
 
         destination = self.root / "download"
-        with mock.patch.object(
-            ota_server, "download_file_from_r2", side_effect=download
-        ):
-            self.module._download_artifacts(
-                self.ctx,
-                destination,
-                object(),
-                self.pin,
-            )
+        with mock.patch.object(ota_server, "download_asset", side_effect=download):
+            self.module._download_artifacts(destination, self.pin)
 
         self.assertEqual(
             (destination / "linux-x64/resources/bin/browseros-server").read_bytes(),
             b"server",
         )
+        self.assertEqual(len(calls), 1)
+        self.assertEqual(
+            calls[0][0],
+            "https://github.com/BlueOriginAI/reBrowser/releases/download/"
+            "agent-server%2Fv0.0.9/browseros-server-resources-linux-x64.zip",
+        )
+        self.assertEqual(calls[0][1]["expected_sha256"], self.pin.objects[0].sha256)
+        self.assertEqual(calls[0][1]["expected_size"], len(self.data))
 
     def test_refuses_download_whose_bytes_do_not_match_the_binding(self):
         bad_pin = ResourcePin(
@@ -222,8 +203,7 @@ class ImmutableSourceDownloadTest(unittest.TestCase):
             (
                 ResourceObjectPin(
                     target="linux-x64",
-                    key=self.key,
-                    etag='"etag"',
+                    filename="browseros-server-resources-linux-x64.zip",
                     size=len(self.data),
                     sha256="0" * 64,
                     release_sha=SOURCE_SHA,
@@ -231,21 +211,22 @@ class ImmutableSourceDownloadTest(unittest.TestCase):
             ),
         )
 
-        def download(_client, _key, destination, _bucket):
-            destination.parent.mkdir(parents=True, exist_ok=True)
-            destination.write_bytes(self.data)
-            return True
-
         with mock.patch.object(
-            ota_server, "download_file_from_r2", side_effect=download
+            ota_server,
+            "download_asset",
+            side_effect=RuntimeError("Downloaded checksum mismatch"),
         ):
             with self.assertRaisesRegex(RuntimeError, "checksum mismatch"):
-                self.module._download_artifacts(
-                    self.ctx,
-                    self.root / "bad-download",
-                    object(),
-                    bad_pin,
-                )
+                self.module._download_artifacts(self.root / "bad", bad_pin)
+
+
+def _write_sidecar(document: dict):
+    def write(tag, repo, name, destination):
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_text(json.dumps(document))
+        return destination
+
+    return write
 
 
 class BoundPayloadUploadTest(unittest.TestCase):
@@ -267,13 +248,8 @@ class BoundPayloadUploadTest(unittest.TestCase):
             version="0.0.9",
             release_sha=SOURCE_SHA,
         )
-        self.ctx = cast(
-            Context,
-            SimpleNamespace(env=SimpleNamespace(r2_bucket="browseros")),
-        )
-
-    def _metadata(self, data: bytes, signature: str) -> dict[str, str]:
-        return {
+        self.sha256 = hashlib.sha256(b"signed-payload").hexdigest()
+        self.binding = {
             "binding-schema": "browseros-server-ota-v1",
             "bundle-id": "browseros-server",
             "version": "0.0.9",
@@ -281,69 +257,95 @@ class BoundPayloadUploadTest(unittest.TestCase):
             "platform": "linux_x64",
             "os": "linux",
             "arch": "x86_64",
-            "sha256": hashlib.sha256(data).hexdigest(),
-            "sparkle-signature": signature,
-            "length": str(len(data)),
+            "sha256": self.sha256,
+            "sparkle-signature": "local-signature",
+            "length": len(b"signed-payload"),
         }
 
-    def test_creates_payload_with_a_write_once_binding(self):
-        client = SimpleNamespace(put_object=mock.Mock())
+    def test_creates_payload_and_binding_assets(self):
+        uploaded = []
 
-        result = self.module._upload_bound_payload(
-            self.ctx,
-            client,
-            self.artifact,
-        )
+        def upload(tag, repo, path, **options):
+            uploaded.append((tag, path.name, options))
+            return "uploaded"
+
+        def upload_json(tag, repo, name, document, **options):
+            uploaded.append((tag, name, document))
+            return "uploaded"
+
+        with (
+            mock.patch.object(
+                ota_server,
+                "release_assets",
+                side_effect=ReleaseAssetError("missing"),
+            ),
+            mock.patch.object(
+                ota_server, "upload_immutable_asset", side_effect=upload
+            ),
+            mock.patch.object(
+                ota_server, "upload_json_asset", side_effect=upload_json
+            ),
+        ):
+            result = self.module._upload_bound_payload(self.artifact)
 
         self.assertEqual(result, self.artifact)
-        request = client.put_object.call_args.kwargs
-        self.assertEqual(request["IfNoneMatch"], "*")
-        self.assertEqual(
-            request["Metadata"], self._metadata(b"signed-payload", "local-signature")
-        )
+        self.assertEqual(uploaded[0][0], "server/v0.0.9")
+        self.assertEqual(uploaded[0][1], self.path.name)
+        self.assertEqual(uploaded[0][2]["expected_sha256"], self.sha256)
+        self.assertEqual(uploaded[1][1], f"{self.path.name}.json")
+        self.assertEqual(uploaded[1][2], self.binding)
 
-    def test_reuses_the_canonical_payload_after_a_write_race(self):
-        canonical = b"canonical-payload"
-        client = SimpleNamespace(
-            put_object=mock.Mock(side_effect=_PreconditionFailure()),
-            get_object=mock.Mock(
-                return_value={
-                    "Body": io.BytesIO(canonical),
-                    "Metadata": self._metadata(canonical, "canonical-signature"),
-                }
+    def test_reuses_a_matching_canonical_payload(self):
+        with (
+            mock.patch.object(
+                ota_server,
+                "release_assets",
+                return_value={self.path.name: {"size": 1, "sha256": self.sha256}},
             ),
-        )
+            mock.patch.object(ota_server, "upload_immutable_asset") as upload,
+            mock.patch.object(ota_server, "upload_json_asset") as upload_json,
+            mock.patch.object(
+                ota_server, "download_release_asset"
+            ) as download,
+        ):
+            def write_sidecar(tag, repo, name, destination):
+                destination.parent.mkdir(parents=True, exist_ok=True)
+                destination.write_text(json.dumps(self.binding))
+                return destination
 
-        result = self.module._upload_bound_payload(
-            self.ctx,
-            client,
-            self.artifact,
-        )
+            download.side_effect = write_sidecar
+            result = self.module._upload_bound_payload(self.artifact)
 
-        self.assertEqual(result.signature, "canonical-signature")
-        self.assertEqual(result.length, len(canonical))
-        self.assertEqual(result.zip_path.name, self.path.name)
+        self.assertEqual(result, self.artifact)
+        upload.assert_not_called()
+        upload_json.assert_not_called()
 
     def test_rejects_a_colliding_payload_with_another_binding(self):
-        canonical = b"canonical-payload"
-        metadata = self._metadata(canonical, "canonical-signature")
-        metadata["release-sha"] = "b" * 40
-        client = SimpleNamespace(
-            put_object=mock.Mock(side_effect=_PreconditionFailure()),
-            get_object=mock.Mock(
-                return_value={
-                    "Body": io.BytesIO(canonical),
-                    "Metadata": metadata,
-                }
+        sidecar = dict(self.binding)
+        sidecar["release-sha"] = OTHER_SHA
+        with (
+            mock.patch.object(
+                ota_server,
+                "release_assets",
+                return_value={self.path.name: {"size": 1, "sha256": self.sha256}},
             ),
-        )
+            mock.patch.object(
+                ota_server,
+                "download_release_asset",
+                side_effect=_write_sidecar(sidecar),
+            ),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "binding mismatch"):
+                self.module._upload_bound_payload(self.artifact)
 
-        with self.assertRaisesRegex(RuntimeError, "binding mismatch"):
-            self.module._upload_bound_payload(
-                self.ctx,
-                client,
-                self.artifact,
-            )
+    def test_rejects_a_colliding_payload_with_another_digest(self):
+        with mock.patch.object(
+            ota_server,
+            "release_assets",
+            return_value={self.path.name: {"size": 1, "sha256": "0" * 64}},
+        ):
+            with self.assertRaisesRegex(RuntimeError, "conflicts"):
+                self.module._upload_bound_payload(self.artifact)
 
     def test_appcast_uses_the_canonical_payload_after_collision(self):
         canonical = SignedArtifact(
@@ -359,13 +361,12 @@ class BoundPayloadUploadTest(unittest.TestCase):
         ctx = cast(
             Context,
             SimpleNamespace(
-                env=SimpleNamespace(r2_bucket="browseros"),
+                env=SimpleNamespace(),
                 artifact_registry=SimpleNamespace(add=mock.Mock()),
             ),
         )
 
         with (
-            mock.patch.object(ota_server, "get_r2_client", return_value=object()),
             mock.patch.object(
                 self.module,
                 "_upload_bound_payload",

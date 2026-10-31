@@ -57,9 +57,8 @@ describe('release-claw-onboard workflow', () => {
 
   it('uploads only the immutable onboarding version and attaches it', () => {
     const build = section('  build-publish:', '  finalize:')
-    expect(build).toContain(
-      'bun scripts/build/claw-onboard.ts --upload --versioned-only',
-    )
+    expect(build).toContain('bun scripts/build/claw-onboard.ts')
+    expect(build).not.toContain('--upload')
     expect(build).toContain('RELEASE_SHA:')
     expect(build).toContain(
       'dist/prod/claw-onboard/browseros-claw-onboard-resources.zip',
@@ -77,19 +76,17 @@ describe('release-claw-onboard workflow', () => {
   it('publishes then moves latest during finalization', () => {
     const finalize = section('  finalize:', '  reflect-version:')
     expect(finalize).toContain('Expected onboarding draft asset')
-    expect(finalize).toContain(
-      `key="claw-onboard/prod-resources/${dollar}{VERSION}/${dollar}{name}"`,
-    )
-    expect(finalize).toContain('--arg component "claw-onboard/prod-resources"')
-    expect(finalize).toContain('aws s3api get-object')
+    expect(finalize).toContain('scripts/ci/component_manifest.py')
+    expect(finalize).toContain('component-manifest.json')
     expect(finalize).toContain('gh release download "$RELEASE_TAG"')
-    expect(finalize).toContain('sha256sum')
-    expect(finalize).toContain('Draft asset does not match canonical R2 object')
-    expect(finalize).toContain('--metadata-directive COPY')
+    expect(finalize).toContain(
+      `gh release upload "$ALIAS_TAG" "${dollar}{assets[@]}" --clobber`,
+    )
+    expect(finalize).not.toContain('aws s3api')
     const verifyIndex = finalize.indexOf('Verify prepared release')
     const tagIndex = finalize.indexOf('git tag -a "$RELEASE_TAG"')
     const publishIndex = finalize.indexOf('--draft=false')
-    const latestIndex = finalize.indexOf('Copy versioned object to latest')
+    const latestIndex = finalize.indexOf('Publish live component resources')
     expect(tagIndex).toBeGreaterThan(verifyIndex)
     expect(publishIndex).toBeGreaterThan(tagIndex)
     expect(latestIndex).toBeGreaterThan(publishIndex)

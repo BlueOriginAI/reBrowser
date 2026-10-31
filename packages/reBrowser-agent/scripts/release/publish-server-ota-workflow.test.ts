@@ -104,8 +104,7 @@ describe('publish-server-ota workflow', () => {
     const publishStepsStart = publish.indexOf('    steps:')
     const publishJobEnv = publish.slice(publishEnvStart, publishStepsStart)
     expect(publishJobEnv).not.toContain(`${dollar}{{ secrets.`)
-    expect(publish).toContain(
-      `R2_ACCOUNT_ID: ${dollar}{{ secrets.R2_ACCOUNT_ID }}`,
-    )
+    expect(publish).toContain(`GH_TOKEN: ${dollar}{{ secrets.GITHUB_TOKEN }}`)
+    expect(publish).not.toContain('R2_')
   })
 })

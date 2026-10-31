@@ -205,7 +205,7 @@ class Context:
         return f"https://github.com/vslavik/winsparkle/releases/download/v{self.WINSPARKLE_VERSION}/WinSparkle-{self.WINSPARKLE_VERSION}.zip"
 
     def get_extensions_manifest_url(self) -> str:
-        """Get CDN URL for bundled extensions manifest"""
+        """Get the published URL for the bundled extensions manifest"""
         return self.env.bundled_extensions_manifest_url or feed_asset_url(
             "extensions", "browseros", "bundled-manifest.xml"
         )
@@ -280,7 +280,7 @@ class Context:
         return versions_mod.update_feed_version(self.browseros_version_parts)
 
     def get_release_path(self, platform: str) -> str:
-        """Get R2 path for release artifacts, e.g. "releases/browseros/0.31.0/macos/"."""
+        """Get the logical release path, e.g. "releases/browseros/0.31.0/macos/"."""
         return (
             f"releases/{self.product.release_prefix}/"
             f"{self.semantic_version}/{platform}/"

@@ -2,7 +2,7 @@
 """GitHub Releases URL helpers.
 
 Public downloads and update feeds are served from GitHub Releases instead of
-the Cloudflare R2/CDN. A single repository hosts several products and feed
+a CDN. A single repository hosts several products and feed
 channels, so URLs are derived from explicit tags rather than GitHub's one
 "latest" release per repository.
 """
@@ -20,6 +20,18 @@ _GITHUB_REMOTE_RE = re.compile(r"github\.com[:/]([^/]+/[^/]+?)(?:\.git)?$")
 
 PRODUCT_IDS = ("browseros", "browserclaw")
 NO_PRODUCT_FEEDS = ("extensions",)
+
+COMPONENT_TAG_PREFIXES = {
+    "server": "agent-server/v",
+    "claw-server-rust": "claw-server/v",
+    "app-onboard": "app-onboard/v",
+    "claw-onboard": "claw-onboard/v",
+    "agent": "ext-agent/v",
+    "browserclaw": "ext-browserclaw/v",
+}
+
+COMPONENT_MANIFEST_ASSET = "component-manifest.json"
+COMPONENT_MANIFEST_SCHEMA = "browseros-component-manifest-v1"
 
 
 def github_repo() -> str:
@@ -114,3 +126,38 @@ def server_asset_url(
     version: str, filename: str, repo: Optional[str] = None
 ) -> str:
     return release_asset_url(server_tag(version), filename, repo)
+
+
+def component_tag(component: str, version: str) -> str:
+    """Versioned tag for one immutable component release."""
+    try:
+        prefix = COMPONENT_TAG_PREFIXES[component]
+    except KeyError as error:
+        raise ValueError(f"Unknown component: {component}") from error
+    return f"{prefix}{version}"
+
+
+def component_resource_tag(component: str) -> str:
+    """Stable tag whose assets mirror the newest component resources."""
+    return f"feed-resources-{component}"
+
+
+def component_manifest_url(
+    component: str,
+    version: Optional[str] = None,
+    repo: Optional[str] = None,
+) -> str:
+    """Public URL of a component resource manifest (versioned or live)."""
+    tag = (
+        component_tag(component, version)
+        if version
+        else component_resource_tag(component)
+    )
+    return release_asset_url(tag, COMPONENT_MANIFEST_ASSET, repo)
+
+
+def component_resource_url(
+    component: str, version: str, filename: str, repo: Optional[str] = None
+) -> str:
+    """Public URL of one immutable component resource asset."""
+    return release_asset_url(component_tag(component, version), filename, repo)

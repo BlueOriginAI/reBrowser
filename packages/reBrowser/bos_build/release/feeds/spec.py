@@ -28,7 +28,7 @@ from ...lib.github_releases import (
 
 @dataclass(frozen=True)
 class ExtensionSpec:
-    """One CDN-distributed extension; name is the crx filename prefix."""
+    """One release-distributed extension; name is the crx filename prefix."""
 
     name: str
     extension_id: str
@@ -60,7 +60,7 @@ def extension_by_name(name: str) -> ExtensionSpec:
 
 @dataclass(frozen=True)
 class FeedSpec:
-    """One publishable feed object: a flat R2 key plus render metadata."""
+    """One publishable feed object: a release asset key plus render metadata."""
 
     key: str
     kind: str  # "browser" | "server" | "extensions"

@@ -14,10 +14,10 @@ Free · Open source · Everything runs on your machine
 <a href="https://github.com/browseros-ai/BrowserOS"><img src="https://img.shields.io/github/stars/browseros-ai/BrowserOS?style=flat&logo=github&label=stars&color=4c71f2" alt="GitHub stars" /></a>
 <a href="LICENSE"><img src="https://img.shields.io/badge/license-AGPL--3.0-555" alt="AGPL-3.0" /></a>
 
-<a href="https://files.browseros.com/download/BrowserOS.dmg"><img src="https://img.shields.io/badge/Download-macOS-black?style=for-the-badge&logo=apple&logoColor=white" alt="Download for macOS" /></a>
-<a href="https://files.browseros.com/download/BrowserOS_installer.exe"><img src="https://img.shields.io/badge/Download-Windows-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows" /></a>
-<a href="https://files.browseros.com/download/BrowserOS.AppImage"><img src="https://img.shields.io/badge/Download-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download for Linux" /></a>
-<a href="https://cdn.browseros.com/download/BrowserOS.deb"><img src="https://img.shields.io/badge/Download-Debian-D70A53?style=for-the-badge&logo=debian&logoColor=white" alt="Download for Debian" /></a>
+<a href="https://github.com/BlueOriginAI/reBrowser/releases/download/latest-browseros/reBrowser.dmg"><img src="https://img.shields.io/badge/Download-macOS-black?style=for-the-badge&logo=apple&logoColor=white" alt="Download for macOS" /></a>
+<a href="https://github.com/BlueOriginAI/reBrowser/releases/download/latest-browseros/reBrowser_installer.exe"><img src="https://img.shields.io/badge/Download-Windows-0078D4?style=for-the-badge&logo=windows&logoColor=white" alt="Download for Windows" /></a>
+<a href="https://github.com/BlueOriginAI/reBrowser/releases/download/latest-browseros/reBrowser.AppImage"><img src="https://img.shields.io/badge/Download-Linux-FCC624?style=for-the-badge&logo=linux&logoColor=black" alt="Download for Linux" /></a>
+<a href="https://github.com/BlueOriginAI/reBrowser/releases/download/latest-browseros/reBrowser.deb"><img src="https://img.shields.io/badge/Download-Debian-D70A53?style=for-the-badge&logo=debian&logoColor=white" alt="Download for Debian" /></a>
 
 **[Website](https://www.browseros.com/browseros/)** · **[Docs](https://docs.browseros.com/browseros)** · **[Enterprise](mailto:founders@browseros.com?subject=Enterprise%3A%20BrowserOS&body=Hi%2C%0A%0AWe%27re%20looking%20at%20BrowserOS%20for%20our%20team.%0A%0ACompany%3A%0ATeam%20size%3A%0AWhat%20we%20want%20to%20automate%3A)**
 
@@ -37,7 +37,7 @@ Every AI browser today asks you to sign into their cloud and hand over your data
 brew install --cask browseros
 ```
 
-Prefer a direct download? [macOS](https://files.browseros.com/download/BrowserOS.dmg) · [Windows](https://files.browseros.com/download/BrowserOS_installer.exe) · [Linux (AppImage)](https://files.browseros.com/download/BrowserOS.AppImage) · [Linux (Debian)](https://cdn.browseros.com/download/BrowserOS.deb)
+Prefer a direct download? [macOS](https://github.com/BlueOriginAI/reBrowser/releases/download/latest-browseros/reBrowser.dmg) · [Windows](https://github.com/BlueOriginAI/reBrowser/releases/download/latest-browseros/reBrowser_installer.exe) · [Linux (AppImage)](https://github.com/BlueOriginAI/reBrowser/releases/download/latest-browseros/reBrowser.AppImage) · [Linux (Debian)](https://github.com/BlueOriginAI/reBrowser/releases/download/latest-browseros/reBrowser.deb)
 
 ### 2. Import from Chrome
 

@@ -96,7 +96,7 @@ def _release_provenance(ctx: Context) -> dict[str, object]:
 
 
 def _get_platform() -> str:
-    """Get platform name for R2 path"""
+    """Get platform name for release metadata"""
     if IS_MACOS():
         return "macos"
     elif IS_WINDOWS():

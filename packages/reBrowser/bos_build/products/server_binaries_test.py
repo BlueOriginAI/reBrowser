@@ -71,20 +71,6 @@ class MacosServerBinariesTest(unittest.TestCase):
             BROWSERCLAW_SERVER_BUNDLE.runtime_binary_name,
             "reBrowser-server",
         )
-        self.assertEqual(
-            BROWSEROS_SERVER_BUNDLE.unsigned_artifact_key("darwin-arm64"),
-            "artifacts/server/latest/browseros-server-resources-darwin-arm64.zip",
-        )
-        self.assertEqual(
-            BROWSEROS_SERVER_BUNDLE.unsigned_artifact_key(
-                "darwin-arm64", version="0.0.9"
-            ),
-            "artifacts/server/0.0.9/browseros-server-resources-darwin-arm64.zip",
-        )
-        self.assertEqual(
-            BROWSERCLAW_SERVER_BUNDLE.unsigned_artifact_key("darwin-arm64"),
-            "claw-server-rust/prod-resources/latest/browseros-claw-server-rust-resources-darwin-arm64.zip",
-        )
 
     def test_server_bundles_filter_by_product(self):
         self.assertEqual(

@@ -22,7 +22,7 @@ function validateRule(rule: ResourceRule): void {
     throw new Error('Manifest rule is missing name')
   }
   const hasSourcePath =
-    (rule.source.type === 'r2' && rule.source.key) ||
+    (rule.source.type === 'url' && rule.source.url) ||
     (rule.source.type === 'local' && rule.source.path)
   if (!hasSourcePath || !rule.destination) {
     throw new Error(
@@ -41,12 +41,16 @@ function parseSource(raw: unknown): ResourceRule['source'] {
     throw new Error('Manifest source must be an object')
   }
   const source = raw as Record<string, unknown>
-  if (source.type === 'r2') {
-    const key = source.key
-    if (typeof key !== 'string' || key.length === 0) {
-      throw new Error('Manifest source key is required')
+  if (source.type === 'url') {
+    const url = source.url
+    if (typeof url !== 'string' || !/^https:\/\//.test(url)) {
+      throw new Error('Manifest source url must be https')
     }
-    return { type: 'r2', key }
+    const member = source.member
+    if (member !== undefined && (typeof member !== 'string' || !member)) {
+      throw new Error('Manifest source member must be a non-empty string')
+    }
+    return member ? { type: 'url', url, member } : { type: 'url', url }
   }
   if (source.type === 'local') {
     const path = source.path

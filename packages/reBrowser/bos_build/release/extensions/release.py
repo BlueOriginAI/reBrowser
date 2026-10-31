@@ -4,14 +4,26 @@
 import hashlib
 import os
 import re
+import tempfile
 from pathlib import Path
 from typing import List, Mapping, Optional, Sequence, Tuple
 
 from ...core.step import Step, ValidationError
 from ...lib.paths import get_package_root
-from ...lib.r2 import BOTO3_AVAILABLE, get_r2_client
 from ...lib.utils import log_info, log_success, log_warning
-from ...lib.github_releases import extension_asset_url
+from ...lib.github_assets import download_asset, fetch_json
+from ...lib.github_releases import (
+    extension_asset_url,
+    extension_tag,
+    github_repo,
+    release_asset_url,
+)
+from ..github_store import (
+    ReleaseAssetError,
+    release_assets,
+    upload_immutable_asset,
+    upload_json_asset,
+)
 from ..feeds.render import extract_manifest_versions
 from .build import (
     build_extension_crx,
@@ -33,34 +45,6 @@ _SOURCE_SHA_RE = re.compile(r"^[0-9a-fA-F]{40}$")
 _CRX_BINDING_SCHEMA = "browseros-extension-crx-v1"
 
 
-def _validate_manifest_update_url(
-    spec: ExtensionSpec, manifest: Mapping[str, object], dist_path: Path
-) -> None:
-    validate_manifest_update_url(spec, manifest, dist_path)
-
-
-def _error_response(error: Exception) -> Tuple[str, Optional[int]]:
-    response = getattr(error, "response", {})
-    code = str(response.get("Error", {}).get("Code", ""))
-    status = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
-    return code, status
-
-
-def _is_missing_object(error: Exception) -> bool:
-    code, status = _error_response(error)
-    return code in {"404", "NoSuchKey", "NotFound"} or status == 404
-
-
-def _is_precondition_failure(error: Exception) -> bool:
-    code, status = _error_response(error)
-    return code in {
-        "409",
-        "412",
-        "ConditionalRequestConflict",
-        "PreconditionFailed",
-    } or status in {409, 412}
-
-
 def _crx_binding(
     spec: ExtensionSpec,
     version: str,
@@ -76,34 +60,31 @@ def _crx_binding(
     }
 
 
+def _validate_manifest_update_url(
+    spec: ExtensionSpec, manifest: Mapping[str, object], dist_path: Path
+) -> None:
+    validate_manifest_update_url(spec, manifest, dist_path)
+
+
+def _crx_sidecar(spec: ExtensionSpec, version: str) -> str:
+    return f"{spec.crx_filename(version)}.json"
+
+
 def _read_bound_extension_crx(
-    client,
-    bucket: str,
     spec: ExtensionSpec,
     version: str,
     source_sha: str,
+    *,
+    repo: Optional[str] = None,
 ) -> Optional[bytes]:
-    key = spec.crx_key(version)
-    try:
-        response = client.get_object(Bucket=bucket, Key=key)
-    except Exception as e:
-        if _is_missing_object(e):
-            return None
-        raise RuntimeError(f"Failed to read canonical extension CRX {key}: {e}") from e
+    repository = repo or github_repo()
+    tag = extension_tag(version)
+    sidecar = fetch_json(
+        release_asset_url(tag, _crx_sidecar(spec, version), repository)
+    )
+    if sidecar is None:
+        return None
 
-    body = response.get("Body")
-    if body is None or not hasattr(body, "read"):
-        raise RuntimeError(f"Canonical extension CRX {key} returned no readable body")
-    try:
-        data = body.read()
-    finally:
-        close = getattr(body, "close", None)
-        if close:
-            close()
-
-    metadata = response.get("Metadata")
-    if not isinstance(metadata, Mapping):
-        metadata = {}
     expected = {
         "binding-schema": _CRX_BINDING_SCHEMA,
         "extension": spec.name,
@@ -111,77 +92,93 @@ def _read_bound_extension_crx(
         "source-sha": source_sha,
     }
     mismatches = {
-        name: {"expected": value, "actual": metadata.get(name)}
+        name: {"expected": value, "actual": sidecar.get(name)}
         for name, value in expected.items()
-        if metadata.get(name) != value
+        if sidecar.get(name) != value
     }
-    actual_sha256 = hashlib.sha256(data).hexdigest()
-    if metadata.get("sha256") != actual_sha256:
-        mismatches["sha256"] = {
-            "expected": actual_sha256,
-            "actual": metadata.get("sha256"),
-        }
     if mismatches:
         raise RuntimeError(
-            f"Canonical extension CRX binding mismatch for {key}: {mismatches}"
+            f"Canonical extension CRX binding mismatch for {tag}: {mismatches}"
+        )
+    with tempfile.TemporaryDirectory(prefix="extension-crx-") as temp_dir:
+        path = Path(temp_dir) / spec.crx_filename(version)
+        download_asset(
+            release_asset_url(tag, spec.crx_filename(version), repository),
+            path,
+            expected_sha256=str(sidecar.get("sha256", "")),
+        )
+        data = path.read_bytes()
+    actual_sha256 = hashlib.sha256(data).hexdigest()
+    if sidecar.get("sha256") != actual_sha256:
+        raise RuntimeError(
+            f"Canonical extension CRX checksum mismatch for {tag}"
         )
     return data
 
 
 def materialize_bound_extension_crx(
-    client,
-    bucket: str,
     spec: ExtensionSpec,
     version: str,
     source_sha: str,
     destination: Path,
+    *,
+    repo: Optional[str] = None,
 ) -> bool:
     """Materialize an existing source-bound CRX for retry attachment."""
-    data = _read_bound_extension_crx(client, bucket, spec, version, source_sha)
+    data = _read_bound_extension_crx(spec, version, source_sha, repo=repo)
     if data is None:
         return False
     destination.parent.mkdir(parents=True, exist_ok=True)
     destination.write_bytes(data)
-    log_success(f"Reused canonical extension CRX: {spec.crx_key(version)}")
+    log_success(f"Reused canonical extension CRX: {spec.crx_filename(version)}")
     return True
 
 
 def upload_bound_extension_crx(
-    client,
-    bucket: str,
     spec: ExtensionSpec,
     version: str,
     source_sha: str,
     path: Path,
+    *,
+    repo: Optional[str] = None,
 ) -> str:
-    """Upload a source-bound CRX or consume the concurrent canonical object."""
-    key = spec.crx_key(version)
+    """Upload a source-bound CRX or consume the concurrent canonical asset."""
+    repository = repo or github_repo()
+    tag = extension_tag(version)
     data = path.read_bytes()
+    sha256 = hashlib.sha256(data).hexdigest()
+    sidecar = _crx_sidecar(spec, version)
     try:
-        client.put_object(
-            Bucket=bucket,
-            Key=key,
-            Body=data,
-            ContentType="application/x-chrome-extension",
-            Metadata=dict(_crx_binding(spec, version, source_sha, data)),
-            IfNoneMatch="*",
-        )
-    except Exception as e:
-        if not _is_precondition_failure(e):
-            raise RuntimeError(
-                f"Failed to create source-bound extension CRX {key}: {e}"
-            ) from e
+        existing = release_assets(tag, repository)
+    except ReleaseAssetError:
+        existing = {}
+    if spec.crx_filename(version) in existing:
         if not materialize_bound_extension_crx(
-            client,
-            bucket,
-            spec,
-            version,
-            source_sha,
-            path,
+            spec, version, source_sha, path, repo=repository
         ):
-            raise RuntimeError(f"Concurrent canonical extension CRX disappeared: {key}")
+            raise RuntimeError(
+                f"Concurrent canonical extension CRX disappeared: {tag}"
+            )
         return "reused"
-    log_success(f"Uploaded source-bound extension CRX: {key}")
+
+    upload_immutable_asset(
+        tag,
+        repository,
+        path,
+        expected_sha256=sha256,
+        title=f"Extensions v{version}",
+    )
+    upload_json_asset(
+        tag,
+        repository,
+        sidecar,
+        {
+            **_crx_binding(spec, version, source_sha, data),
+            "size": len(data),
+        },
+        title=f"Extensions v{version}",
+    )
+    log_success(f"Uploaded source-bound extension CRX: {tag}/{path.name}")
     return "uploaded"
 
 
@@ -290,34 +287,30 @@ def resolve_extension_version(
 
 
 def verify_versioned_crx_objects(
-    client,
-    bucket: str,
     version: str,
     names: Sequence[str],
     source_sha: str,
     output_dir: Optional[Path] = None,
+    *,
+    repo: Optional[str] = None,
 ) -> Tuple[str, ...]:
     """Require every selected CRX to have the expected source binding."""
     if not _SOURCE_SHA_RE.fullmatch(source_sha):
         raise ValueError("Extension verification requires a full source commit SHA")
-    keys = []
+    assets = []
     for name in names:
         spec = spec_by_name(name)
-        key = spec.crx_key(version)
-        data = _read_bound_extension_crx(
-            client,
-            bucket,
-            spec,
-            version,
-            source_sha,
-        )
+        data = _read_bound_extension_crx(spec, version, source_sha, repo=repo)
         if data is None:
-            raise RuntimeError(f"Prepared extension CRX is missing: {key}")
+            raise RuntimeError(
+                f"Prepared extension CRX is missing: "
+                f"{extension_tag(version)}/{spec.crx_filename(version)}"
+            )
         if output_dir is not None:
             output_dir.mkdir(parents=True, exist_ok=True)
             (output_dir / spec.crx_filename(version)).write_bytes(data)
-        keys.append(key)
-    return tuple(keys)
+        assets.append(spec.crx_filename(version))
+    return tuple(assets)
 
 
 class ExtensionReleaseModule(Step):
@@ -325,7 +318,7 @@ class ExtensionReleaseModule(Step):
 
     produces = []
     requires = []
-    description = "Build and upload extension CRXs to the CDN"
+    description = "Build and upload extension CRXs to GitHub Releases"
 
     def __init__(
         self,
@@ -336,7 +329,6 @@ class ExtensionReleaseModule(Step):
         chrome_binary: Optional[str] = None,
         monorepo_root: Optional[Path] = None,
         work_root: Optional[Path] = None,
-        r2_client=None,
     ):
         self.version = version
         self.names = names
@@ -345,7 +337,6 @@ class ExtensionReleaseModule(Step):
         self.chrome_binary = chrome_binary
         self._monorepo_root = monorepo_root
         self._work_root = work_root
-        self._r2_client = r2_client
 
     def _specs(self) -> List[ExtensionSpec]:
         return [spec_by_name(name) for name in self.names]
@@ -375,13 +366,6 @@ class ExtensionReleaseModule(Step):
                         f"'{spec.name}' is missing or empty"
                     )
 
-        if not BOTO3_AVAILABLE:
-            raise ValidationError(
-                "boto3 library not installed - run: pip install boto3"
-            )
-        if not ctx.env.has_r2_config():
-            raise ValidationError("R2 configuration not set")
-
         # Public repos clone fine without it — warn, don't fail.
         if not os.environ.get("GH_TOKEN") and any(
             isinstance(spec.source, ExternalRepoSource) for spec in specs
@@ -401,11 +385,6 @@ class ExtensionReleaseModule(Step):
         monorepo_root = self._monorepo_root or package_root.parent.parent
         work_root = self._work_root or package_root / "build" / "extensions"
 
-        client = self._r2_client
-        if client is None:
-            client = get_r2_client(ctx.env)
-            if client is None:
-                raise RuntimeError("Failed to create R2 client")
         chrome = find_chrome_binary(self.chrome_binary)
 
         for spec in self._specs():
@@ -415,8 +394,6 @@ class ExtensionReleaseModule(Step):
             )
             crx_path = work_root / "dist" / spec.crx_filename(self.version)
             if materialize_bound_extension_crx(
-                client,
-                ctx.env.r2_bucket,
                 spec,
                 self.version,
                 self.source_sha,
@@ -440,8 +417,6 @@ class ExtensionReleaseModule(Step):
                     "remove it if this was a local test run"
                 )
             upload_bound_extension_crx(
-                client,
-                ctx.env.r2_bucket,
                 spec,
                 self.version,
                 self.source_sha,

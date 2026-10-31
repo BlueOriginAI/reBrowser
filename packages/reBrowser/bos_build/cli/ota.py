@@ -74,14 +74,7 @@ def _server_bundle_id(product: str) -> str:
 
 
 def _feed_publisher() -> FeedPublisher:
-    env = EnvConfig()
-    if not env.has_r2_config():
-        log_error(
-            "R2 configuration not set. Required env vars: R2_ACCOUNT_ID, "
-            "R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY"
-        )
-        raise typer.Exit(1)
-    return FeedPublisher(env=env)
+    return FeedPublisher(env=EnvConfig())
 
 
 def _log_alternate_product_appcasts(
@@ -260,7 +253,7 @@ def server_release_appcast(
     publish: bool = typer.Option(
         False,
         "--publish",
-        help="Write to R2 (default is a dry run: full XML + diff vs live)",
+        help="Publish to GitHub Releases (default is a dry run: full XML + diff vs live)",
     ),
     allow_downgrade: bool = typer.Option(
         False, "--allow-downgrade", help="Override the version-downgrade guard"
@@ -326,7 +319,7 @@ def server_promote(
     publish: bool = typer.Option(
         False,
         "--publish",
-        help="Write to R2 (default is a dry run: full XML + diff vs live)",
+        help="Publish to GitHub Releases (default is a dry run: full XML + diff vs live)",
     ),
     allow_downgrade: bool = typer.Option(
         False, "--allow-downgrade", help="Override the version-downgrade guard"

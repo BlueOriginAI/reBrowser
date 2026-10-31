@@ -4,7 +4,7 @@
 One command owns update-manifest(.alpha).xml + extensions(.alpha).json +
 bundled-manifest.xml so the three can never drift (the live alpha manifest
 fell behind prod under hand-editing). CRX building is out of scope — the
-crx objects must already exist in R2 (HEAD-checked before any write).
+crx assets must already be published (HEAD-checked before any write).
 """
 
 from pathlib import Path
@@ -12,7 +12,6 @@ from typing import Dict, List
 
 from ...core.context import Context
 from ...core.step import Step, ValidationError
-from ...lib.r2 import BOTO3_AVAILABLE
 from ...lib.utils import log_info
 from ..feeds.publisher import FeedPublisher
 from ..feeds.render import (
@@ -68,14 +67,6 @@ class ExtensionsFeedModule(Step):
         self.baseline_root = baseline_root
 
     def validate(self, ctx: Context) -> None:
-        if not BOTO3_AVAILABLE:
-            raise ValidationError(
-                "boto3 library not installed - run: pip install boto3"
-            )
-
-        if not ctx.env.has_r2_config():
-            raise ValidationError("R2 configuration not set")
-
         if self.channel not in CHANNELS:
             raise ValidationError(
                 f"channel must be one of {'/'.join(CHANNELS)}, got '{self.channel}'"
@@ -166,10 +157,10 @@ class ExtensionsFeedModule(Step):
         """Final pins: bundled fallback < channel manifest < explicit --set.
 
         Each feed retains its newest live or committed entry. A sibling may
-        have merged its snapshot and then failed to publish R2; using only live
+        have merged its snapshot and then failed to publish the feed; using only live
         bytes would silently erase that durable progress on the next merge.
         Callers supplying a baseline must hold the publication lock from this
-        read through snapshot persistence and R2 publication.
+        read through snapshot persistence and feed publication.
         """
         live_bundled = self._live_versions(publisher, bundled_manifest_feed().key)
         live_channel = self._live_versions(
@@ -182,7 +173,7 @@ class ExtensionsFeedModule(Step):
             live_channel, update_manifest_feed(self.channel).key, bundled=False
         )
         if self.baseline_root is not None and not self.allow_downgrade:
-            # Live-only preflight cannot protect a merged snapshot whose R2
+            # Live-only preflight cannot protect a merged snapshot whose feed
             # upload failed. Check explicit pins before they replace that durable
             # channel state; bundled may legitimately be newer than prod.
             for name, version in self.set_versions.items():
@@ -252,12 +243,12 @@ class ExtensionsFeedModule(Step):
         return merged
 
     def _check_crx_objects(self, publisher: FeedPublisher, targets) -> None:
-        """Every crx referenced by any output must already exist in R2."""
+        """Every crx referenced by any output must already be published."""
         for name, version in targets:
             url = extension_by_name(name).crx_url(version)
             status = publisher.http_head(url)
             if status != 200:
                 raise RuntimeError(
-                    f"crx not found in R2 (HTTP {status}): {url} — upload it "
+                    f"crx not found (HTTP {status}): {url} — upload it "
                     "before regenerating manifests"
                 )

@@ -3,7 +3,7 @@
 
 Replaces the old snippet printer: every browser feed key from the FeedSpec
 table is rendered as a full single-item document and pushed through the
-rails publisher (dry-run by default; --publish writes to R2 with backup).
+rails publisher (dry-run by default; --publish writes to GitHub Releases with backup).
 """
 
 from ..core.context import Context

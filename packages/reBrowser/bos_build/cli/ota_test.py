@@ -23,14 +23,6 @@ from bos_build.release.ota.common import SERVER_PLATFORMS
 runner = CliRunner()
 
 
-class _MissingR2Client:
-    class exceptions:
-        class NoSuchKey(Exception):
-            pass
-
-    def get_object(self, Bucket, Key):
-        raise self.exceptions.NoSuchKey(Key)
-
 
 def _appcast(bundle_id: str, channel: str, version: str | None = None) -> str:
     spec = server_feed(bundle_id, channel)
@@ -78,8 +70,7 @@ class ReleaseAppcastCliTest(unittest.TestCase):
 
     def _publisher(self) -> FeedPublisher:
         return FeedPublisher(
-            env=SimpleNamespace(r2_bucket="browseros"),
-            r2_client=_MissingR2Client(),
+            env=SimpleNamespace(),
             http_head=lambda _: 200,
             appcast_staging_dir=self.root / "staged",
         )
@@ -187,8 +178,7 @@ class AssembleServerAppcastTest(unittest.TestCase):
         self.root = Path(self._tmp.name)
         self.output = self.root / "appcast-server.alpha.xml"
         self.publisher = FeedPublisher(
-            env=SimpleNamespace(r2_bucket="browseros"),
-            r2_client=_MissingR2Client(),
+            env=SimpleNamespace(),
             http_head=lambda _: 200,
             appcast_staging_dir=self.root / "staged",
         )

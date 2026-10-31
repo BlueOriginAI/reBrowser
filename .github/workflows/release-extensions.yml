@@ -92,14 +92,6 @@ on:
     secrets:
       GH_TOKEN:
         required: false
-      R2_ACCOUNT_ID:
-        required: true
-      R2_ACCESS_KEY_ID:
-        required: true
-      R2_SECRET_ACCESS_KEY:
-        required: true
-      R2_BUCKET:
-        required: true
       BROWSEROS_AGENT_V2_KEY:
         required: false
       BROWSEROS_CONTROLLER_KEY:
@@ -218,10 +210,6 @@ jobs:
           EVENT_NAME: ${{ github.event_name }}
           EXTENSION: ${{ inputs.extension }}
           GH_TOKEN: ${{ github.token }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
           REQUESTED_VERSION: ${{ inputs.version || '' }}
         run: |
           set -euo pipefail
@@ -233,16 +221,16 @@ jobs:
               --default-branch "$DEFAULT_BRANCH"
               --requested-version "$REQUESTED_VERSION"
               --release-ref HEAD
-              --r2-allocations
+              --resource-allocations
               --repo "$GITHUB_REPOSITORY"
               --github-output "$GITHUB_OUTPUT"
               --github-summary "$GITHUB_STEP_SUMMARY"
             )
             if [ -z "$REQUESTED_VERSION" ]; then
               args+=(
-                --manifest https://cdn.browseros.com/extensions/bundled-manifest.xml
-                --manifest https://cdn.browseros.com/extensions/update-manifest.alpha.xml
-                --manifest https://cdn.browseros.com/extensions/update-manifest.xml
+                --manifest https://github.com/${{ github.repository }}/releases/download/feed-extensions/bundled-manifest.xml
+                --manifest https://github.com/${{ github.repository }}/releases/download/feed-extensions/update-manifest.alpha.xml
+                --manifest https://github.com/${{ github.repository }}/releases/download/feed-extensions/update-manifest.xml
               )
             fi
             uv run browseros release component resolve "${args[@]}"
@@ -404,10 +392,6 @@ jobs:
         env:
           BRANCH: ${{ inputs.branch || '' }}
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
           BROWSEROS_AGENT_V2_KEY: ${{ secrets.BROWSEROS_AGENT_V2_KEY }}
           BROWSEROS_CONTROLLER_KEY: ${{ secrets.BROWSEROS_CONTROLLER_KEY }}
           BUGREPORTER_KEY: ${{ secrets.BUGREPORTER_KEY }}
@@ -501,10 +485,7 @@ jobs:
         id: render
         working-directory: packages/reBrowser
         env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if [ "$PUBLISH_ALPHA_FEED" != "true" ]; then
@@ -557,10 +538,6 @@ jobs:
         working-directory: packages/reBrowser
         env:
           GH_TOKEN: ${{ github.token }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
         run: |
           set -euo pipefail
           canonical_dir="${RUNNER_TEMP}/canonical-extension-assets"
@@ -583,7 +560,7 @@ jobs:
             mkdir -p "$draft_dir"
             gh release download "$TAG" --pattern "$asset" --dir "$draft_dir"
             if ! cmp --silent "$canonical_dir/$asset" "$draft_dir/$asset"; then
-              echo "::error::GitHub release asset does not match canonical R2 object: $TAG/$asset"
+              echo "::error::GitHub release asset does not match the canonical CRX: $TAG/$asset"
               exit 1
             fi
             is_draft="$(jq -r '.isDraft' <<< "$release")"
@@ -683,10 +660,7 @@ jobs:
       - name: Render alpha feeds from current committed and live state
         working-directory: packages/reBrowser
         env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           args=(--channel alpha --baseline-root "$GITHUB_WORKSPACE/updates")
@@ -716,10 +690,7 @@ jobs:
       - name: Publish committed alpha feeds
         working-directory: packages/reBrowser
         env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           uv run browseros release feeds publish-local \

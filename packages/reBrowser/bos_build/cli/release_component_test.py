@@ -73,7 +73,7 @@ class ComponentReleaseCliTest(unittest.TestCase):
             self.assertEqual(values["names"], "server")
             self.assertIn("BrowserOS server release", summary.read_text())
 
-    def test_resolve_can_include_immutable_r2_allocations(self) -> None:
+    def test_resolve_can_include_immutable_resource_allocations(self) -> None:
         record = StandaloneReleaseRecord(
             component="server",
             version="0.0.130",
@@ -82,13 +82,7 @@ class ComponentReleaseCliTest(unittest.TestCase):
             previous_tag="agent-server/v0.0.128",
             reservation="create",
         )
-        env = mock.Mock(r2_bucket="browseros")
-        client = object()
         with (
-            mock.patch("bos_build.cli.release_component.EnvConfig", return_value=env),
-            mock.patch(
-                "bos_build.cli.release_component.get_r2_client", return_value=client
-            ),
             mock.patch(
                 "bos_build.cli.release_component.GitComponentReleaseOperations"
             ) as operations,
@@ -113,7 +107,7 @@ class ComponentReleaseCliTest(unittest.TestCase):
                     "HEAD",
                     "--repo",
                     "browseros-ai/BrowserOS",
-                    "--r2-allocations",
+                    "--resource-allocations",
                 ],
             )
 
@@ -122,8 +116,7 @@ class ComponentReleaseCliTest(unittest.TestCase):
             mock.ANY,
             "browseros-ai/BrowserOS",
             "origin",
-            r2_client=client,
-            r2_bucket="browseros",
+            probe_resources=True,
         )
 
     def test_manifest_versions_become_public_extension_allocations(self) -> None:
@@ -132,7 +125,7 @@ class ComponentReleaseCliTest(unittest.TestCase):
             "bos_build.cli.release_component._read_manifest", return_value=content
         ):
             allocations = _manifest_allocations(
-                "browserclaw", ["https://cdn.browseros.com/extensions/update.xml"]
+                "browserclaw", ["https://github.com/BlueOriginAI/reBrowser/releases/download/feed-extensions/update-manifest.xml"]
             )
 
         self.assertEqual(len(allocations), 1)

@@ -3,15 +3,6 @@ import assert from 'node:assert'
 import { existsSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 
-const R2_ENV_KEYS = [
-  'R2_ACCOUNT_ID',
-  'R2_ACCESS_KEY_ID',
-  'R2_SECRET_ACCESS_KEY',
-  'R2_BUCKET',
-  'R2_UPLOAD_PREFIX',
-  'R2_DOWNLOAD_PREFIX',
-] as const
-
 const EXPECTED_RESOURCE_FILES = [
   'index.html',
   'app.js',
@@ -45,11 +36,11 @@ describe('app onboard resources archive', () => {
     })
   })
 
-  it('builds the universal Chromium archive without R2 credentials', async () => {
+  it('builds the universal Chromium archive', async () => {
     rmSync(zipPath, { force: true })
     const pkg = await Bun.file(versionPkgPath).json()
     const build = await collectProcess(
-      Bun.spawn(['bun', buildScript, '--no-upload'], {
+      Bun.spawn(['bun', buildScript], {
         cwd: rootDir,
         stdout: 'pipe',
         stderr: 'pipe',
@@ -121,9 +112,5 @@ async function collectProcess(process: CollectableProcess) {
 }
 
 function buildEnv(): NodeJS.ProcessEnv {
-  const env = { ...process.env }
-  for (const key of R2_ENV_KEYS) {
-    delete env[key]
-  }
-  return env
+  return { ...process.env }
 }

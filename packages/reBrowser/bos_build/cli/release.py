@@ -149,7 +149,7 @@ def list_releases(
     ),
     show_all: bool = typer.Option(False, "--all", help="Show every version"),
 ):
-    """List releases from R2 (newest first), or artifacts for one version.
+    """List releases from GitHub (newest first), or artifacts for one version.
 
     \b
     Examples:

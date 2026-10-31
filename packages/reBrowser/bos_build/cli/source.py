@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Source CLI - Chromium checkout provisioning and caching.
+"""Source CLI - Chromium checkout provisioning.
 
 On a fresh remote runner the whole provisioning story is:
 
@@ -18,7 +18,6 @@ import typer
 
 from ..lib.paths import get_package_root
 from ..lib.utils import log_error, log_info
-from ..steps.source import cache as source_cache
 from ..steps.source.provision import STRATEGIES, ensure, read_pinned_version
 
 app = typer.Typer(
@@ -27,15 +26,6 @@ app = typer.Typer(
     pretty_exceptions_enable=False,
     pretty_exceptions_show_locals=False,
 )
-
-cache_app = typer.Typer(
-    help="Checkout cache in R2 (for runners without WarpCache)",
-    no_args_is_help=True,
-    pretty_exceptions_enable=False,
-    pretty_exceptions_show_locals=False,
-)
-app.add_typer(cache_app, name="cache")
-
 
 @app.command("ensure")
 def ensure_cmd(
@@ -96,24 +86,6 @@ def ensure_cmd(
     except Exception as e:
         log_error(f"Provisioning failed: {e}")
         raise typer.Exit(1)
-
-
-@cache_app.command("restore")
-def cache_restore(
-    key: str = typer.Option(..., "--key", help="cache key (no prefix/extension)"),
-    root: Path = typer.Option(..., "--root", help="chromium gclient root dir"),
-):
-    """Restore the checkout cache; degrades to cache-miss, never fails."""
-    source_cache.restore(key, root)
-
-
-@cache_app.command("save")
-def cache_save(
-    key: str = typer.Option(..., "--key", help="cache key (no prefix/extension)"),
-    root: Path = typer.Option(..., "--root", help="chromium gclient root dir"),
-):
-    """Save the checkout as a cache object (skips if the key exists)."""
-    source_cache.save(key, root)
 
 
 if __name__ == "__main__":

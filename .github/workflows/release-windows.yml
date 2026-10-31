@@ -11,10 +11,6 @@ on:
           - browseros
           - browserclaw
           - all
-      upload_to_r2:
-        description: "Upload release metadata/artifacts to R2"
-        type: boolean
-        default: true
       sign:
         description: "Sign Windows binaries and update artifacts"
         type: boolean
@@ -26,11 +22,6 @@ on:
         required: false
         type: string
         default: browseros
-      upload_to_r2:
-        description: "Upload release metadata/artifacts to R2"
-        required: false
-        type: boolean
-        default: true
       sign:
         description: "Sign Windows binaries and update artifacts"
         required: false
@@ -72,14 +63,6 @@ on:
         type: string
         default: ""
     secrets:
-      R2_ACCOUNT_ID:
-        required: false
-      R2_ACCESS_KEY_ID:
-        required: false
-      R2_SECRET_ACCESS_KEY:
-        required: false
-      R2_BUCKET:
-        required: false
       BROWSEROS_CONFIG_URL:
         required: false
       POSTHOG_API_KEY:
@@ -248,7 +231,6 @@ jobs:
       timeout-minutes: 780
       profile: release-ci
       sign: ${{ inputs.sign }}
-      upload: ${{ inputs.upload_to_r2 }}
       resource-mode: ${{ inputs.resource_mode || 'published' }}
       candidate-sha: ${{ inputs.candidate_sha || '' }}
       prepared-resources-artifact: ${{ inputs.prepared_resources_artifact || '' }}
@@ -257,10 +239,6 @@ jobs:
       extension-version: ${{ inputs.extension_version || '' }}
       onboarding-version: ${{ inputs.onboarding_version || '' }}
     secrets:
-      R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-      R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-      R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-      R2_BUCKET: ${{ secrets.R2_BUCKET }}
       BROWSEROS_CONFIG_URL: ${{ secrets.BROWSEROS_CONFIG_URL }}
       POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}

@@ -133,7 +133,7 @@ def main(
     download: Optional[bool] = typer.Option(
         None,
         "--download/--no-download",
-        help="Preset mode: toggle downloading server resources from R2",
+        help="Preset mode: toggle downloading server resources from GitHub Releases",
     ),
     resource_mode: Optional[str] = typer.Option(
         None,

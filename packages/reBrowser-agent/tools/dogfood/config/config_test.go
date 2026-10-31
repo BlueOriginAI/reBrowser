@@ -41,7 +41,7 @@ func TestDefaults(t *testing.T) {
 	if cfg.ProductionEnv.Server["LOG_LEVEL"] != "debug" {
 		t.Fatalf("server log level got %q want debug", cfg.ProductionEnv.Server["LOG_LEVEL"])
 	}
-	if cfg.ProductionEnv.CLI["R2_BUCKET"] != "browseros" {
+	if _, ok := cfg.ProductionEnv.CLI["POSTHOG_API_KEY"]; !ok {
 		t.Fatalf("missing cli production env defaults: %#v", cfg.ProductionEnv.CLI)
 	}
 }
@@ -89,7 +89,7 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 		Ports:             Ports{CDP: 9015, Server: 9115, Extension: 9315},
 		ProductionEnv: ProductionEnv{
 			Server: map[string]string{"NODE_ENV": "production"},
-			CLI:    map[string]string{"R2_BUCKET": "browseros"},
+			CLI:    map[string]string{"POSTHOG_API_KEY": "phc_test"},
 		},
 	}
 
@@ -112,7 +112,7 @@ func TestSaveLoadRoundTrip(t *testing.T) {
 	if got.Branch != cfg.Branch {
 		t.Fatalf("branch mismatch: %q", got.Branch)
 	}
-	if got.ProductionEnv.CLI["R2_BUCKET"] != "browseros" {
+	if got.ProductionEnv.CLI["POSTHOG_API_KEY"] != "phc_test" {
 		t.Fatalf("production env mismatch: %#v", got.ProductionEnv)
 	}
 }

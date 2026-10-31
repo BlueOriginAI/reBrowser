@@ -37,11 +37,6 @@ on:
         required: false
         type: boolean
         default: false
-      upload:
-        description: "Run upload steps selected by the profile/preset"
-        required: false
-        type: boolean
-        default: false
       resource-mode:
         description: "Resource provider: published or source"
         required: false
@@ -92,14 +87,6 @@ on:
         description: "Uploaded lane-manifest artifact name"
         value: ${{ jobs.build.outputs.lane-artifact }}
     secrets:
-      R2_ACCOUNT_ID:
-        required: false
-      R2_ACCESS_KEY_ID:
-        required: false
-      R2_SECRET_ACCESS_KEY:
-        required: false
-      R2_BUCKET:
-        required: false
       BROWSEROS_CONFIG_URL:
         required: false
       POSTHOG_API_KEY:
@@ -296,20 +283,6 @@ jobs:
           restore-keys: |
             chromium-src-${{ inputs.platform }}-${{ inputs.arch }}-v2-
 
-      - name: Restore chromium checkout (R2)
-        if: runner.os == 'Windows'
-        id: r2cache
-        env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
-        run: |
-          set -euo pipefail
-          uv run --project packages/reBrowser browseros source cache restore \
-            --key "${{ steps.pin.outputs.cache_key }}" \
-            --root "$CHROMIUM_ROOT"
-
       - name: Ensure chromium checkout at pinned tag
         run: |
           set -euo pipefail
@@ -343,19 +316,6 @@ jobs:
         with:
           path: ${{ env.CHROMIUM_ROOT }}
           key: ${{ steps.pin.outputs.cache_key }}
-
-      - name: Save chromium checkout (R2)
-        if: runner.os == 'Windows' && steps.r2cache.outputs.cache-hit != 'true'
-        env:
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
-        run: |
-          set -euo pipefail
-          uv run --project packages/reBrowser browseros source cache save \
-            --key "${{ steps.pin.outputs.cache_key }}" \
-            --root "$CHROMIUM_ROOT"
 
       - name: Install Linux build deps
         if: inputs.platform == 'linux'
@@ -406,10 +366,6 @@ jobs:
           ONBOARDING_RESOURCE_VERSION: ${{ inputs.onboarding-version }}
           BUNDLED_EXTENSIONS_MANIFEST_URL: ${{ inputs.extension-version && format('{0}/updates/extensions/bundled-manifest.xml', github.workspace) || '' }}
           BUNDLED_PRODUCT_EXTENSION_VERSION: ${{ inputs.extension-version }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
           BROWSEROS_CONFIG_URL: ${{ inputs.product == 'browseros' && secrets.BROWSEROS_CONFIG_URL || '' }}
           POSTHOG_API_KEY: ${{ inputs.product == 'browseros' && secrets.POSTHOG_API_KEY || '' }}
           SENTRY_DSN: ${{ inputs.product == 'browseros' && secrets.SENTRY_DSN || '' }}
@@ -422,12 +378,8 @@ jobs:
         run: |
           set -euo pipefail
           sign_flag="--no-sign"
-          upload_flag="--no-upload"
           if [ "${{ inputs.sign }}" = "true" ]; then
             sign_flag="--sign"
-          fi
-          if [ "${{ inputs.upload }}" = "true" ]; then
-            upload_flag="--upload"
           fi
 
           args=(
@@ -436,7 +388,7 @@ jobs:
             --arch "${{ inputs.arch }}"
             --resource-mode "${{ inputs.resource-mode }}"
             "$sign_flag"
-            "$upload_flag"
+            --upload
             --chromium-src "$CHROMIUM_SRC"
           )
           if [ "${{ inputs.resource-mode }}" = "source" ]; then

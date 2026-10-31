@@ -19,6 +19,5 @@ export const clawOnboardBuildProduct: AssetBuildProductDescriptor = {
     inlineEnvKeys: INLINED_ENV_VARS,
     ciInlineEnvDefaults: PRODUCTION_INLINE_ENV,
     inlineEnvOverrides: PRODUCTION_INLINE_ENV,
-    defaultR2UploadPrefix: 'claw-onboard/prod-resources',
   },
 }

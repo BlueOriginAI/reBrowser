@@ -60,7 +60,7 @@ def appcast_command(
     publish: bool = typer.Option(
         False,
         "--publish",
-        help="Write to R2 (default is a dry run: full XML + diff vs live)",
+        help="Publish to GitHub Releases (default is a dry run: full XML + diff vs live)",
     ),
     allow_downgrade: bool = typer.Option(
         False, "--allow-downgrade", help="Override the version-downgrade guard"
@@ -91,7 +91,7 @@ def appcast_command(
         help="Require release metadata from this Actions run attempt",
     ),
 ):
-    """Generate browser appcasts from R2 release metadata."""
+    """Generate browser appcasts from GitHub release metadata."""
     ctx = _create_context(version, product)
     _execute(
         ctx,
@@ -121,7 +121,7 @@ def extensions_command(
     publish: bool = typer.Option(
         False,
         "--publish",
-        help="Write to R2 (default is a dry run: full files + diff vs live)",
+        help="Publish to GitHub Releases (default is a dry run: full files + diff vs live)",
     ),
     allow_downgrade: bool = typer.Option(
         False, "--allow-downgrade", help="Override the version-downgrade guard"
@@ -157,12 +157,6 @@ def extensions_command(
 def feeds_status():
     """Show every feed key with its live version and newest backup."""
     env = EnvConfig()
-    if not env.has_r2_config():
-        log_error(
-            "R2 configuration not set. Required env vars: R2_ACCOUNT_ID, "
-            "R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY"
-        )
-        raise typer.Exit(1)
 
     statuses = FeedPublisher(env=env).collect_status()
 
@@ -188,7 +182,7 @@ def feeds_publish_local(
     publish: bool = typer.Option(
         False,
         "--publish",
-        help="Write to R2 after every selected file passes preflight",
+        help="Publish to GitHub Releases after every selected file passes preflight",
     ),
     allow_downgrade: bool = typer.Option(
         False,
@@ -203,12 +197,6 @@ def feeds_publish_local(
 ):
     """Validate or publish selected files from the tracked updates directory."""
     env = EnvConfig()
-    if not env.has_r2_config():
-        log_error(
-            "R2 configuration not set. Required env vars: R2_ACCOUNT_ID, "
-            "R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY"
-        )
-        raise typer.Exit(1)
 
     if not FeedPublisher(env=env).publish_staged(
         keys,

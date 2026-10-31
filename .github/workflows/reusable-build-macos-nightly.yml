@@ -216,7 +216,6 @@ jobs:
           BROWSEROS_BUILD_RESERVATION_SHA: ${{ inputs.reservation_sha }}
           BROWSEROS_BUILD_SOURCE_SHA: ${{ inputs.source_sha }}
           BROWSEROS_CONFIG_URL: ${{ secrets.BROWSEROS_CONFIG_URL }}
-          BROWSEROS_DEFER_R2_UPLOAD: "1"
           BROWSEROS_REPO: ${{ steps.inputs.outputs.browseros_repo }}
           BROWSEROS_SERVER_RESOURCE_VERSION: ${{ inputs.product == 'browseros' && inputs.server_version || '' }}
           BUNDLED_EXTENSIONS_MANIFEST_URL: ${{ steps.inputs.outputs.browseros_repo }}/updates/extensions/bundled-manifest.xml

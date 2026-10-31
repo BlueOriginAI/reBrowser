@@ -32,6 +32,5 @@ export const clawServerRustBuildProduct: ResourceBuildProductDescriptor = {
     ciInlineEnvOverrides: {
       CLAW_POSTHOG_KEY: 'phc_browseros_ci',
     },
-    defaultR2UploadPrefix: 'claw-server-rust/prod-resources',
   },
 }

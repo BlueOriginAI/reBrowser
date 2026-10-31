@@ -52,16 +52,7 @@ export interface LocalEnvMigrationResult extends LocalEnvMigrationPlan {
 }
 
 const MODE_ORDER: readonly EnvMode[] = ['development', 'production']
-const RETIRED_KEYS = new Set(['R2_UPLOAD_PREFIX', 'R2_DOWNLOAD_PREFIX'])
-const RETIRED_PREFIX_DEFAULTS: Record<string, readonly string[]> = {
-  R2_UPLOAD_PREFIX: [
-    'artifacts/server',
-    'cli',
-    'claw-server/prod-resources',
-    'claw-onboard/prod-resources',
-  ],
-  R2_DOWNLOAD_PREFIX: ['artifacts/vendor'],
-}
+const RETIRED_KEY_PREFIX = 'R2_'
 const PRIMARY_OLD_FILES: Record<EnvMode, string[]> = {
   development: ['apps/server/.env.development', 'apps/app/.env.development'],
   production: ['apps/server/.env.production', 'apps/cli/.env.production'],
@@ -157,10 +148,10 @@ function harvestEnvFile(options: {
         mode: options.mode,
         key,
         sourceFile: options.sourceFile,
-        reason: RETIRED_KEYS.has(key)
-          ? 'retired to code constants'
+        reason: key.startsWith(RETIRED_KEY_PREFIX)
+          ? 'retired; artifacts use GitHub Releases'
           : `not in the ${options.mode} registry`,
-        warning: retiredPrefixWarning(key, value, options.sourceFile),
+        warning: retiredKeyWarning(key, value, options.sourceFile),
       })
       continue
     }
@@ -216,20 +207,16 @@ function findOldEnvFiles(rootDir: string, mode: EnvMode): string[] {
   })
 }
 
-function retiredPrefixWarning(
+function retiredKeyWarning(
   key: string,
   value: string,
   sourceFile: string,
 ): string | undefined {
-  const defaults = RETIRED_PREFIX_DEFAULTS[key]
-  const trimmedValue = value.trim()
-  if (!defaults || trimmedValue === '' || defaults.includes(trimmedValue)) {
+  if (!key.startsWith(RETIRED_KEY_PREFIX) || value.trim() === '') {
     return undefined
   }
 
-  return `RETIRED PREFIX WARNING: ${key}=${trimmedValue} from ${sourceFile} is retired; builds now default to code constants (${defaults.join(
-    ', ',
-  )}). Export ${key} in the environment when running upload scripts to use a custom prefix.`
+  return `RETIRED ENV WARNING: ${key} from ${sourceFile} is retired; downloads and uploads now use GitHub Releases.`
 }
 
 function findAppEnvFiles(rootDir: string, filename: string): string[] {

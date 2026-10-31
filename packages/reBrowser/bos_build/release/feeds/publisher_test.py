@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tests for the rails-enforcing feed publisher (all R2/HTTP faked)."""
+"""Tests for the rails-enforcing feed publisher (GitHub/HTTP faked)."""
 
 import hashlib
 import io
@@ -9,7 +9,6 @@ import unittest
 from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
-from types import SimpleNamespace
 from unittest import mock
 
 from . import publisher as publisher_module
@@ -47,7 +46,7 @@ class _FakeExceptions:
         pass
 
 
-class FakeR2Client:
+class FakeFeedStore:
     exceptions = _FakeExceptions
 
     def __init__(self, objects=None):
@@ -203,7 +202,7 @@ class PublisherTestCase(unittest.TestCase):
         self.head_calls = []
 
     def _publisher(self, objects=None, head_status=200):
-        self.client = FakeR2Client(objects)
+        self.store = FakeFeedStore(objects)
 
         def key_for_asset(filename: str) -> str:
             for spec in all_feeds():
@@ -214,8 +213,8 @@ class PublisherTestCase(unittest.TestCase):
         def fake_download(tag, repo, filename, dest_dir):
             key = key_for_asset(filename)
             try:
-                body = self.client.get_object("b", key)["Body"].read()
-            except self.client.exceptions.NoSuchKey:
+                body = self.store.get_object("b", key)["Body"].read()
+            except self.store.exceptions.NoSuchKey:
                 return None
             dest = Path(dest_dir) / filename
             dest.parent.mkdir(parents=True, exist_ok=True)
@@ -227,7 +226,7 @@ class PublisherTestCase(unittest.TestCase):
             content_type = (
                 "application/json" if key.endswith(".json") else "application/xml"
             )
-            self.client.put_object("b", key, Path(path).read_bytes(), content_type)
+            self.store.put_object("b", key, Path(path).read_bytes(), content_type)
             return True
 
         for patcher in (
@@ -285,7 +284,7 @@ class PublisherTestCase(unittest.TestCase):
         ok = publisher.publish(feed_by_key("appcast.xml"), _mac_appcast())
 
         self.assertTrue(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
         staged = self.staging_root / "browser" / "appcast.xml"
         self.assertEqual(staged.read_text(), _mac_appcast())
 
@@ -297,7 +296,7 @@ class PublisherTestCase(unittest.TestCase):
         ok = publisher.publish(feed_by_key("appcast.xml"), _mac_appcast(), stage=False)
 
         self.assertTrue(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
         self.assertFalse((self.staging_root / "browser" / "appcast.xml").exists())
 
     def test_publish_backs_up_live_before_put(self):
@@ -308,7 +307,7 @@ class PublisherTestCase(unittest.TestCase):
 
         self.assertTrue(ok)
         self.assertEqual(
-            self.client.calls,
+            self.store.calls,
             [("put", "appcast.xml", "application/xml")],
         )
         backup = self.staging_root.parent / "feeds-history" / (
@@ -325,7 +324,7 @@ class PublisherTestCase(unittest.TestCase):
         ok = publisher.publish(feed_by_key("appcast.xml"), content, publish=True)
 
         self.assertTrue(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
         staged = self.staging_root / "browser" / "appcast.xml"
         self.assertEqual(staged.read_text(), content)
 
@@ -335,7 +334,7 @@ class PublisherTestCase(unittest.TestCase):
         ok = publisher.publish(feed_by_key("appcast.xml"), _mac_appcast(), publish=True)
 
         self.assertTrue(ok)
-        self.assertEqual(self.client.calls, [("put", "appcast.xml", "application/xml")])
+        self.assertEqual(self.store.calls, [("put", "appcast.xml", "application/xml")])
 
     def test_empty_live_shell_is_valid_first_population(self):
         publisher = self._publisher({"appcast.xml": _empty_mac_appcast().encode()})
@@ -343,7 +342,7 @@ class PublisherTestCase(unittest.TestCase):
         ok = publisher.publish(feed_by_key("appcast.xml"), _mac_appcast())
 
         self.assertTrue(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
         self.assertEqual(
             (self.staging_root / "browser" / "appcast.xml").read_text(),
             _mac_appcast(),
@@ -360,7 +359,7 @@ class PublisherTestCase(unittest.TestCase):
 
         self.assertTrue(ok)
         self.assertEqual(
-            self.client.calls,
+            self.store.calls,
             [("put", "appcast.xml", "application/xml")],
         )
         backup = self.staging_root.parent / "feeds-history" / (
@@ -382,7 +381,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_populated_versionless_live_appcast_fails_closed(self):
         live = _mac_appcast().replace(
@@ -398,7 +397,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_duplicate_channel_with_populated_item_is_not_an_empty_shell(self):
         populated_channel = (
@@ -417,7 +416,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_item_outside_the_single_channel_is_not_an_empty_shell(self):
         live = _empty_mac_appcast().replace(
@@ -433,7 +432,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_malformed_live_appcast_version_fails_closed(self):
         for live_version in ("garbage", "10000.0.beta"):
@@ -451,7 +450,7 @@ class PublisherTestCase(unittest.TestCase):
                 )
 
                 self.assertFalse(ok)
-                self.assertEqual(self.client.calls, [])
+                self.assertEqual(self.store.calls, [])
 
     def test_every_populated_live_item_requires_one_strict_version(self):
         bad_items = (
@@ -476,7 +475,7 @@ class PublisherTestCase(unittest.TestCase):
                 )
 
                 self.assertFalse(ok)
-                self.assertEqual(self.client.calls, [])
+                self.assertEqual(self.store.calls, [])
 
     def test_every_new_appcast_item_requires_one_strict_version(self):
         content = _mac_appcast().replace(
@@ -493,7 +492,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_populated_wrong_channel_live_appcast_fails_closed(self):
         spec = feed_by_key("appcast.xml")
@@ -514,7 +513,7 @@ class PublisherTestCase(unittest.TestCase):
                 ok = publisher.publish(spec, _mac_appcast(), publish=True)
 
                 self.assertFalse(ok)
-                self.assertEqual(self.client.calls, [])
+                self.assertEqual(self.store.calls, [])
 
     def test_browserclaw_legacy_title_migrates_with_backup(self):
         spec = feed_by_key("appcast-claw.xml")
@@ -526,7 +525,7 @@ class PublisherTestCase(unittest.TestCase):
 
         self.assertTrue(ok)
         self.assertEqual(
-            self.client.calls,
+            self.store.calls,
             [("put", spec.key, "application/xml")],
         )
         backup = self.staging_root.parent / "feeds-history" / (
@@ -544,7 +543,7 @@ class PublisherTestCase(unittest.TestCase):
 
         self.assertTrue(ok)
         self.assertEqual(
-            self.client.calls,
+            self.store.calls,
             [("put", spec.key, "application/xml")],
         )
         backup = self.staging_root.parent / "feeds-history" / (
@@ -589,7 +588,7 @@ class PublisherTestCase(unittest.TestCase):
                 ok = publisher.publish(spec, canonical, publish=True)
 
                 self.assertFalse(ok)
-                self.assertEqual(self.client.calls, [])
+                self.assertEqual(self.store.calls, [])
 
     def test_browserclaw_legacy_title_migration_refuses_downgrade(self):
         spec = feed_by_key("appcast-claw.xml")
@@ -600,7 +599,7 @@ class PublisherTestCase(unittest.TestCase):
         ok = publisher.publish(spec, _browserclaw_appcast(), publish=True)
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_browserclaw_legacy_title_requires_canonical_link(self):
         spec = feed_by_key("appcast-claw.xml")
@@ -612,7 +611,7 @@ class PublisherTestCase(unittest.TestCase):
         ok = publisher.publish(spec, _browserclaw_appcast(), publish=True)
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_downgrade_refused_without_flag(self):
         publisher = self._publisher(
@@ -624,7 +623,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
         self.assertFalse((self.staging_root / "browser").exists())
 
     def test_downgrade_allowed_with_flag(self):
@@ -640,7 +639,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertTrue(ok)
-        self.assertEqual(len(self.client.calls), 1)
+        self.assertEqual(len(self.store.calls), 1)
 
     def test_equal_version_passes(self):
         publisher = self._publisher({"appcast.xml": _mac_appcast().encode()})
@@ -675,7 +674,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_head_failure_refuses_and_blocks_put(self):
         url = _artifact()["url"]
@@ -684,7 +683,7 @@ class PublisherTestCase(unittest.TestCase):
         ok = publisher.publish(feed_by_key("appcast.xml"), _mac_appcast(), publish=True)
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
         self.assertIn(url, self.head_calls)
 
     def test_failed_backup_blocks_the_put(self):
@@ -703,7 +702,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_manifest_entry_removal_refused_even_with_override(self):
         spec = update_manifest_feed("alpha")
@@ -718,7 +717,7 @@ class PublisherTestCase(unittest.TestCase):
             }
         )
         self.assertFalse(publisher.publish(spec, missing_browserclaw, publish=True))
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
         self.assertFalse(
             publisher.publish(
@@ -729,7 +728,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_update_manifest_guards_per_extension(self):
         spec = update_manifest_feed("alpha")
@@ -740,7 +739,7 @@ class PublisherTestCase(unittest.TestCase):
             {**EXTENSION_VERSIONS, "agent": "0.0.117.0"}
         )
         self.assertFalse(publisher.publish(spec, downgraded, publish=True))
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
         upgraded = render_update_manifest({**EXTENSION_VERSIONS, "agent": "0.0.119.0"})
         self.assertTrue(publisher.publish(spec, upgraded, publish=True))
@@ -774,7 +773,7 @@ class PublisherTestCase(unittest.TestCase):
                 publisher = self._publisher({spec.key: invalid_live.encode()})
 
                 self.assertFalse(publisher.publish(spec, corrected, publish=True))
-                self.assertEqual(self.client.calls, [])
+                self.assertEqual(self.store.calls, [])
 
     def test_allow_downgrade_does_not_repair_wrong_channel_live(self):
         for bundle_id, version in (
@@ -794,7 +793,7 @@ class PublisherTestCase(unittest.TestCase):
                     allow_downgrade=True,
                 )
             )
-            self.assertEqual(self.client.calls, [])
+            self.assertEqual(self.store.calls, [])
 
     def test_repair_accepts_same_version_wrong_channel_appcasts(self):
         for bundle_id, version in (
@@ -815,7 +814,7 @@ class PublisherTestCase(unittest.TestCase):
                 )
             )
             self.assertEqual(
-                self.client.calls,
+                self.store.calls,
                 [("put", spec.key, "application/xml")],
             )
             backup = self.staging_root.parent / "feeds-history" / (
@@ -839,7 +838,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_repair_refuses_recoverable_appcast_downgrade(self):
         spec = server_feed("browseros-server", "prod")
@@ -859,7 +858,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_repair_wrong_channel_requires_recoverable_live_version(self):
         spec = server_feed("browseros-server", "prod")
@@ -876,7 +875,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_repair_malformed_appcast_compares_recoverable_version(self):
         spec = server_feed("browseros-server", "prod")
@@ -893,7 +892,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_repair_malformed_versionless_appcast_accepts_strict_replacement(self):
         spec = server_feed("browseros-server", "prod")
@@ -906,7 +905,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_repair_refuses_parseable_manifest_downgrade(self):
         spec = update_manifest_feed("alpha")
@@ -921,7 +920,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_repair_refuses_invalid_new_content(self):
         spec = server_feed("browseros-server", "prod")
@@ -943,7 +942,7 @@ class PublisherTestCase(unittest.TestCase):
                         repair_invalid_live=True,
                     )
                 )
-                self.assertEqual(self.client.calls, [])
+                self.assertEqual(self.store.calls, [])
 
     def test_repair_refuses_empty_manifest(self):
         versions = {"agent": "0.0.123.0"}
@@ -962,7 +961,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_repair_refuses_failed_download_url(self):
         spec = server_feed("browseros-server", "prod")
@@ -983,7 +982,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_repair_refuses_appcast_with_any_missing_download_url(self):
         spec = server_feed("browseros-server", "prod")
@@ -1006,7 +1005,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_repair_refuses_manifest_with_missing_download_url(self):
         versions = {**EXTENSION_VERSIONS, "agent": "0.0.123.0"}
@@ -1024,7 +1023,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_repair_refuses_appcast_missing_download_url_with_valid_live(self):
         spec = server_feed("browseros-server", "prod")
@@ -1040,7 +1039,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_repair_refuses_manifest_missing_download_url_with_valid_live(self):
         spec = update_manifest_feed("alpha")
@@ -1056,7 +1055,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_repair_refuses_unpublishable_spec(self):
         spec = replace(feed_by_key("appcast.xml"), publishable=False)
@@ -1069,7 +1068,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_repair_logs_hashes_and_backs_up_before_put(self):
         spec = server_feed("browseros-server", "prod")
@@ -1091,7 +1090,7 @@ class PublisherTestCase(unittest.TestCase):
         self.assertIn("REPAIR INVALID LIVE", message)
         self.assertIn(hashlib.sha256(invalid_live.encode()).hexdigest(), message)
         self.assertIn(hashlib.sha256(corrected.encode()).hexdigest(), message)
-        self.assertEqual(self.client.calls[0][0], "put")
+        self.assertEqual(self.store.calls[0][0], "put")
         self.assertTrue(
             (
                 self.staging_root.parent
@@ -1120,7 +1119,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_repair_batch_invalid_new_file_performs_zero_live_calls(self):
         browseros_spec = server_feed("browseros-server", "prod")
@@ -1158,7 +1157,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_mixed_repair_batch_is_retry_safe(self):
         browseros_spec = server_feed("browseros-server", "prod")
@@ -1184,9 +1183,9 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(len(self.client.calls), 1)
+        self.assertEqual(len(self.store.calls), 1)
 
-        self.client.calls.clear()
+        self.store.calls.clear()
         self.assertTrue(
             publisher.publish_staged(
                 keys,
@@ -1194,7 +1193,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_tracked_snapshots_have_canonical_metadata(self):
         updates = Path(__file__).resolve().parents[5] / "updates"
@@ -1260,7 +1259,7 @@ class PublisherTestCase(unittest.TestCase):
         self.assertTrue(ok)
         self.assertEqual(self.head_calls, [])
         self.assertEqual(
-            self.client.calls,
+            self.store.calls,
             [("put", "extensions/extensions.alpha.json", "application/json")],
         )
         staged = self.staging_root / "extensions" / "extensions.alpha.json"
@@ -1306,7 +1305,7 @@ class PublisherTestCase(unittest.TestCase):
                         repair_invalid_live=True,
                     )
                 )
-                self.assertEqual(self.client.calls, [])
+                self.assertEqual(self.store.calls, [])
 
     def test_extension_manifests_require_exact_ids_and_canonical_crx_binding(self):
         canonical = render_update_manifest(EXTENSION_VERSIONS)
@@ -1349,7 +1348,7 @@ class PublisherTestCase(unittest.TestCase):
                             repair_invalid_live=True,
                         )
                     )
-                    self.assertEqual(self.client.calls, [])
+                    self.assertEqual(self.store.calls, [])
                     self.assertEqual(self.head_calls, [])
 
     def test_publish_staged_extension_pair_writes_manifest_before_json(self):
@@ -1368,7 +1367,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertEqual(
-            [call[1] for call in self.client.calls if call[0] == "put"],
+            [call[1] for call in self.store.calls if call[0] == "put"],
             [manifest_key, json_key],
         )
 
@@ -1391,7 +1390,7 @@ class PublisherTestCase(unittest.TestCase):
                 repair_invalid_live=True,
             )
         )
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_publish_staged_json_requires_selected_or_valid_live_manifest(self):
         json_key = "extensions/extensions.alpha.json"
@@ -1400,7 +1399,7 @@ class PublisherTestCase(unittest.TestCase):
         publisher = self._publisher()
         self._write_staged(publisher, json_key, render_extensions_json("alpha"))
         self.assertFalse(publisher.publish_staged([json_key], publish=True))
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
         publisher = self._publisher(
             {
@@ -1415,7 +1414,7 @@ class PublisherTestCase(unittest.TestCase):
         )
         self._write_staged(publisher, json_key, render_extensions_json("alpha"))
         self.assertFalse(publisher.publish_staged([json_key], publish=True))
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_publish_staged_keeps_manifest_repair_and_bundled_independent(self):
         manifest_key = "extensions/update-manifest.alpha.xml"
@@ -1433,7 +1432,7 @@ class PublisherTestCase(unittest.TestCase):
             )
         )
         self.assertEqual(
-            [call[0] for call in self.client.calls],
+            [call[0] for call in self.store.calls],
             ["put"],
         )
         self.assertTrue(
@@ -1449,7 +1448,7 @@ class PublisherTestCase(unittest.TestCase):
         self._write_staged(publisher, bundled_key, corrected)
         self.assertTrue(publisher.publish_staged([bundled_key], publish=True))
         self.assertEqual(
-            [call[1] for call in self.client.calls if call[0] == "put"],
+            [call[1] for call in self.store.calls if call[0] == "put"],
             [bundled_key],
         )
 
@@ -1467,7 +1466,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_publish_staged_defaults_to_dry_run(self):
         manifest_key = "extensions/update-manifest.alpha.xml"
@@ -1479,7 +1478,7 @@ class PublisherTestCase(unittest.TestCase):
 
         self.assertTrue(publisher.publish_staged([key]))
 
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_publish_staged_writes_after_successful_preflight(self):
         manifest_key = "extensions/update-manifest.alpha.xml"
@@ -1492,7 +1491,7 @@ class PublisherTestCase(unittest.TestCase):
         self.assertTrue(publisher.publish_staged([key], publish=True))
 
         self.assertEqual(
-            self.client.calls,
+            self.store.calls,
             [("put", key, "application/json")],
         )
 
@@ -1520,7 +1519,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_empty_appcast_refused_with_item_error(self):
         publisher = self._publisher()
@@ -1531,7 +1530,7 @@ class PublisherTestCase(unittest.TestCase):
             )
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
         log_error.assert_called_with("appcast.xml: new content has no <item> entries")
 
     def test_versionless_appcast_refused_with_version_error(self):
@@ -1544,7 +1543,7 @@ class PublisherTestCase(unittest.TestCase):
             ok = publisher.publish(feed_by_key("appcast.xml"), content, publish=True)
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
         log_error.assert_called_with(
             "appcast.xml: new content has <item> entries but no sparkle:version"
         )
@@ -1587,7 +1586,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_unparseable_live_fails_closed_without_flag(self):
         publisher = self._publisher({"appcast.xml": b"garbage <not xml"})
@@ -1595,7 +1594,7 @@ class PublisherTestCase(unittest.TestCase):
         ok = publisher.publish(feed_by_key("appcast.xml"), _mac_appcast(), publish=True)
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_unparseable_live_remains_blocked_with_override(self):
         publisher = self._publisher({"appcast.xml": b"garbage <not xml"})
@@ -1608,7 +1607,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_extensions_json_for_wrong_channel_refused(self):
         publisher = self._publisher()
@@ -1620,7 +1619,7 @@ class PublisherTestCase(unittest.TestCase):
         )
 
         self.assertFalse(ok)
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
     def test_quiet_preflight_skips_output_but_keeps_rails(self):
         publisher = self._publisher(
@@ -1679,7 +1678,7 @@ class PublisherTestCase(unittest.TestCase):
 
         self.assertTrue(publisher.publish(spec, content))
         self.assertFalse(publisher.publish(spec, content, publish=True))
-        self.assertEqual(self.client.calls, [])
+        self.assertEqual(self.store.calls, [])
 
 
 if __name__ == "__main__":

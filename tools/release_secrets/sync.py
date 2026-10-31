@@ -68,62 +68,6 @@ class CheckResult:
 
 ALLOWLIST: tuple[SecretSpec, ...] = (
     SecretSpec(
-        "R2_ACCOUNT_ID",
-        (
-            "build-browseros.yml",
-            "release-browseros.yml",
-            "release-browserclaw.yml",
-            "release-server.yml",
-            "release-claw-onboard.yml",
-            "release-claw-server.yml",
-            "publish-server-ota.yml",
-            "release-extension-feeds.yml",
-            "release-extensions.yml",
-        ),
-    ),  # Release artifact downloads/uploads.
-    SecretSpec(
-        "R2_ACCESS_KEY_ID",
-        (
-            "build-browseros.yml",
-            "release-browseros.yml",
-            "release-browserclaw.yml",
-            "release-server.yml",
-            "release-claw-onboard.yml",
-            "release-claw-server.yml",
-            "publish-server-ota.yml",
-            "release-extension-feeds.yml",
-            "release-extensions.yml",
-        ),
-    ),  # Release artifact downloads/uploads.
-    SecretSpec(
-        "R2_SECRET_ACCESS_KEY",
-        (
-            "build-browseros.yml",
-            "release-browseros.yml",
-            "release-browserclaw.yml",
-            "release-server.yml",
-            "release-claw-onboard.yml",
-            "release-claw-server.yml",
-            "publish-server-ota.yml",
-            "release-extension-feeds.yml",
-            "release-extensions.yml",
-        ),
-    ),  # Release artifact downloads/uploads.
-    SecretSpec(
-        "R2_BUCKET",
-        (
-            "build-browseros.yml",
-            "release-browseros.yml",
-            "release-browserclaw.yml",
-            "release-server.yml",
-            "release-claw-onboard.yml",
-            "release-claw-server.yml",
-            "publish-server-ota.yml",
-            "release-extension-feeds.yml",
-            "release-extensions.yml",
-        ),
-    ),  # Release artifact downloads/uploads.
-    SecretSpec(
         "BROWSEROS_CONFIG_URL",
         ("release-browseros.yml", "release-server.yml"),
     ),  # BrowserOS server inline production config URL.

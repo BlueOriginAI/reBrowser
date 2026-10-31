@@ -27,7 +27,6 @@ SENSITIVE_ENV_VARS: frozenset[str] = frozenset(
         "PROD_MACOS_BROWSERCLAW_PASSKEY_PROFILE_B64",
         "PROD_MACOS_BROWSEROS_PASSKEY_PROFILE_B64",
         "PROD_MACOS_NOTARIZATION_PWD",
-        "R2_SECRET_ACCESS_KEY",
         "SENTRY_AUTH_TOKEN",
         "SLACK_WEBHOOK_URL",
         "SPARKLE_PRIVATE_KEY",
@@ -174,34 +173,6 @@ class EnvConfig:
         return os.environ.get("ESIGNER_CREDENTIAL_ID")
 
     @property
-    def r2_account_id(self) -> Optional[str]:
-        """Cloudflare account ID for R2"""
-        return os.environ.get("R2_ACCOUNT_ID")
-
-    @property
-    def r2_access_key_id(self) -> Optional[str]:
-        """R2 access key ID"""
-        return os.environ.get("R2_ACCESS_KEY_ID")
-
-    @property
-    def r2_secret_access_key(self) -> Optional[str]:
-        """R2 secret access key"""
-        return os.environ.get("R2_SECRET_ACCESS_KEY")
-
-    @property
-    def r2_bucket(self) -> str:
-        """R2 bucket name (default: browseros)"""
-        return os.environ.get("R2_BUCKET", "browseros")
-
-    @property
-    def r2_endpoint_url(self) -> Optional[str]:
-        """R2 S3-compatible endpoint URL (computed from account ID)"""
-        account_id = self.r2_account_id
-        if account_id:
-            return f"https://{account_id}.r2.cloudflarestorage.com"
-        return None
-
-    @property
     def sparkle_private_key(self) -> Optional[str]:
         """Base64-encoded Sparkle Ed25519 private key for macOS auto-update signing"""
         return os.environ.get("SPARKLE_PRIVATE_KEY")
@@ -247,22 +218,6 @@ class EnvConfig:
             raise ValueError(
                 f"Missing required environment variables: {', '.join(missing)}"
             )
-
-    def get_r2_config(self) -> dict:
-        """Return the R2 configuration."""
-        return {
-            "account_id": self.r2_account_id or "",
-            "access_key_id": self.r2_access_key_id or "",
-            "secret_access_key": self.r2_secret_access_key or "",
-            "bucket": self.r2_bucket,
-            "endpoint_url": self.r2_endpoint_url or "",
-        }
-
-    def has_r2_config(self) -> bool:
-        """Check if R2 upload configuration is available"""
-        return bool(
-            self.r2_account_id and self.r2_access_key_id and self.r2_secret_access_key
-        )
 
     def has_sparkle_key(self) -> bool:
         """Check if Sparkle private key is available"""

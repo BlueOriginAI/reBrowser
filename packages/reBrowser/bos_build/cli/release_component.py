@@ -10,9 +10,7 @@ from typing import List, Optional
 import requests
 import typer
 
-from ..lib.env import EnvConfig
 from ..lib.paths import get_package_root
-from ..lib.r2 import get_r2_client
 from ..lib.utils import log_error
 from ..release.component_release import (
     GitComponentReleaseOperations,
@@ -102,7 +100,9 @@ def resolve(
     repo_root: Optional[Path] = typer.Option(None, "--repo-root"),
     remote: str = typer.Option("origin", "--remote"),
     manifest: Optional[List[str]] = typer.Option(None, "--manifest"),
-    r2_allocations: bool = typer.Option(False, "--r2-allocations"),
+    resource_allocations: bool = typer.Option(
+        False, "--resource-allocations"
+    ),
     github_output: Optional[Path] = typer.Option(None, "--github-output"),
     github_summary: Optional[Path] = typer.Option(None, "--github-summary"),
 ) -> None:
@@ -111,16 +111,7 @@ def resolve(
         repository = repo or os.environ.get("GITHUB_REPOSITORY", "")
         if not repository:
             raise ValueError("--repo or GITHUB_REPOSITORY is required")
-        operation_options = {}
-        if r2_allocations:
-            env = EnvConfig()
-            client = get_r2_client(env)
-            if client is None:
-                raise RuntimeError("R2 client is required for immutable allocations")
-            operation_options = {
-                "r2_client": client,
-                "r2_bucket": env.r2_bucket,
-            }
+        operation_options = {"probe_resources": resource_allocations}
         record = resolve_standalone_release(
             StandaloneReleaseRequest(
                 component=component,

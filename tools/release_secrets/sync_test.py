@@ -86,15 +86,7 @@ class WorkflowSecretScannerTest(unittest.TestCase):
         self.assertIn(workflow, {path.name for path in RELEASE_WORKFLOW_FILES})
 
         consumers = {spec.name for spec in ALLOWLIST if workflow in spec.consumers}
-        self.assertEqual(
-            {
-                "R2_ACCOUNT_ID",
-                "R2_ACCESS_KEY_ID",
-                "R2_SECRET_ACCESS_KEY",
-                "R2_BUCKET",
-            },
-            consumers,
-        )
+        self.assertEqual(set(), consumers)
 
     def test_server_ota_workflow_is_registered_with_signing_secrets(self):
         workflow = "publish-server-ota.yml"
@@ -111,10 +103,6 @@ class WorkflowSecretScannerTest(unittest.TestCase):
                 "PROD_MACOS_NOTARIZATION_APPLE_ID",
                 "PROD_MACOS_NOTARIZATION_PWD",
                 "PROD_MACOS_NOTARIZATION_TEAM_ID",
-                "R2_ACCESS_KEY_ID",
-                "R2_ACCOUNT_ID",
-                "R2_BUCKET",
-                "R2_SECRET_ACCESS_KEY",
                 "SPARKLE_PRIVATE_KEY",
             },
             consumers,

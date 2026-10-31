@@ -82,66 +82,41 @@ describe('release-claw-server workflow', () => {
     )
   })
 
-  it('uploads only immutable version keys and attaches all draft assets', () => {
+  it('attaches every versioned draft asset without an object store', () => {
     const publish = section('  publish-versioned:', '  finalize:')
-    const attach = section(
-      '      - name: Attach zips to private draft',
-      '  finalize:',
-    )
-    expect(publish).toContain('actions/setup-python@v6')
-    expect(publish).toContain('python -m pip install "boto3>=1.35.1,<2"')
-    expect(publish).not.toContain('pip install --user')
+    expect(publish).not.toContain('boto3')
+    expect(publish).not.toContain('IfNoneMatch')
     expect(publish).toContain('Expected 5 BrowserClaw server resource zips')
-    expect(publish).toContain('IfNoneMatch')
-    expect(publish).toContain('status not in {409, 412}')
-    expect(publish).toContain('Metadata={')
-    expect(publish).toContain('"release-sha": release_sha')
-    expect(publish).toContain('"component": "claw-server-rust/prod-resources"')
-    expect(publish).toContain('path.write_bytes(existing)')
-    expect(publish).toContain(
-      'f"claw-server-rust/prod-resources/{version}/{path.name}"',
-    )
-    expect(publish).not.toContain('claw-server-rust/prod-resources/latest/')
     expect(publish).toContain(
       `gh release upload "$RELEASE_TAG" "${dollar}{assets[@]}" --clobber`,
     )
-    expect(attach).toContain(`GH_REPO: ${dollar}{{ github.repository }}`)
-    expect(attach).toContain('--target "$RELEASE_SHA"')
-    expect(attach).not.toContain('--verify-tag')
+    expect(publish).toContain(`GH_REPO: ${dollar}{{ github.repository }}`)
+    expect(publish).not.toContain('--verify-tag')
   })
 
-  it('recovers completed targets before rebuilding missing targets', () => {
+  it('builds every target without recovering from an object store', () => {
     const build = section('  build:', '  publish-versioned:')
-    expect(build).toContain('Recover existing immutable target')
-    expect(build).toContain('actions/setup-python@v6')
-    expect(build).toContain('python -m pip install boto3')
-    expect(build).not.toContain('pip install --user boto3')
-    expect(build).toContain('Immutable R2 object binding mismatch')
-    expect(build).toContain('path.write_bytes(data)')
-    expect(build).toContain("steps.recover.outputs.recovered != 'true'")
-    expect(build).toContain(
-      'steps.package.outputs.zip_path || steps.recover.outputs.zip_path',
-    )
+    expect(build).not.toContain('Recover existing immutable target')
+    expect(build).not.toContain('boto3')
+    expect(build).toContain('steps.package.outputs.zip_path')
+    expect(build).not.toContain('steps.recover.outputs.zip_path')
   })
 
-  it('moves every latest alias before publishing during finalization', () => {
+  it('publishes the live alias before publishing the draft', () => {
     const finalize = section('  finalize:', '  publish-ota:')
-    expect(finalize).toContain('actions/setup-python@v6')
-    expect(finalize).toContain('python -m pip install awscli')
-    expect(finalize).not.toContain('pip install --user')
+    expect(finalize).not.toContain('aws s3api')
+    expect(finalize).not.toContain('boto3')
     expect(finalize).toContain('Expected 5 draft assets')
-    expect(finalize).toContain(
-      '--arg component "claw-server-rust/prod-resources"',
-    )
-    expect(finalize).toContain('aws s3api get-object')
+    expect(finalize).toContain('scripts/ci/component_manifest.py')
+    expect(finalize).toContain('component-manifest.json')
     expect(finalize).toContain('gh release download "$RELEASE_TAG"')
-    expect(finalize).toContain('sha256sum')
-    expect(finalize).toContain('Draft asset does not match canonical R2 object')
-    expect(finalize).toContain('--metadata-directive COPY')
+    expect(finalize).toContain(
+      `gh release upload "$ALIAS_TAG" "${dollar}{assets[@]}" --clobber`,
+    )
     const verifyIndex = finalize.indexOf('Verify prepared release')
     const tagIndex = finalize.indexOf('git tag -a "$RELEASE_TAG"')
     const publishIndex = finalize.indexOf('--draft=false')
-    const latestIndex = finalize.indexOf('Copy versioned objects to latest')
+    const latestIndex = finalize.indexOf('Publish live component resources')
     expect(tagIndex).toBeGreaterThan(verifyIndex)
     expect(latestIndex).toBeGreaterThan(tagIndex)
     expect(publishIndex).toBeGreaterThan(latestIndex)

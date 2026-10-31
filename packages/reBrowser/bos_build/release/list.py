@@ -5,10 +5,10 @@ from typing import List, Optional, Tuple
 
 from ..core.context import Context
 from ..core.products import ProductDescriptor
-from ..core.step import Step, ValidationError
+from ..core.step import Step
 from ..lib.env import EnvConfig
 from ..lib.utils import log_info
-from ..products import DEFAULT_PRODUCT_ID, PRODUCTS
+from ..products import PRODUCTS
 from .common import (
     PLATFORMS,
     PLATFORM_DISPLAY_NAMES,

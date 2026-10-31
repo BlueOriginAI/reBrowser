@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Extension packaging spec table — one owner for how each extension is
-built, signed and shipped to the CDN.
+built, signed and shipped as GitHub release assets.
 
 Same descriptor pattern as feeds/spec.py: a frozen dataclass plus a
 module-level table. This absorbs the actions repo's configs/extensions.yaml;

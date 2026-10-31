@@ -42,7 +42,7 @@ browser lane from starting.
 The full workflow freezes the dispatch SHA and passes it to every component
 and browser build. Version reflection is intentionally separate: a component
 first allocates and builds its next version from that SHA, publishes its tag,
-GitHub release, and canonical R2 objects, and only then opens the version-bump
+GitHub release, and live component resources, and only then opens the version-bump
 PR. A failed build or publication never changes the committed component
 version.
 
@@ -88,12 +88,12 @@ gh workflow run release-extensions.yml --ref main -f extension=browserclaw
 ```
 
 Direct server dispatches default to `publish_ota=true`. They publish the
-versioned and `latest` resources, render all five platform appcast fragments,
+versioned and live resources, render all five platform appcast fragments,
 merge the tracked snapshot through a short-lived pull request, and then publish
 that exact appcast to alpha.
 
 Direct extension dispatches default to `publish_alpha_feed=true`. They publish
-the CRX release and canonical versioned R2 object, update the alpha and bundled
+the CRX release and canonical versioned CRX asset, update the alpha and bundled
 manifests atomically through a short-lived pull request, publish those exact
 manifests, and reflect in-repository extension versions only after finalization
 succeeds.
@@ -134,7 +134,7 @@ merged fails closed; post-merge recovery must rerun failed jobs so it reuses the
 successful signed artifacts from the original run.
 
 If browser draft creation alone fails, rerun that job in the original run. It
-uses the R2 metadata written by the three native lanes and verifies the same
+uses the release receipts written by the three native lanes and verifies the same
 source SHA and workflow run ID before refreshing the draft. Native lanes from
 different rerun attempts are valid because GitHub keeps the run ID stable.
 
@@ -188,13 +188,13 @@ versions, commit, push, or open a PR.
 ## Publication boundary
 
 The full workflow creates or refreshes a draft browser GitHub release after
-all three native lanes upload complete R2 metadata. It does not publish the
+all three native lanes upload complete release receipts. It does not publish the
 browser appcast. Inspect the browser draft before promotion.
 
 | Workflow | Owned publication |
 | --- | --- |
-| `release-server.yml` | BrowserOS server release, versioned/`latest` resources, alpha OTA, version reflection |
-| `release-claw-server.yml` | BrowserOS neo server release, versioned/`latest` resources, alpha OTA, version reflection |
+| `release-server.yml` | BrowserOS server release, versioned/live resources, alpha OTA, version reflection |
+| `release-claw-server.yml` | BrowserOS neo server release, versioned/live resources, alpha OTA, version reflection |
 | `release-claw-onboard.yml` | onboarding release and resources |
 | `release-extensions.yml` | extension CRX release, versioned object, alpha/bundled manifests, version reflection |
 | `release-extension-feeds.yml` | explicit extension manifest preview or publication |
@@ -205,7 +205,7 @@ browser appcast. Inspect the browser draft before promotion.
 
 ## Required configuration
 
-Component publication and browser uploads use the `R2_*` secrets. BrowserOS
+Component publication and browser uploads use GitHub Releases. BrowserOS
 server builds need `BROWSEROS_CONFIG_URL`, `POSTHOG_API_KEY`, and `SENTRY_DSN`;
 BrowserOS neo server builds need `CLAW_POSTHOG_KEY`. Extension builds need the
 matching signing key and build-time secrets.

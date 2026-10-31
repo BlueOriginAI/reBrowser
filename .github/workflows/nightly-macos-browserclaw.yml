@@ -200,7 +200,7 @@ jobs:
       pull-requests: write
     concurrency:
       # This is the shared read-modify-write boundary. Keep current-main feed
-      # resolution, durable state merge, and R2 writes in this one locked job.
+      # resolution, durable state merge, and feed publication in this one locked job.
       group: release-feed-snapshots
       cancel-in-progress: false
       queue: max
@@ -272,10 +272,6 @@ jobs:
         working-directory: packages/reBrowser
         env:
           EXTENSION_VERSION: ${{ needs.transaction.outputs.browserclaw_version }}
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
         run: |
           set -euo pipefail
           uv run browseros release extensions \
@@ -351,10 +347,7 @@ jobs:
       - name: Publish immutable signed browser artifact
         working-directory: packages/reBrowser
         env:
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           uv run browseros release suite publish-browser-artifact \
@@ -365,10 +358,7 @@ jobs:
       - name: Publish current committed product feeds
         working-directory: packages/reBrowser
         env:
-          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
-          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
-          R2_BUCKET: ${{ secrets.R2_BUCKET }}
-          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           uv run browseros release feeds publish-local \

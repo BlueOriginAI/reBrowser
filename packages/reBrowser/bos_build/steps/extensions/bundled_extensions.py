@@ -56,7 +56,7 @@ class BundledExtensionsModule(Step):
             if not extensions:
                 raise RuntimeError("No extensions found in manifest")
             staged = self._select_product_extensions(extensions, ctx)
-            source_label = "CDN manifest"
+            source_label = "published manifest"
 
         output_dir = self._get_output_dir(ctx)
         output_dir.mkdir(parents=True, exist_ok=True)

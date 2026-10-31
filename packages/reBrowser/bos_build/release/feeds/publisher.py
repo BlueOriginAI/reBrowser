@@ -229,7 +229,7 @@ class FeedStatus:
 
 
 class FeedPublisher:
-    """Publishes FeedSpec content to R2 behind the safety rails."""
+    """Publishes FeedSpec content to GitHub Releases behind the safety rails."""
 
     def __init__(
         self,
@@ -240,8 +240,6 @@ class FeedPublisher:
         appcast_staging_dir: Optional[Path] = None,
         extensions_staging_dir: Optional[Path] = None,
         now: Optional[Callable[[], datetime]] = None,
-        r2_client=None,  # Compatibility shim; feeds no longer use R2.
-        **_: object,
     ):
         self.env = env or EnvConfig()
         self.repo = repo or github_repo()
@@ -458,7 +456,7 @@ class FeedPublisher:
         live = self.fetch_live(spec.key)
         if live is None and new_empty_appcast:
             # A placeholder may migrate metadata on an existing empty object,
-            # but must not establish a versionless feed at a new CDN key.
+            # but must not establish a versionless feed at a new release key.
             self._log_appcast_version_error(spec, content)
             return False
         if live is not None and not self._check_version_guard(

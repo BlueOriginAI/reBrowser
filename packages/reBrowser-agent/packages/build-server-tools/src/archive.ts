@@ -1,25 +1,10 @@
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readdir, rm, utimes } from 'node:fs/promises'
-import {
-  basename,
-  dirname,
-  isAbsolute,
-  join,
-  relative,
-  resolve,
-  sep,
-} from 'node:path'
-
-import type { S3Client } from '@aws-sdk/client-s3'
+import { dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
 
 import { runCommand } from './command'
-import {
-  joinObjectKey,
-  uploadFileToObject,
-  uploadImmutableFileToObject,
-} from './r2'
-import type { R2Config, StagedArtifact, UploadResult } from './types'
+import type { StagedArtifact, UploadResult } from './types'
 
 const ARCHIVE_TIMESTAMP = new Date('1980-01-01T00:00:00.000Z')
 const MAX_ARCHIVE_MEMBER_BYTES = 512 * 1024 * 1024
@@ -190,64 +175,6 @@ async function normalizeArchiveTimestamps(path: string): Promise<void> {
     }
   }
   await utimes(path, ARCHIVE_TIMESTAMP, ARCHIVE_TIMESTAMP)
-}
-
-export async function archiveAndUploadArtifacts(
-  artifacts: StagedArtifact[],
-  version: string,
-  client: S3Client,
-  r2: R2Config,
-  upload: boolean,
-  archiveBaseName: string,
-  options: {
-    releaseSha?: string
-    versionedOnly?: boolean
-    filesOnly?: boolean
-  } = {},
-): Promise<UploadResult[]> {
-  if (options.versionedOnly && !options.releaseSha) {
-    throw new Error('releaseSha is required for versioned-only uploads')
-  }
-  const results = await archiveArtifacts(artifacts, archiveBaseName, {
-    filesOnly: options.filesOnly,
-  })
-  if (!upload) {
-    return results
-  }
-
-  const uploadedResults: UploadResult[] = []
-  for (const result of results) {
-    const fileName = basename(result.zipPath)
-    const latestR2Key = joinObjectKey(r2.uploadPrefix, 'latest', fileName)
-    const versionR2Key = joinObjectKey(r2.uploadPrefix, version, fileName)
-    await uploadImmutableFileToObject(
-      client,
-      r2,
-      versionR2Key,
-      result.zipPath,
-      {
-        identity: options.releaseSha
-          ? {
-              component: r2.uploadPrefix,
-              releaseSha: options.releaseSha,
-              target: result.targetId,
-              version,
-            }
-          : undefined,
-      },
-    )
-    if (!options.versionedOnly) {
-      await uploadFileToObject(client, r2, latestR2Key, result.zipPath)
-    }
-    uploadedResults.push({
-      targetId: result.targetId,
-      zipPath: result.zipPath,
-      latestR2Key: options.versionedOnly ? undefined : latestR2Key,
-      versionR2Key,
-    })
-  }
-
-  return uploadedResults
 }
 
 export async function archiveArtifacts(

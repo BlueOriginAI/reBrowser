@@ -25,27 +25,13 @@ function getNativeTarget(): { id: string; ext: string } {
 
 const REQUIRED_INLINE_ENV_KEYS = ['POSTHOG_API_KEY', 'SENTRY_DSN'] as const
 
-const R2_ENV_KEYS = [
-  'R2_ACCOUNT_ID',
-  'R2_ACCESS_KEY_ID',
-  'R2_SECRET_ACCESS_KEY',
-  'R2_BUCKET',
-] as const
-
-const PROD_SECRET_KEYS = [...REQUIRED_INLINE_ENV_KEYS, ...R2_ENV_KEYS]
+const PROD_SECRET_KEYS = [...REQUIRED_INLINE_ENV_KEYS]
 
 const INLINE_ENV_STUBS: Record<string, string> = {
   POSTHOG_API_KEY: 'phc_server_build_test_unique',
   SENTRY_DSN: 'https://server-build-test@sentry.invalid/0',
   LOG_LEVEL: 'info',
   NODE_ENV: 'production',
-}
-
-const R2_ENV_STUBS: Record<string, string> = {
-  R2_ACCOUNT_ID: 'test',
-  R2_ACCESS_KEY_ID: 'test',
-  R2_SECRET_ACCESS_KEY: 'test',
-  R2_BUCKET: 'test',
 }
 
 describe('server build', () => {
@@ -96,14 +82,13 @@ describe('server build', () => {
         'bun',
         buildScript,
         `--target=${target.id}`,
-        '--no-upload',
         `--manifest=${emptyManifestPath}`,
       ],
       {
         cwd: rootDir,
         stdout: 'pipe',
         stderr: 'pipe',
-        env: buildEnv({ ...INLINE_ENV_STUBS, ...R2_ENV_STUBS }),
+        env: buildEnv({ ...INLINE_ENV_STUBS }),
       },
     )
     const buildExit = await build.exited
@@ -136,7 +121,7 @@ describe('server build', () => {
     )
   }, 300_000)
 
-  it('archives CI builds without R2 config or production env secrets', async () => {
+  it('archives CI builds without production env secrets', async () => {
     rmSync(zipPath, { force: true })
 
     const build = Bun.spawn(

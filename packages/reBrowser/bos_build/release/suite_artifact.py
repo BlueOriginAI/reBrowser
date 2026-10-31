@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Publish one signed suite browser artifact through immutable R2 effects.
+"""Publish one signed suite browser artifact through immutable release assets.
 
 Signing jobs persist a DMG and its complete release receipt in Actions. This
 module validates that receipt against the family transaction, then creates each
-versioned R2 object conditionally so retries accept identical bytes and reject
-every conflicting identity or checksum without overwriting public state.
+versioned GitHub release asset once so retries accept identical bytes and
+reject every conflicting identity or checksum without overwriting public state.
 """
 
 from __future__ import annotations
@@ -12,11 +12,20 @@ from __future__ import annotations
 import hashlib
 import json
 import re
+import tempfile
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping, Protocol
 
+from ..lib.github_releases import github_repo, release_tag
 from ..products.resource_sources import source_resources_for_product
+from .github_store import (
+    ReleaseAssetError,
+    download_release_asset,
+    release_assets,
+    upload_immutable_asset,
+    upload_json_asset,
+)
 from .suite import SuiteRecord
 
 
@@ -55,65 +64,60 @@ class ImmutableObjectBackend(Protocol):
     ) -> None: ...
 
 
-def _read_body(response: Mapping[str, object], key: str) -> bytes:
-    body = response.get("Body")
-    if body is None or not hasattr(body, "read"):
-        raise RuntimeError(f"R2 object {key} returned no readable body")
-    try:
-        content = body.read()
-    finally:
-        close = getattr(body, "close", None)
-        if close:
-            close()
-    if not isinstance(content, bytes):
-        raise RuntimeError(f"R2 object {key} returned non-byte content")
-    return content
+class GitHubImmutableObjectBackend:
+    """Conditional-create adapter for the suite's versioned release assets."""
 
+    def __init__(self, repo: str = "") -> None:
+        self.repo = repo or github_repo()
 
-def _is_precondition_failure(error: Exception) -> bool:
-    response = getattr(error, "response", {})
-    code = str(response.get("Error", {}).get("Code", ""))
-    status = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
-    return code in {
-        "409",
-        "412",
-        "Conflict",
-        "ConditionalRequestConflict",
-        "PreconditionFailed",
-    } or status in {409, 412}
+    def _identity(self, key: str) -> tuple[str, str]:
+        parts = key.split("/")
+        if len(parts) != 5 or parts[0] != "releases":
+            raise ValueError(f"Unsupported suite artifact key: {key}")
+        _, product, version, platform, name = parts
+        if Path(name).name != name:
+            raise ValueError(f"Unsupported suite artifact key: {key}")
+        tag = release_tag(version, product)
+        asset = name if platform == "macos" else f"{platform}-{name}"
+        if name == "release.json" and platform != "macos":
+            asset = f"release-{platform}.json"
+        return tag, asset
 
-
-class R2ImmutableObjectBackend:
-    """Conditional-create adapter for the suite's versioned R2 namespace."""
-
-    def __init__(self, client, bucket: str) -> None:
-        self.client = client
-        self.bucket = bucket
-
-    def _verify(self, key: str, content: bytes, binding: Mapping[str, str]) -> None:
+    def _verify(
+        self,
+        tag: str,
+        asset: str,
+        sha256: str,
+        binding: Mapping[str, str],
+    ) -> None:
         try:
-            response = self.client.get_object(Bucket=self.bucket, Key=key)
-            actual = _read_body(response, key)
-        except Exception as error:
+            existing = release_assets(tag, self.repo)
+        except ReleaseAssetError as error:
+            raise RuntimeError(f"Failed to inspect {tag}: {error}") from error
+        entry = existing.get(asset)
+        if entry is None:
+            raise RuntimeError(f"Immutable release asset is missing: {tag}/{asset}")
+        if entry["sha256"] and entry["sha256"] != sha256:
             raise RuntimeError(
-                f"Failed to verify immutable R2 object {key}: {error}"
-            ) from error
-        if actual != content:
-            raise RuntimeError(
-                f"Immutable R2 object {key} conflicts: "
-                f"expected sha256 {_sha256(content)}, got {_sha256(actual)}"
+                f"Immutable release asset {tag}/{asset} conflicts with its checksum"
             )
-        metadata = response.get("Metadata", {})
-        if not isinstance(metadata, dict):
-            raise RuntimeError(f"Immutable R2 object {key} has invalid metadata")
-        mismatches = {
-            name: {"expected": value, "actual": metadata.get(name)}
-            for name, value in binding.items()
-            if metadata.get(name) != value
-        }
-        if mismatches:
+        with tempfile.TemporaryDirectory(prefix="suite-binding-") as temp_dir:
+            sidecar = download_release_asset(
+                tag, self.repo, f"{asset}.json", Path(temp_dir) / f"{asset}.json"
+            )
+            try:
+                document = json.loads(sidecar.read_text(encoding="utf-8"))
+            except (OSError, json.JSONDecodeError) as error:
+                raise RuntimeError(
+                    f"Immutable release asset {tag}/{asset} has no valid binding"
+                ) from error
+        if not isinstance(document, dict):
             raise RuntimeError(
-                f"Immutable R2 object {key} binding conflicts: {mismatches}"
+                f"Immutable release asset {tag}/{asset} has no valid binding"
+            )
+        if document.get("sha256") != sha256 or document.get("binding") != binding:
+            raise RuntimeError(
+                f"Immutable release asset {tag}/{asset} binding conflicts"
             )
 
     def ensure(
@@ -124,25 +128,34 @@ class R2ImmutableObjectBackend:
         content_type: str,
         binding: Mapping[str, str],
     ) -> None:
-        expected_binding = {**binding, "sha256": _sha256(content)}
-        try:
-            self.client.put_object(
-                Bucket=self.bucket,
-                Key=key,
-                Body=content,
-                ContentType=content_type,
-                Metadata=expected_binding,
-                IfNoneMatch="*",
-            )
-        except Exception as error:
-            if not _is_precondition_failure(error):
-                raise RuntimeError(
-                    f"Failed to create immutable R2 object {key}: {error}"
-                ) from error
-        # Verification is mandatory after both create and precondition failure:
-        # conditional requests provide atomicity, while the read proves bytes and
-        # transaction binding rather than trusting object existence alone.
-        self._verify(key, content, expected_binding)
+        del content_type
+        tag, asset = self._identity(key)
+        sha256 = _sha256(content)
+        expected_binding = dict(binding)
+        with tempfile.TemporaryDirectory(prefix="suite-artifact-") as temp_dir:
+            path = Path(temp_dir) / asset
+            path.write_bytes(content)
+            try:
+                upload_immutable_asset(
+                    tag,
+                    self.repo,
+                    path,
+                    expected_sha256=sha256,
+                    title=f"Suite browser artifact {tag}",
+                )
+                upload_json_asset(
+                    tag,
+                    self.repo,
+                    f"{asset}.json",
+                    {"sha256": sha256, "binding": expected_binding},
+                    title=f"Suite browser artifact {tag}",
+                )
+            except ReleaseAssetError as error:
+                raise RuntimeError(str(error)) from error
+        # Verification is mandatory after both create and an existing asset:
+        # the sidecar proves bytes and transaction binding rather than trusting
+        # asset existence alone.
+        self._verify(tag, asset, sha256, expected_binding)
 
 
 def _string_map(value: object, name: str) -> dict[str, str]:

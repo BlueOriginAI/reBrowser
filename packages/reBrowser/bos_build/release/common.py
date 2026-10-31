@@ -74,7 +74,7 @@ def validate_release_metadata(
     workflow_run_id: str = "",
     workflow_run_attempt: str = "",
 ) -> Dict[str, Dict]:
-    """Select and validate the exact R2 metadata for one release invocation."""
+    """Select and validate the exact release metadata for one invocation."""
     expected = expected_browser_artifact_keys(platforms, macos_arch)
     provenance = {
         "source_sha": source_sha,
@@ -203,7 +203,7 @@ def fetch_all_release_metadata(
     Finalize passes the Actions-artifact directory; CLI users rely on the
     metadata assets attached to the published GitHub release.
     """
-    del env  # Kept for call-site compatibility; metadata no longer lives in R2.
+    del env  # Kept for call-site compatibility; metadata lives in GitHub Releases.
     tag = release_tag(version, product_id)
     resolved_repo = repo or github_repo()
 
