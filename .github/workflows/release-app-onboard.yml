@@ -303,15 +303,6 @@ jobs:
             git push origin "refs/tags/$RELEASE_TAG"
           fi
 
-      - name: Publish private draft
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -euo pipefail
-          if [ "$(gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft')" = "true" ]; then
-            gh release edit "$RELEASE_TAG" --draft=false --latest=false
-          fi
-
       - name: Publish live component resources
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -353,6 +344,15 @@ jobs:
           fi
           assets=("$artifact_dir"/*.zip "$manifest")
           gh release upload "$ALIAS_TAG" "${assets[@]}" --clobber
+
+      - name: Publish private draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ "$(gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft')" = "true" ]; then
+            gh release edit "$RELEASE_TAG" --draft=false --latest=false
+          fi
 
       - name: Summarize onboarding resource keys
         run: |
