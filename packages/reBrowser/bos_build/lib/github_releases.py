@@ -139,6 +139,9 @@ def component_tag(component: str, version: str) -> str:
 
 def component_resource_tag(component: str) -> str:
     """Stable tag whose assets mirror the newest component resources."""
+    # GitHub permanently reserved the original tag after an immutable release.
+    if component == "app-onboard":
+        return "feed-resources-app-onboard-v2"
     return f"feed-resources-{component}"
 
 

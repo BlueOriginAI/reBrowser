@@ -8,6 +8,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from bos_build.lib.github_releases import component_manifest_url, component_resource_tag
 from bos_build.release.github import (
     create_pull_request,
     download_release_asset,
@@ -160,6 +161,14 @@ class PullRequestAdapterTest(unittest.TestCase):
 
 
 class ReleaseAdapterTest(unittest.TestCase):
+    def test_onboarding_feed_avoids_permanently_reserved_tag(self) -> None:
+        self.assertEqual(
+            component_manifest_url("app-onboard", repo="owner/repo"),
+            "https://github.com/owner/repo/releases/download/"
+            "feed-resources-app-onboard-v2/component-manifest.json",
+        )
+        self.assertEqual(component_resource_tag("server"), "feed-resources-server")
+
     def test_release_tag_preserves_nonzero_browser_patch(self) -> None:
         self.assertEqual(normalize_version("0.50.0.3"), "0.50.0.3")
         self.assertEqual(

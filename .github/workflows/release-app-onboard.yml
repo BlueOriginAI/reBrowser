@@ -6,6 +6,14 @@ on:
       - "app-onboard/v*"
   workflow_dispatch:
     inputs:
+      mode:
+        description: "Build a release or finalize existing prepared assets"
+        required: false
+        type: choice
+        options:
+          - build
+          - finalize
+        default: "build"
       version:
         description: "Release version; allocated automatically when omitted"
         required: false
@@ -243,7 +251,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
-      ALIAS_TAG: feed-resources-app-onboard
+      ALIAS_TAG: feed-resources-app-onboard-v2
       RELEASE_SHA: ${{ needs.prepare.outputs.release_sha }}
       RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
       RESERVATION: ${{ needs.prepare.outputs.reservation }}
@@ -359,7 +367,7 @@ jobs:
             echo
             echo "- Version: \`$VERSION\`"
             echo "- GitHub release: \`$RELEASE_TAG\`"
-            echo "- Latest: \`https://github.com/${{ github.repository }}/releases/download/feed-resources-app-onboard/browseros-app-onboard-resources.zip\`"
+            echo "- Latest: \`https://github.com/${{ github.repository }}/releases/download/feed-resources-app-onboard-v2/browseros-app-onboard-resources.zip\`"
             echo "- Versioned: \`https://github.com/${{ github.repository }}/releases/download/app-onboard/v${VERSION}/browseros-app-onboard-resources.zip\`"
           } >> "$GITHUB_STEP_SUMMARY"
 
