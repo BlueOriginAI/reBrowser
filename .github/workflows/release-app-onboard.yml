@@ -48,8 +48,6 @@ on:
       release_sha:
         description: "Immutable source commit"
         value: ${{ jobs.prepare.outputs.release_sha }}
-    secrets:
-
 permissions:
   contents: write
   pull-requests: write
