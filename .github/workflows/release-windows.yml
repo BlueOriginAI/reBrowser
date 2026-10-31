@@ -63,8 +63,6 @@ on:
         type: string
         default: ""
     secrets:
-      BROWSEROS_CONFIG_URL:
-        required: false
       POSTHOG_API_KEY:
         required: false
       SENTRY_DSN:
@@ -239,7 +237,6 @@ jobs:
       extension-version: ${{ inputs.extension_version || '' }}
       onboarding-version: ${{ inputs.onboarding_version || '' }}
     secrets:
-      BROWSEROS_CONFIG_URL: ${{ secrets.BROWSEROS_CONFIG_URL }}
       POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
       SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
       CLAW_POSTHOG_KEY: ${{ secrets.CLAW_POSTHOG_KEY }}

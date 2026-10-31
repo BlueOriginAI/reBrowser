@@ -206,7 +206,7 @@ browser appcast. Inspect the browser draft before promotion.
 ## Required configuration
 
 Component publication and browser uploads use GitHub Releases. BrowserOS
-server builds need `BROWSEROS_CONFIG_URL`, `POSTHOG_API_KEY`, and `SENTRY_DSN`;
+server builds need `POSTHOG_API_KEY` and `SENTRY_DSN`;
 BrowserOS neo server builds need `CLAW_POSTHOG_KEY`. Extension builds need the
 matching signing key and build-time secrets.
 

@@ -68,10 +68,6 @@ class CheckResult:
 
 ALLOWLIST: tuple[SecretSpec, ...] = (
     SecretSpec(
-        "BROWSEROS_CONFIG_URL",
-        ("release-browseros.yml", "release-server.yml"),
-    ),  # BrowserOS server inline production config URL.
-    SecretSpec(
         "POSTHOG_API_KEY",
         ("release-browseros.yml", "release-server.yml", "release-extensions.yml"),
     ),  # Server and extension release analytics key.

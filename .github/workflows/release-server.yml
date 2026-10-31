@@ -64,8 +64,6 @@ on:
         description: "Immutable source commit"
         value: ${{ jobs.prepare.outputs.release_sha }}
     secrets:
-      BROWSEROS_CONFIG_URL:
-        required: true
       POSTHOG_API_KEY:
         required: true
       SENTRY_DSN:
@@ -230,7 +228,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 90
     env:
-      BROWSEROS_CONFIG_URL: ${{ secrets.BROWSEROS_CONFIG_URL }}
       LOG_LEVEL: info
       NODE_ENV: production
       POSTHOG_API_KEY: ${{ secrets.POSTHOG_API_KEY }}
@@ -251,7 +248,7 @@ jobs:
       - name: Preflight required secrets
         run: |
           set -euo pipefail
-          required=(BROWSEROS_CONFIG_URL POSTHOG_API_KEY SENTRY_DSN)
+          required=(POSTHOG_API_KEY SENTRY_DSN)
           missing=()
           for name in "${required[@]}"; do
             if [ -z "${!name:-}" ]; then missing+=("$name"); fi

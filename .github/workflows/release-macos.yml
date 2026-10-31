@@ -70,8 +70,6 @@ on:
         type: string
         default: ""
     secrets:
-      BROWSEROS_CONFIG_URL:
-        required: false
       POSTHOG_API_KEY:
         required: false
       SENTRY_DSN:
@@ -331,7 +329,6 @@ jobs:
           BROWSEROS_SERVER_RESOURCE_VERSION: ${{ steps.inputs.outputs.products == 'browseros' && inputs.server_version || '' }}
           BROWSERCLAW_SERVER_RESOURCE_VERSION: ${{ steps.inputs.outputs.products == 'browserclaw' && inputs.server_version || '' }}
           ONBOARDING_RESOURCE_VERSION: ${{ inputs.onboarding_version }}
-          BROWSEROS_CONFIG_URL: ${{ secrets.BROWSEROS_CONFIG_URL }}
           BUNDLED_EXTENSIONS_MANIFEST_URL: ${{ inputs.extension_version && format('{0}/updates/extensions/bundled-manifest.xml', steps.inputs.outputs.browseros_repo) || '' }}
           BUNDLED_PRODUCT_EXTENSION_VERSION: ${{ inputs.extension_version }}
           CLAW_POSTHOG_KEY: ${{ secrets.CLAW_POSTHOG_KEY }}
