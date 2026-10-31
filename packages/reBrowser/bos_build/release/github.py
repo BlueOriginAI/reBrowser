@@ -359,29 +359,42 @@ def ensure_published_release(tag: str, repo: str, title: str) -> None:
 def download_release_asset(
     tag: str, repo: str, filename: str, dest_dir: Path
 ) -> Optional[Path]:
-    """Download one release asset into dest_dir, returning its path."""
+    """Download one release asset; only an absent release or asset is None."""
     dest_dir.mkdir(parents=True, exist_ok=True)
     try:
-        subprocess.run(
-            [
-                "gh",
-                "release",
-                "download",
-                tag,
-                "--repo",
-                repo,
-                "--pattern",
-                filename,
-                "--dir",
-                str(dest_dir),
-            ],
-            check=True,
-            capture_output=True,
-        )
-    except Exception:
+        release = inspect_github_release(tag, repo)
+    except subprocess.CalledProcessError as error:
+        stderr = error.stderr or ""
+        if isinstance(stderr, bytes):
+            stderr = stderr.decode("utf-8", "replace")
+        if "not found" not in stderr.lower():
+            raise
         return None
+    if filename not in release["assets"]:
+        return None
+    result = subprocess.run(
+        [
+            "gh",
+            "release",
+            "download",
+            tag,
+            "--repo",
+            repo,
+            "--pattern",
+            filename,
+            "--dir",
+            str(dest_dir),
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
     path = dest_dir / filename
-    return path if path.is_file() else None
+    if result.returncode != 0 or not path.is_file():
+        raise RuntimeError(
+            f"Failed to download {tag}/{filename}: {result.stderr.strip()}"
+        )
+    return path
 
 
 def normalize_version(version: str) -> str:

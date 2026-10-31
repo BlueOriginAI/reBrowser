@@ -3,11 +3,14 @@
 
 import json
 import subprocess
+import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
 from bos_build.release.github import (
     create_pull_request,
+    download_release_asset,
     edit_pull_request_body,
     github_release_tag,
     inspect_github_release,
@@ -247,6 +250,74 @@ class ReleaseAdapterTest(unittest.TestCase):
         self.assertEqual(command[:3], ["gh", "release", "view"])
         self.assertEqual(command[3], "ext-agent/v0.0.124.0")
         self.assertEqual(command[-2:], ["--json", "isDraft,targetCommitish,assets"])
+
+
+class ReleaseAssetDownloadTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.dest = Path(self._tmp.name)
+
+    def _missing_release_error(self) -> subprocess.CalledProcessError:
+        return subprocess.CalledProcessError(
+            1, ["gh"], stderr="release not found"
+        )
+
+    def test_absent_release_is_not_an_error(self) -> None:
+        with mock.patch(
+            "bos_build.release.github.inspect_github_release",
+            side_effect=self._missing_release_error(),
+        ):
+            result = download_release_asset(
+                "feed-browseros", "owner/repo", "appcast.xml", self.dest
+            )
+
+        self.assertIsNone(result)
+
+    def test_transient_release_lookup_failure_raises(self) -> None:
+        with mock.patch(
+            "bos_build.release.github.inspect_github_release",
+            side_effect=subprocess.CalledProcessError(
+                1, ["gh"], stderr="error connecting to api.github.com"
+            ),
+        ):
+            with self.assertRaises(subprocess.CalledProcessError):
+                download_release_asset(
+                    "feed-browseros", "owner/repo", "appcast.xml", self.dest
+                )
+
+    def test_absent_asset_returns_none_without_downloading(self) -> None:
+        with (
+            mock.patch(
+                "bos_build.release.github.inspect_github_release",
+                return_value={"assets": ["other.xml"]},
+            ),
+            mock.patch("bos_build.release.github.subprocess.run") as runner,
+        ):
+            result = download_release_asset(
+                "feed-browseros", "owner/repo", "appcast.xml", self.dest
+            )
+
+        self.assertIsNone(result)
+        runner.assert_not_called()
+
+    def test_download_failure_raises_instead_of_reporting_absence(self) -> None:
+        completed = subprocess.CompletedProcess(
+            args=[], returncode=1, stdout="", stderr="network down"
+        )
+        with (
+            mock.patch(
+                "bos_build.release.github.inspect_github_release",
+                return_value={"assets": ["appcast.xml"]},
+            ),
+            mock.patch(
+                "bos_build.release.github.subprocess.run", return_value=completed
+            ),
+        ):
+            with self.assertRaisesRegex(RuntimeError, "network down"):
+                download_release_asset(
+                    "feed-browseros", "owner/repo", "appcast.xml", self.dest
+                )
 
 
 if __name__ == "__main__":
