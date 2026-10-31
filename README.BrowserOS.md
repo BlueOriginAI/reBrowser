@@ -39,6 +39,8 @@ brew install --cask browseros
 
 Prefer a direct download? [macOS](https://github.com/BlueOriginAI/reBrowser/releases/download/latest-browseros/reBrowser.dmg) · [Windows](https://github.com/BlueOriginAI/reBrowser/releases/download/latest-browseros/reBrowser_installer.exe) · [Linux (AppImage)](https://github.com/BlueOriginAI/reBrowser/releases/download/latest-browseros/reBrowser.AppImage) · [Linux (Debian)](https://github.com/BlueOriginAI/reBrowser/releases/download/latest-browseros/reBrowser.deb)
 
+> Already on v0.1.0–v0.1.3? Those builds checked the retired `cdn.browseros.com` feed and can no longer update themselves. Install the current release once; automatic updates then follow this repository's GitHub Releases.
+
 ### 2. Import from Chrome
 
 One click brings over your bookmarks, passwords and extensions.

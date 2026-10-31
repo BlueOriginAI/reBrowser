@@ -37,6 +37,8 @@ brew install --cask browseros-neo
 
 Prefer a direct download? Grab it for [macOS](https://github.com/BlueOriginAI/reBrowser/releases/download/latest-browserclaw/reBrowser-agent.dmg) or [Windows](https://github.com/BlueOriginAI/reBrowser/releases/download/latest-browserclaw/reBrowser-agent_installer.exe).
 
+> Builds that still point at the retired `cdn.browseros.com` feed cannot update themselves. Install the current release once; automatic updates then follow this repository's GitHub Releases.
+
 ### 2. Import from Chrome
 
 One click brings over your logins, bookmarks and extensions. Your agents work with your real accounts from the first task.
