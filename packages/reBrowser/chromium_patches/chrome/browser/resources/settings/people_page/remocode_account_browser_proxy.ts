@@ -2,7 +2,7 @@ diff --git a/chrome/browser/resources/settings/people_page/remocode_account_brow
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/resources/settings/people_page/remocode_account_browser_proxy.ts
-@@ -0,0 +1,66 @@
+@@ -0,0 +1,75 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -17,9 +17,13 @@ new file mode 100644
 +  state: RemocodeAccountStatus;
 +  displayName: string;
 +  email: string;
++  // Encoded from a verified, decoded native bitmap; never a remote URL.
++  avatarDataUrl?: string;
 +  // A stable error/status code, never a raw provider response.
 +  message: string;
 +  busy: boolean;
++  // Native local-profile policy; independent of cloud sign-in.
++  canAddProfile?: boolean;
 +  // Optional for compatibility; logoutPending/logoutFailed also signal this.
 +  providerRevoked?: boolean;
 +}
@@ -31,6 +35,7 @@ new file mode 100644
 +  logout(): void;
 +  manage(): void;
 +  retry(): void;
++  addProfile(): void;
 +}
 +
 +export class RemocodeAccountBrowserProxyImpl implements
@@ -57,6 +62,10 @@ new file mode 100644
 +
 +  retry(): void {
 +    chrome.send('remocodeAccountRetry');
++  }
++
++  addProfile(): void {
++    chrome.send('remocodeAccountAddProfile');
 +  }
 +
 +  static getInstance(): RemocodeAccountBrowserProxy {

@@ -117,7 +117,7 @@ diff --git a/chrome/app/resources/generated_resources_zh-CN.xtb b/chrome/app/res
  <translation id="5095848221827496531">取消选择</translation>
  <translation id="5096775069898886423">在您访问不支持安全连接的网站前，系统会发出警告</translation>
  <translation id="5097002363526479830">无法连接到网络“<ph name="NAME" />”：<ph name="DETAILS" /></translation>
-+<translation id="5097276334233313454">您与 Remocode</translation>
++<translation id="5097276334233313454">我与Remocode</translation>
  <translation id="5097306410549350357">详细了解如何使用位置信息</translation>
  <translation id="5097349930204431044">您访问的网站能判断您的喜好，然后在您继续浏览时向您展示建议的广告</translation>
  <translation id="5097649414558628673">工具：<ph name="PRINT_NAME" /></translation>

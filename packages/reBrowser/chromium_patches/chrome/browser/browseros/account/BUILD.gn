@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/account/BUILD.gn b/chrome/browser/browsero
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/account/BUILD.gn
-@@ -0,0 +1,77 @@
+@@ -0,0 +1,79 @@
 +# Copyright 2026 The Chromium Authors
 +# Use of this source code is governed by a BSD-style license.
 +import("//testing/test.gni")
@@ -38,6 +38,7 @@ new file mode 100644
 +    "//net",
 +    "//components/os_crypt/async/common",
 +    "//services/network/public/cpp",
++    "//ui/gfx",
 +  ]
 +  deps = [
 +    "//chrome/browser:browser_process",
@@ -48,6 +49,7 @@ new file mode 100644
 +    "//components/pref_registry",
 +    "//content/public/browser",
 +    "//services/network/public/mojom",
++    "//services/data_decoder/public/cpp",
 +  ]
 +}
 +

@@ -1,11 +1,12 @@
 diff --git a/chrome/browser/resources/settings/people_page/people_page.html b/chrome/browser/resources/settings/people_page/people_page.html
 --- a/chrome/browser/resources/settings/people_page/people_page.html
 +++ b/chrome/browser/resources/settings/people_page/people_page.html
-@@ -65,7 +65,13 @@
+@@ -65,7 +65,14 @@
          }
        }
      </style>
 +<if expr="not is_chromeos">
++    <settings-remocode-account-card></settings-remocode-account-card>
 +    <settings-section page-title="[[getRemocodeServicesText_(
 +        'remocodeLocalProfileTitle')]]">
 +</if>
@@ -15,7 +16,7 @@ diff --git a/chrome/browser/resources/settings/people_page/people_page.html b/ch
        <div>
  
  <if expr="not is_chromeos">
-@@ -84,28 +90,7 @@
+@@ -84,28 +91,6 @@
            </settings-sync-account-control>
          </template>
  
@@ -41,7 +42,6 @@ diff --git a/chrome/browser/resources/settings/people_page/people_page.html b/ch
 -            </template>
 -          </div>
 -        </template>
-+        <settings-remocode-account-card></settings-remocode-account-card>
  </if>
  
  <if expr="is_chromeos">

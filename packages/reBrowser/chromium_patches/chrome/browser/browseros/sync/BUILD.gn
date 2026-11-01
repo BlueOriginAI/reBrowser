@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/sync/BUILD.gn b/chrome/browser/browseros/s
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/BUILD.gn
-@@ -0,0 +1,155 @@
+@@ -0,0 +1,156 @@
 +# Copyright 2026 The Chromium Authors
 +# Use of this source code is governed by a BSD-style license.
 +import("//chrome/browser/sparkle_buildflags.gni")
@@ -82,6 +82,7 @@ new file mode 100644
 +    sources = [ "//chrome/test/base/run_all_unittests.cc" ]
 +    deps = [
 +      ":unit_tests",
++      "//chrome/browser/browseros/sync/adapters:unit_tests",
 +      "//base/test:test_support",
 +      "//build:branding_buildflags",
 +      "//chrome:packed_resources",

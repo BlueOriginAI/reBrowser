@@ -1,9 +1,8 @@
 diff --git a/chrome/browser/browseros/sync/adapters/local_sync_adapters_unittest.cc b/chrome/browser/browseros/sync/adapters/local_sync_adapters_unittest.cc
 new file mode 100644
-index 0000000000000000000000000000000000000000..58acdb84c47041e0bcd2dc0c65b9314a633939c3
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/adapters/local_sync_adapters_unittest.cc
-@@ -0,0 +1,420 @@
+@@ -0,0 +1,442 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -227,6 +226,28 @@ index 0000000000000000000000000000000000000000..58acdb84c47041e0bcd2dc0c65b9314a
 +  EXPECT_EQ(last->uuid().AsLowercaseString(), *result.entries[1].GetDict().FindString("id"));
 +  EXPECT_TRUE(result.entries[1].GetDict().Find("url")->is_none());
 +  EXPECT_EQ("q=synthetic", first->url().query());
++  EXPECT_EQ(result.entries, ReadBookmarks().entries);
++}
++
++TEST_F(LocalSyncAdaptersTest, WideFolderKeepsSafeSiblingAnchorsInOnePass) {
++  constexpr int kCount = 512;
++  for (int i = 0; i < kCount; ++i) {
++    const auto* root = model_->bookmark_bar_node();
++    model_->AddURL(root, root->children().size(), u"Public",
++        GURL("https://example.com/" + std::to_string(i)));
++    model_->AddURL(root, root->children().size(), u"Private",
++        GURL("http://192.168.1.1/" + std::to_string(i)));
++  }
++  const auto result = ReadBookmarks();
++  ASSERT_TRUE(result.success);
++  ASSERT_EQ(static_cast<size_t>(kCount), result.entries.size());
++  std::string previous;
++  for (const auto& value : result.entries) {
++    const auto& entry = value.GetDict();
++    if (previous.empty()) EXPECT_TRUE(entry.Find("afterId")->is_none());
++    else EXPECT_EQ(previous, *entry.FindString("afterId"));
++    previous = *entry.FindString("id");
++  }
 +  EXPECT_EQ(result.entries, ReadBookmarks().entries);
 +}
 +

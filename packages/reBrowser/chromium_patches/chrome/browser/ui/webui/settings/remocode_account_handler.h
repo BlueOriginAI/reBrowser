@@ -2,7 +2,7 @@ diff --git a/chrome/browser/ui/webui/settings/remocode_account_handler.h b/chrom
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/ui/webui/settings/remocode_account_handler.h
-@@ -0,0 +1,27 @@
+@@ -0,0 +1,28 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#ifndef CHROME_BROWSER_UI_WEBUI_SETTINGS_REMOCODE_ACCOUNT_HANDLER_H_
@@ -22,6 +22,7 @@ new file mode 100644
 +  remocode::AccountService* GetService();
 +  base::DictValue GetState();
 +  void HandleGetState(const base::ListValue& args);
++  void HandleAddProfile(const base::ListValue& args);
 +  void HandleCommand(Command command, const base::ListValue& args);
 +  void OnStateChanged();
 +  void OnJavascriptAllowed() override;

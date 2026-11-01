@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/sync/remocode_sync_service.h b/chrome/brow
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/remocode_sync_service.h
-@@ -0,0 +1,110 @@
+@@ -0,0 +1,114 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#ifndef CHROME_BROWSER_BROWSEROS_SYNC_REMOCODE_SYNC_SERVICE_H_
@@ -30,6 +30,8 @@ new file mode 100644
 +  base::DictValue GetState() const;
 +  base::CallbackListSubscription Observe(base::RepeatingClosure observer);
 +  void Refresh();
++  // Subscription UI reads must not start or queue a data synchronization cycle.
++  void RefreshStatus(bool force);
 +  // Enabled is only category consent, never an entitlement or provider selector.
 +  bool SetEnabled(const base::DictValue& enabled);
 +  std::string PrepareCloudDeletion();
@@ -56,6 +58,7 @@ new file mode 100644
 +  void Request(Endpoint endpoint, base::DictValue body,
 +               base::OnceCallback<void(int, base::DictValue)> callback);
 +  void OnStatus(int status, base::DictValue data);
++  void OnStatusOnly(int status, base::DictValue data);
 +  bool AcceptStatus(const base::DictValue& data);
 +  void Enroll();
 +  void OnEnrollment(int status, base::DictValue data);
@@ -87,6 +90,7 @@ new file mode 100644
 +  // Independent of refresh/debounce: a request in flight cannot extend VIP.
 +  base::OneShotTimer entitlement_timer_;
 +  base::Time vip_expires_at_;
++  base::TimeTicks last_status_request_;
 +  bool purchase_available_ = false;
 +  bool management_available_ = false;
 +  std::string deletion_status_ = "none";

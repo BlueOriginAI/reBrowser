@@ -18,7 +18,7 @@ new file mode 100644
 +  void RegisterMessages() override;
 + private:
 +  enum class Command {
-+    kGetState, kRefresh, kSetEnabled, kPrepareDelete, kDelete, kPurchase, kManage
++    kGetState, kRefresh, kRefreshIfStale, kSetEnabled, kPrepareDelete, kDelete, kPurchase, kManage
 +  };
 +  void Handle(Command command, const base::ListValue& args);
 +  browseros::sync::RemocodeSyncService* Service();

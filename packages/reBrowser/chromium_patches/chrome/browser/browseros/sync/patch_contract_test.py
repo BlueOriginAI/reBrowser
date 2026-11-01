@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/sync/patch_contract_test.py b/chrome/brows
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/patch_contract_test.py
-@@ -0,0 +1,135 @@
+@@ -0,0 +1,140 @@
 +#!/usr/bin/env python3
 +# Copyright 2026 The Chromium Authors
 +# Use of this source code is governed by a BSD-style license.
@@ -65,21 +65,26 @@ new file mode 100644
 +        self.assertIn('CancelSyncRequests()', stop)
 +        self.assertIn('generation != generation_', text.split('void AccountService::OnSyncResponse')[1])
 +    def test_ui_contains_no_bearer_or_entitlement_override(self):
-+        text = source(UI + 'remocode_sync_page.ts') + source(UI + 'remocode_sync_browser_proxy.ts')
++        text = (source(UI + 'remocode_sync_page.ts') +
++                source(UI + 'remocode_account_card.ts') +
++                source(UI + 'remocode_sync_browser_proxy.ts'))
++        # Check executable source, not explanatory full-line comments.
++        text = re.sub(r'(?m)^\s*//.*$', '', text)
 +        for secret in ['accessToken', 'refreshToken', 'Authorization', 'providerUrl', 'isPaid']:
-+            self.assertNotIn(secret, text)
-+        self.assertIn("entitlement !== 'active'", text)
++            self.assertNotRegex(text, r"\b" + re.escape(secret) + r"\b")
++        self.assertIn("!this.isPro_(account, state)", text)
++        self.assertIn("state.deletionPending", text)
 +    def test_all_categories_default_off_and_agent_unavailable(self):
 +        service = source(SYNC + 'remocode_sync_service.cc')
 +        self.assertIn('enabled.Set(stream, false)', service)
 +        self.assertIn('available.Set("agent_history", false)', service)
-+        page = source(UI + 'remocode_sync_page.ts')
++        page = source(UI + 'remocode_account_card.ts')
 +        self.assertIn('enabled: {bookmarks: false, history: false, agent_history: false}', page)
 +    def test_distinct_entitlement_and_operation_states(self):
-+        text = source(UI + 'remocode_sync_page.ts')
-+        for state in ['loading:', 'signedOut:', 'free:', 'active:', 'error:', 'unavailable:',
-+                      'paused:', 'pending:', 'failed:', 'conflict:', 'deletePending:']:
-+            self.assertIn(state, text)
++        text = source(UI + 'remocode_sync_browser_proxy.ts')
++        for state in ['loading', 'signedOut', 'free', 'active', 'error', 'unavailable',
++                      'paused', 'pending', 'failed', 'conflict', 'deletePending']:
++            self.assertIn("'" + state + "'", text)
 +    def test_strict_dto_and_url_whitelist(self):
 +        text = source(SYNC + 'sync_protocol.cc')
 +        self.assertIn('SchemeIsHTTPOrHTTPS', text)

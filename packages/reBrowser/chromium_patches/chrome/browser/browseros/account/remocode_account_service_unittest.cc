@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/account/remocode_account_service_unittest.
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/account/remocode_account_service_unittest.cc
-@@ -0,0 +1,415 @@
+@@ -0,0 +1,489 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#include "chrome/browser/browseros/account/remocode_account_service.h"
@@ -21,6 +21,7 @@ new file mode 100644
 +#include "services/network/test/test_url_loader_factory.h"
 +#include "services/network/test/test_utils.h"
 +#include "testing/gtest/include/gtest/gtest.h"
++#include "third_party/skia/include/core/SkBitmap.h"
 +
 +namespace remocode {
 +namespace {
@@ -78,6 +79,31 @@ new file mode 100644
 +    Reply("/me", kMe);
 +    ASSERT_EQ(State(), "signedIn");
 +  }
++  void SignInWithAvatar(const std::string& url) {
++    Seed();
++    Start();
++    Reply("/refresh", kTokens);
++    base::DictValue account;
++    account.Set("displayName", "Verified User");
++    account.Set("email", "verified@example.invalid");
++    account.Set("imageUrl", url);
++    base::DictValue response;
++    response.Set("account", std::move(account));
++    response.Set("installationId", "installation-1");
++    const std::string json = *base::WriteJson(response);
++    Reply("/me", json.c_str());
++    ASSERT_EQ(State(), "signedIn");
++  }
++  bool AcceptAccount(const base::DictValue& response) {
++    return service_->AcceptAccount(response);
++  }
++  uint64_t AvatarGeneration() { return service_->avatar_generation_; }
++  void DeliverAvatar(uint64_t generation) {
++    SkBitmap bitmap;
++    bitmap.allocN32Pixels(8, 8);
++    bitmap.eraseColor(SK_ColorRED);
++    service_->OnAvatarDecoded(generation, bitmap);
++  }
 +  // Deterministic socket-ready seam: network/crypto/state behavior is real,
 +  // but unit tests never contend with another process for production port 48123.
 +  void BeginAuthorization() {
@@ -125,6 +151,54 @@ new file mode 100644
 +  std::unique_ptr<TestingProfile> profile_;
 +  std::unique_ptr<AccountService> service_;
 +};
++TEST_F(AccountServiceTest, AvatarFetchOmitsCredentialsAndLogoutDropsLateImage) {
++  SignInWithAvatar("https://img.clerk.com/account-avatar.png");
++  const auto* pending = network_.GetPendingRequest(0);
++  ASSERT_TRUE(pending);
++  EXPECT_EQ(pending->request.url, GURL("https://img.clerk.com/account-avatar.png"));
++  EXPECT_EQ(pending->request.credentials_mode,
++            network::mojom::CredentialsMode::kOmit);
++  EXPECT_EQ(pending->request.redirect_mode, network::mojom::RedirectMode::kError);
++  EXPECT_FALSE(pending->request.headers.HasHeader("Authorization"));
++  EXPECT_TRUE(pending->request.referrer.empty());
++  const uint64_t generation = AvatarGeneration();
++  DeliverAvatar(generation);
++  EXPECT_FALSE(service_->GetAvatarImage().isNull());
++  service_->Logout();
++  EXPECT_TRUE(service_->GetAvatarImage().isNull());
++  DeliverAvatar(generation);
++  EXPECT_TRUE(service_->GetAvatarImage().isNull());
++}
++TEST_F(AccountServiceTest, UntrustedAvatarNeverFetchesOrBreaksSignIn) {
++  for (const char* url : {"http://img.clerk.com/avatar.png",
++                         "https://img.clerk.com.evil.example/avatar.png",
++                         "https://127.0.0.1/avatar.png",
++                         "https://user:pass@img.clerk.com/avatar.png",
++                         "https://img.clerk.com:444/avatar.png",
++                         "data:image/png;base64,AA=="}) {
++    SignInWithAvatar(url);
++    EXPECT_EQ(network_.NumPending(), 0);
++    EXPECT_TRUE(service_->GetAvatarImage().isNull());
++    service_->Shutdown();
++    service_.reset();
++  }
++}
++TEST_F(AccountServiceTest, NewAvatarRejectsPreviousAccountsDecode) {
++  SignInWithAvatar("https://img.clerk.com/first-avatar.png");
++  const uint64_t old_generation = AvatarGeneration();
++  base::DictValue account;
++  account.Set("displayName", "Verified User");
++  account.Set("email", "verified@example.invalid");
++  account.Set("imageUrl", "https://img.clerk.com/new-avatar.png");
++  base::DictValue response;
++  response.Set("account", std::move(account));
++  response.Set("installationId", "installation-1");
++  ASSERT_TRUE(AcceptAccount(response));
++  DeliverAvatar(old_generation);
++  EXPECT_TRUE(service_->GetAvatarImage().isNull());
++  DeliverAvatar(AvatarGeneration());
++  EXPECT_FALSE(service_->GetAvatarImage().isNull());
++}
 +TEST_F(AccountServiceTest, StartMustSucceedBeforeOpeningProviderOrExchangingCode) {
 +  BeginAuthorization();
 +  EXPECT_EQ(State(), "authorizing");

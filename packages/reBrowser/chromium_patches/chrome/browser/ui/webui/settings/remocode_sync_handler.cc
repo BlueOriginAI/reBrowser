@@ -2,7 +2,7 @@ diff --git a/chrome/browser/ui/webui/settings/remocode_sync_handler.cc b/chrome/
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/ui/webui/settings/remocode_sync_handler.cc
-@@ -0,0 +1,79 @@
+@@ -0,0 +1,82 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#include "chrome/browser/ui/webui/settings/remocode_sync_handler.h"
@@ -22,6 +22,7 @@ new file mode 100644
 +  const std::pair<const char*, Command> commands[] = {
 +      {"remocodeSyncGetState", Command::kGetState},
 +      {"remocodeSyncRefresh", Command::kRefresh},
++      {"remocodeSyncRefreshIfStale", Command::kRefreshIfStale},
 +      {"remocodeSyncSetEnabled", Command::kSetEnabled},
 +      {"remocodeSyncPrepareDelete", Command::kPrepareDelete},
 +      {"remocodeSyncDelete", Command::kDelete},
@@ -43,8 +44,10 @@ new file mode 100644
 +      if (args.size() != 1) break;
 +      ResolveJavascriptCallback(args[0], service->GetState()); return;
 +    case Command::kRefresh:
++    case Command::kRefreshIfStale:
 +      if (args.size() != 1) break;
-+      service->Refresh(); ResolveJavascriptCallback(args[0], service->GetState()); return;
++      service->RefreshStatus(command == Command::kRefresh);
++      ResolveJavascriptCallback(args[0], service->GetState()); return;
 +    case Command::kSetEnabled:
 +      if (args.size() != 2 || !args[1].is_dict()) break;
 +      ResolveJavascriptCallback(args[0], base::Value(service->SetEnabled(args[1].GetDict()))); return;

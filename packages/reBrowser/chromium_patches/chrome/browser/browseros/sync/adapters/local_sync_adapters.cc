@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/sync/adapters/local_sync_adapters.cc b/chr
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/adapters/local_sync_adapters.cc
-@@ -0,0 +1,1024 @@
+@@ -0,0 +1,1034 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -465,7 +465,8 @@ new file mode 100644
 +    return node && IsLocal(node) ? node : nullptr;
 +  }
 +
-+  std::optional<base::DictValue> Snapshot(const Node* node) const {
++  std::optional<base::DictValue> Snapshot(
++      const Node* node, const std::string* preceding_id = nullptr) const {
 +    if (!node || node->is_permanent_node() || !IsLocal(node)) {
 +      return std::nullopt;
 +    }
@@ -477,12 +478,19 @@ new file mode 100644
 +      }
 +    }
 +    std::string after;
-+    for (const auto& sibling : node->parent()->children()) {
-+      if (sibling.get() == node) {
-+        break;
-+      }
-+      if (sibling->is_folder() || internal::SanitizeURL(sibling->url())) {
-+        after = Id(sibling.get());
++    if (preceding_id) {
++      after = *preceding_id;
++    } else {
++      // Point lookups need only the closest exportable predecessor, not a
++      // repeated sanitization of the entire prefix of a wide folder.
++      const auto& siblings = node->parent()->children();
++      size_t index = node->parent()->GetIndexOf(node).value();
++      while (index > 0) {
++        const auto& sibling = siblings[--index];
++        if (sibling->is_folder() || internal::SanitizeURL(sibling->url())) {
++          after = Id(sibling.get());
++          break;
++        }
 +      }
 +    }
 +    base::DictValue entry;
@@ -496,9 +504,11 @@ new file mode 100644
 +  }
 +
 +  void Collect(const Node* parent, base::DictValue& metadata, Result& result) {
++    std::string preceding_id;
 +    for (const auto& child : parent->children()) {
-+      if (auto entry = Snapshot(child.get())) {
++      if (auto entry = Snapshot(child.get(), &preceding_id)) {
 +        const auto id = Id(child.get());
++        preceding_id = id;
 +        const auto* old = metadata.FindDict(id);
 +        if (IsDirty(*entry, old)) {
 +          if (old) {

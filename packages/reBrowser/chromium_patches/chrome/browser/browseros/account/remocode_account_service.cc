@@ -2,13 +2,14 @@ diff --git a/chrome/browser/browseros/account/remocode_account_service.cc b/chro
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/account/remocode_account_service.cc
-@@ -0,0 +1,504 @@
+@@ -0,0 +1,581 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#include "chrome/browser/browseros/account/remocode_account_service.h"
 +
 +#include <algorithm>
 +#include "base/base64.h"
++#include "base/containers/span.h"
 +#include "base/check.h"
 +#include "base/functional/bind.h"
 +#include "base/json/json_reader.h"
@@ -28,10 +29,13 @@ new file mode 100644
 +#include "net/base/net_errors.h"
 +#include "net/http/http_response_headers.h"
 +#include "net/traffic_annotation/network_traffic_annotation.h"
++#include "services/data_decoder/public/cpp/decode_image.h"
 +#include "services/network/public/cpp/resource_request.h"
 +#include "services/network/public/cpp/simple_url_loader.h"
 +#include "services/network/public/mojom/fetch_api.mojom.h"
 +#include "services/network/public/mojom/url_response_head.mojom.h"
++#include "third_party/skia/include/core/SkBitmap.h"
++#include "ui/gfx/geometry/size.h"
 +
 +namespace remocode {
 +namespace {
@@ -54,6 +58,29 @@ new file mode 100644
 +        setting: "Remocode account in Settings. Signing out clears local credentials."
 +        policy_exception_justification: "Optional user-initiated account service."
 +      })");
++
++constexpr auto kAvatarTraffic = net::DefineNetworkTrafficAnnotation(
++    "remocode_account_avatar", R"traffic(
++      semantics {
++        sender: "Remocode account avatar"
++        description: "Downloads the signed-in Remocode account's avatar for the "
++                     "toolbar and account menu."
++        trigger: "A verified account response supplies a new avatar URL."
++        data: "The avatar URL only. No credentials, cookies or browsing data."
++        destination: WEBSITE
++        destination_other: "Clerk avatar CDN (img.clerk.com or images.clerk.dev)"
++      }
++      policy {
++        cookies_allowed: NO
++        setting: "Signing out clears the image and stops pending downloads."
++        policy_exception_justification: "Avatar for the user-initiated account."
++      })traffic");
++
++bool IsTrustedAvatarURL(const GURL& url) {
++  return url.is_valid() && url.SchemeIs("https") && !url.has_username() &&
++         !url.has_password() && !url.has_port() &&
++         (url.host() == "img.clerk.com" || url.host() == "images.clerk.dev");
++}
 +
 +bool ValidString(const std::string* value, size_t maximum) {
 +  return value && !value->empty() && value->size() <= maximum;
@@ -149,6 +176,7 @@ new file mode 100644
 +}
 +void AccountService::StopOperations() {
 +  ++generation_;
++  ClearAvatar();
 +  CancelSyncRequests();
 +  loader_.reset();
 +  request_kind_.reset();
@@ -287,7 +315,55 @@ new file mode 100644
 +  display_name_ = *account->FindString("displayName");
 +  email_ = *account->FindString("email");
 +  if (display_name_.empty()) display_name_ = email_;
++  const std::string* image_url = account->FindString("imageUrl");
++  GURL avatar_url;
++  if (ValidString(image_url, 8192) && IsTrustedAvatarURL(GURL(*image_url))) {
++    avatar_url = GURL(*image_url);
++  }
++  if (avatar_url != avatar_url_) {
++    ClearAvatar();
++    avatar_url_ = avatar_url;
++  }
 +  return true;
++}
++void AccountService::ClearAvatar() {
++  ++avatar_generation_;
++  avatar_loader_.reset();
++  avatar_url_ = GURL();
++  avatar_image_ = gfx::ImageSkia();
++}
++void AccountService::FetchAvatar() {
++  if (shutdown_ || state_ != "signedIn" || !avatar_url_.is_valid() ||
++      avatar_loader_ || !avatar_image_.isNull()) return;
++  auto request = std::make_unique<network::ResourceRequest>();
++  request->url = avatar_url_;
++  request->credentials_mode = network::mojom::CredentialsMode::kOmit;
++  request->redirect_mode = network::mojom::RedirectMode::kError;
++  request->load_flags = net::LOAD_DISABLE_CACHE;
++  avatar_loader_ = network::SimpleURLLoader::Create(std::move(request), kAvatarTraffic);
++  avatar_loader_->SetTimeoutDuration(base::Seconds(15));
++  avatar_loader_->DownloadToString(url_loader_factory_.get(),
++      base::BindOnce(&AccountService::OnAvatarFetched,
++                     weak_factory_.GetWeakPtr(), avatar_generation_), 2 * 1024 * 1024);
++}
++void AccountService::OnAvatarFetched(uint64_t generation,
++                                     std::optional<std::string> body) {
++  if (shutdown_ || generation != avatar_generation_ || !avatar_loader_) return;
++  const bool success = avatar_loader_->NetError() == net::OK &&
++      avatar_loader_->ResponseInfo() && avatar_loader_->ResponseInfo()->headers &&
++      avatar_loader_->ResponseInfo()->headers->response_code() == 200;
++  avatar_loader_.reset();
++  if (!success || !body || body->empty()) return;
++  data_decoder::DecodeImageIsolated(base::as_byte_span(*body),
++      data_decoder::mojom::ImageCodec::kDefault, true, 1024 * 1024,
++      gfx::Size(256, 256), base::BindOnce(&AccountService::OnAvatarDecoded,
++          weak_factory_.GetWeakPtr(), generation));
++}
++void AccountService::OnAvatarDecoded(uint64_t generation, const SkBitmap& bitmap) {
++  if (shutdown_ || generation != avatar_generation_ || state_ != "signedIn" ||
++      bitmap.drawsNothing()) return;
++  avatar_image_ = gfx::ImageSkia::CreateFrom1xBitmap(bitmap);
++  Notify();
 +}
 +bool AccountService::AcceptTokens(const base::DictValue& data, bool is_refresh) {
 +  const std::string* access = data.FindString("accessToken");
@@ -385,6 +461,7 @@ new file mode 100644
 +    if (!AcceptAccount(*data)) { Fail("providerError"); return; }
 +    state_ = "signedIn";
 +    message_.clear();
++    FetchAvatar();
 +    const auto remaining = expiration_ - base::Time::Now();
 +    if (remaining <= base::Seconds(0)) { Refresh(); return; }
 +    refresh_timer_.Start(FROM_HERE,

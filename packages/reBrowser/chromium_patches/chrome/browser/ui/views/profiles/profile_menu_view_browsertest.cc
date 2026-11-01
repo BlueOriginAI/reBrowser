@@ -31,7 +31,7 @@ diff --git a/chrome/browser/ui/views/profiles/profile_menu_view_browsertest.cc b
  #include "ui/views/controls/webview/webview.h"
  #include "ui/views/test/widget_activation_waiter.h"
  #include "ui/views/test/widget_test.h"
-@@ -318,6 +324,142 @@
+@@ -318,6 +324,158 @@
        syncer::kReplaceSyncPromosWithSignInPromos};
  };
  
@@ -144,6 +144,22 @@ diff --git a/chrome/browser/ui/views/profiles/profile_menu_view_browsertest.cc b
 +  }));
 +  EXPECT_EQ(CountLabel(IDS_SETTINGS_REMOCODE_SYNC_TITLE), 1u);
 +  EXPECT_EQ(CountLabel(IDS_SETTINGS_REMOCODE_ACCOUNT_MANAGE), 0u);
++}
++
++IN_PROC_BROWSER_TEST_F(ProfileMenuViewRemocodeTest,
++                       ManageAccountOpensRemocodePeopleSettings) {
++  ASSERT_NO_FATAL_FAILURE(OpenProfileMenu());
++  SetAccountState("signedIn");
++
++  menu()->OnRemocodeAccountAction(ProfileMenuView::RemocodeAction::kManage);
++
++  ASSERT_TRUE(base::test::RunUntil([&] {
++    const GURL& url = browser()
++                          ->tab_strip_model()
++                          ->GetActiveWebContents()
++                          ->GetVisibleURL();
++    return url == chrome::GetSettingsUrl(chrome::kPeopleSubPage);
++  }));
 +}
 +
 +IN_PROC_BROWSER_TEST_F(ProfileMenuViewRemocodeTest,

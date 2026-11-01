@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/sync/remocode_sync_service.cc b/chrome/bro
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/remocode_sync_service.cc
-@@ -0,0 +1,672 @@
+@@ -0,0 +1,712 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#include "chrome/browser/browseros/sync/remocode_sync_service.h"
@@ -84,6 +84,7 @@ new file mode 100644
 +  deletion_nonce_.clear();
 +}
 +void RemocodeSyncService::ResetEntitlement() {
++  last_status_request_ = base::TimeTicks();
 +  entitlement_timer_.Stop();
 +  vip_expires_at_ = base::Time();
 +  purchase_available_ = false;
@@ -203,12 +204,51 @@ new file mode 100644
 +  if (!SignedIn()) { entitlement_ = "signedOut"; Notify(); return; }
 +  if (!EnsureOwner()) return;
 +  timer_.Stop();
++  last_status_request_ = base::TimeTicks::Now();
 +  busy_ = true;
 +  entitlement_ = "loading";
 +  error_code_.clear();
 +  Notify();
 +  Request(Endpoint::kStatus, base::DictValue(), base::BindOnce(
 +      &RemocodeSyncService::OnStatus, operation_factory_.GetWeakPtr()));
++}
++void RemocodeSyncService::RefreshStatus(bool force) {
++  if (shutdown_ || busy_) return;
++  if (!SignedIn()) { entitlement_ = "signedOut"; Notify(); return; }
++  if (!EnsureOwner()) return;
++  const auto now = base::TimeTicks::Now();
++  if (!force && !last_status_request_.is_null() &&
++      now - last_status_request_ < base::Seconds(30)) return;
++  last_status_request_ = now;
++  busy_ = true;
++  // Keep the current entitlement visible while checking it. Neither the
++  // background timer nor a pending background rerun is changed by a UI read.
++  Notify();
++  Request(Endpoint::kStatus, base::DictValue(), base::BindOnce(
++      &RemocodeSyncService::OnStatusOnly, operation_factory_.GetWeakPtr()));
++}
++void RemocodeSyncService::OnStatusOnly(int status, base::DictValue data) {
++  if (status != 200) {
++    purchase_available_ = management_available_ = false;
++    RecordError(data);
++    entitlement_ = status == 404 || status == 501 || status == 503 ? "unavailable" : "error";
++    Fail(); return;
++  }
++  if (!AcceptStatus(data)) { Fail(); return; }
++  RecordError(data);
++  busy_ = false;
++  const bool background_due = rerun_;
++  rerun_ = false;
++  if (deletion_status_ == "pending") operation_ = "deletePending";
++  else if (!CanSync()) operation_ = "paused";
++  Notify();
++  // A real local edit or an elapsed background timer can still request work.
++  // Status reads alone never start an immediate bookmark/history scan.
++  if ((background_due || !timer_.IsRunning()) &&
++      (CanSync() || deletion_status_ == "pending")) {
++    timer_.Start(FROM_HERE, background_due ? base::Seconds(1) : base::Seconds(30),
++                 this, &RemocodeSyncService::Refresh);
++  }
 +}
 +void RemocodeSyncService::Request(Endpoint endpoint, base::DictValue body,
 +    base::OnceCallback<void(int, base::DictValue)> callback) {

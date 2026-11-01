@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/account/remocode_account_service.h b/chrom
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/account/remocode_account_service.h
-@@ -0,0 +1,110 @@
+@@ -0,0 +1,122 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#ifndef CHROME_BROWSER_BROWSEROS_ACCOUNT_REMOCODE_ACCOUNT_SERVICE_H_
@@ -22,8 +22,10 @@ new file mode 100644
 +#include "components/keyed_service/core/keyed_service.h"
 +#include "components/os_crypt/async/common/encryptor.h"
 +#include "services/network/public/cpp/shared_url_loader_factory.h"
++#include "ui/gfx/image/image_skia.h"
 +
 +class Profile;
++class SkBitmap;
 +namespace os_crypt_async { class OSCryptAsync; }
 +namespace network { class SimpleURLLoader; }
 +namespace browseros::sync { class RemocodeSyncService; }
@@ -38,6 +40,8 @@ new file mode 100644
 +  ~AccountService() override;
 +  void Shutdown() override;
 +  base::DictValue GetState() const;
++  // Native bitmap access; the settings handler supplies a PNG presentation to WebUI.
++  const gfx::ImageSkia& GetAvatarImage() const { return avatar_image_; }
 +  base::CallbackListSubscription Observe(base::RepeatingClosure observer);
 +  void Login(base::OnceCallback<void(const GURL&)> open_authorization);
 +  void Cancel();
@@ -83,6 +87,10 @@ new file mode 100644
 +  void StopOperations();
 +  void Fail(std::string message, bool reauth = false);
 +  void Notify();
++  void FetchAvatar();
++  void ClearAvatar();
++  void OnAvatarFetched(uint64_t generation, std::optional<std::string> body);
++  void OnAvatarDecoded(uint64_t generation, const SkBitmap& bitmap);
 +
 +  const raw_ptr<Profile> profile_;
 +  const scoped_refptr<network::SharedURLLoaderFactory> url_loader_factory_;
@@ -108,6 +116,10 @@ new file mode 100644
 +  std::string installation_id_;
 +  std::string display_name_;
 +  std::string email_;
++  GURL avatar_url_;
++  gfx::ImageSkia avatar_image_;
++  std::unique_ptr<network::SimpleURLLoader> avatar_loader_;
++  uint64_t avatar_generation_ = 0;
 +  base::Time expiration_;
 +  base::WeakPtrFactory<AccountService> weak_factory_{this};
 +};

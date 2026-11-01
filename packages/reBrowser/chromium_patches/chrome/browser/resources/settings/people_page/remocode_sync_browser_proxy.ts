@@ -2,7 +2,7 @@ diff --git a/chrome/browser/resources/settings/people_page/remocode_sync_browser
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/resources/settings/people_page/remocode_sync_browser_proxy.ts
-@@ -0,0 +1,45 @@
+@@ -0,0 +1,47 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +import {sendWithPromise} from 'chrome://resources/js/cr.js';
@@ -28,6 +28,7 @@ new file mode 100644
 +export interface RemocodeSyncBrowserProxy {
 +  getState(): Promise<RemocodeSyncState>;
 +  refresh(): Promise<RemocodeSyncState>;
++  refreshIfStale(): Promise<RemocodeSyncState>;
 +  purchase(): Promise<boolean>;
 +  manage(): Promise<boolean>;
 +  setEnabled(enabled: SyncEnabled): Promise<boolean>;
@@ -37,6 +38,7 @@ new file mode 100644
 +export class RemocodeSyncBrowserProxyImpl implements RemocodeSyncBrowserProxy {
 +  getState(): Promise<RemocodeSyncState> { return sendWithPromise('remocodeSyncGetState'); }
 +  refresh(): Promise<RemocodeSyncState> { return sendWithPromise('remocodeSyncRefresh'); }
++  refreshIfStale(): Promise<RemocodeSyncState> { return sendWithPromise('remocodeSyncRefreshIfStale'); }
 +  purchase(): Promise<boolean> { return sendWithPromise('remocodeSyncPurchase'); }
 +  manage(): Promise<boolean> { return sendWithPromise('remocodeSyncManage'); }
 +  setEnabled(enabled: SyncEnabled): Promise<boolean> { return sendWithPromise('remocodeSyncSetEnabled', enabled); }

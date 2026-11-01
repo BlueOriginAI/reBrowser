@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/sync/remocode_sync_service_unittest.cc b/c
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/remocode_sync_service_unittest.cc
-@@ -0,0 +1,260 @@
+@@ -0,0 +1,307 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#include "chrome/browser/browseros/sync/remocode_sync_service.h"
@@ -79,6 +79,14 @@ new file mode 100644
 +    task_environment_.RunUntilIdle();
 +  }
 +  bool Polling() { return service_->timer_.IsRunning(); }
++  void RefreshStatus(bool force) {
++    service_->RefreshStatus(force);
++    task_environment_.RunUntilIdle();
++  }
++  bool BackgroundRerun() { return service_->rerun_; }
++  void EnableBookmarksLocally() {
++    service_->local_state_.EnsureDict("enabled")->Set("bookmarks", true);
++  }
 +  bool DeadlineRunning() { return service_->entitlement_timer_.IsRunning(); }
 +  bool HasWireConsentTime() { return WireNumber(service_->local_state_, "historySince").has_value(); }
 +  std::string ConsentTimeState() { return base::WriteJson(service_->local_state_).value_or("invalid test state"); }
@@ -101,6 +109,45 @@ new file mode 100644
 +  EXPECT_FALSE(state.contains("accessToken")); EXPECT_FALSE(state.contains("refreshToken"));
 +  EXPECT_FALSE(state.FindBool("purchaseAvailable").value());
 +  EXPECT_FALSE(state.FindBool("managementAvailable").value());
++}
++TEST_F(RemocodeSyncServiceTest, StatusReadNeverQueuesAnotherBusySyncCycle) {
++  SignIn();
++  ASSERT_EQ(1, network_.NumPending());
++  RefreshStatus(true);
++  EXPECT_EQ(1, network_.NumPending());
++  EXPECT_FALSE(BackgroundRerun());
++  Reply(Status());
++}
++TEST_F(RemocodeSyncServiceTest, AutomaticStatusReadsCoalesceButManualReadsAreFresh) {
++  SignIn(); Reply(Status());
++  RefreshStatus(false);
++  EXPECT_EQ(0, network_.NumPending());
++  RefreshStatus(true);
++  ASSERT_EQ(1, network_.NumPending());
++  EXPECT_EQ("free", Entitlement());
++  RefreshStatus(false);
++  EXPECT_EQ(1, network_.NumPending());
++  Reply(Status());
++  task_environment_.FastForwardBy(base::Seconds(31));
++  RefreshStatus(false);
++  ASSERT_EQ(1, network_.NumPending());
++  Reply(Status());
++}
++TEST_F(RemocodeSyncServiceTest, StatusReadWithEnabledBookmarksDoesNotStartDataPull) {
++  SignIn(); Reply(Status());
++  EnableBookmarksLocally();
++  RefreshStatus(true);
++  auto status = Status(true);
++  status.FindDict("enabled")->Set("bookmarks", true);
++  base::DictValue registration;
++  registration.Set("spaceId", "synthetic-space");
++  registration.Set("enrollmentId", "synthetic-enrollment");
++  registration.Set("generation", 1); registration.Set("revision", 0);
++  registration.Set("deviceSequence", 0);
++  status.Set("registration", std::move(registration));
++  Reply(std::move(status));
++  EXPECT_EQ("active", Entitlement());
++  EXPECT_EQ(0, network_.NumPending());
 +}
 +TEST_F(RemocodeSyncServiceTest, FreeErrorAndUnavailableAreDistinct) {
 +  auto data = Status();

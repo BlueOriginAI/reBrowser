@@ -18,16 +18,25 @@ diff --git a/chrome/browser/ui/views/profiles/avatar_toolbar_button.cc b/chrome/
  #include "chrome/browser/profiles/avatar_menu.h"
  #include "chrome/browser/profiles/profile.h"
  #include "chrome/browser/profiles/profile_attributes_entry.h"
-@@ -51,6 +54,8 @@
+@@ -34,6 +37,7 @@
+ #include "chrome/browser/ui/browser_element_identifiers.h"
+ #include "chrome/browser/ui/browser_window.h"
+ #include "chrome/browser/ui/browser_window/public/browser_window_features.h"
++#include "chrome/browser/ui/chrome_pages.h"
+ #include "chrome/browser/ui/color/chrome_color_id.h"
+ #include "chrome/browser/ui/layout_constants.h"
+ #include "chrome/browser/ui/profiles/profile_colors_util.h"
+@@ -51,6 +55,9 @@
  #include "chrome/browser/user_education/user_education_service_factory.h"
  #include "chrome/browser/webauthn/passkey_unlock_manager.h"
  #include "chrome/browser/webauthn/passkey_unlock_manager_factory.h"
++#include "chrome/common/webui_url_constants.h"
 +#include "chrome/grit/generated_resources.h"
 +#include "ui/strings/grit/ui_strings.h"
  #include "components/feature_engagement/public/feature_constants.h"
  #include "components/feature_engagement/public/tracker.h"
  #include "components/password_manager/content/common/web_ui_constants.h"
-@@ -60,6 +65,7 @@
+@@ -60,6 +67,7 @@
  #include "components/signin/public/identity_manager/tribool.h"
  #include "components/sync/base/features.h"
  #include "components/user_education/common/user_education_class_properties.h"
@@ -35,7 +44,7 @@ diff --git a/chrome/browser/ui/views/profiles/avatar_toolbar_button.cc b/chrome/
  #include "content/public/common/url_utils.h"
  #include "google_apis/gaia/gaia_id.h"
  #include "third_party/skia/include/core/SkColor.h"
-@@ -101,6 +107,13 @@
+@@ -101,6 +109,18 @@
        state_manager_(*this, browser_view->browser()),
        slide_animation_(this) {
    state_manager_.InitializeStates();
@@ -43,13 +52,18 @@ diff --git a/chrome/browser/ui/views/profiles/avatar_toolbar_button.cc b/chrome/
 +    if (auto* service = remocode::AccountServiceFactory::GetForProfile(
 +            state_manager_.browser()->profile())) {
 +      remocode_account_subscription_ = service->Observe(base::BindRepeating(
-+          &AvatarToolbarButton::UpdateText, weak_ptr_factory_.GetWeakPtr()));
++          [](base::WeakPtr<AvatarToolbarButton> button) {
++            if (button) {
++              button->UpdateText();
++              button->UpdateIcon();
++            }
++          }, weak_ptr_factory_.GetWeakPtr()));
 +    }
 +  }
  #if BUILDFLAG(IS_CHROMEOS)
    // On CrOS this button should only show as badging for Incognito, Guest and
    // captivie portal signin. It's only enabled for non captive portal Incognito
-@@ -155,9 +168,15 @@
+@@ -155,9 +175,26 @@
    const ui::ColorProvider* const color_provider = GetColorProvider();
    CHECK(color_provider);
    StateProvider* state_provider = state_manager_.GetActiveStateProvider();
@@ -65,10 +79,21 @@ diff --git a/chrome/browser/ui/views/profiles/avatar_toolbar_button.cc b/chrome/
 +      : state_provider->GetAvatarIcon(
 +            icon_size, GetForegroundColor(ButtonState::STATE_NORMAL),
 +            *color_provider);
++
++  if (UsesRemocodeAccount()) {
++    auto* service = remocode::AccountServiceFactory::GetForProfile(
++        state_manager_.browser()->profile());
++    if (service && !service->GetAvatarImage().isNull()) {
++      icon = ui::ImageModel::FromImage(profiles::GetSizedAvatarIcon(
++          gfx::Image(service->GetAvatarImage()), icon_size, icon_size,
++          profiles::SHAPE_CIRCLE));
++      icon_type = AvatarIconType::kNonPlaceholder;
++    }
++  }
  
    SetImageModel(ButtonState::STATE_NORMAL, icon);
    SetImageModel(ButtonState::STATE_DISABLED,
-@@ -296,9 +315,18 @@
+@@ -296,9 +333,18 @@
    const auto* const color_provider = GetColorProvider();
    CHECK(color_provider);
  
@@ -90,7 +115,7 @@ diff --git a/chrome/browser/ui/views/profiles/avatar_toolbar_button.cc b/chrome/
    UpdateAccessibilityLabel();
    // Update the layout insets after `SetHighlight()` since
    // text might be updated by setting the highlight.
-@@ -336,7 +364,52 @@
+@@ -336,7 +382,52 @@
    GetViewAccessibility().AnnounceAlert(std::move(text));
  }
  
@@ -143,17 +168,14 @@ diff --git a/chrome/browser/ui/views/profiles/avatar_toolbar_button.cc b/chrome/
    auto [name, description] = state_manager_.GetAccessibilityLabels(GetText());
  
    GetViewAccessibility().SetName(name);
-@@ -503,6 +576,15 @@
+@@ -503,6 +594,12 @@
  }
  
  void AvatarToolbarButton::ButtonPressed(bool is_source_accelerator) {
 +  if (UsesRemocodeAccount()) {
 +    state_manager_.NotifyButtonPressed();
-+    if (auto* coordinator = state_manager_.browser()
-+                                ->GetFeatures()
-+                                .profile_menu_coordinator()) {
-+      coordinator->Show(is_source_accelerator);
-+    }
++    chrome::ShowSettingsSubPage(state_manager_.browser(),
++                                chrome::kPeopleSubPage);
 +    return;
 +  }
    state_manager_.HandleButtonPressed(is_source_accelerator);

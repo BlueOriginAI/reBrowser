@@ -161,7 +161,7 @@ diff --git a/chrome/browser/ui/views/profiles/profile_menu_view.cc b/chrome/brow
  void ProfileMenuView::BuildGuestIdentity() {
    menu_title_ = l10n_util::GetStringUTF16(IDS_GUEST_PROFILE_NAME);
    menu_subtitle_ = std::u16string();
-@@ -648,313 +594,156 @@
+@@ -648,313 +594,163 @@
    }
  }
  
@@ -232,8 +232,8 @@ diff --git a/chrome/browser/ui/views/profiles/profile_menu_view.cc b/chrome/brow
 -  if (is_dasherless_profile) {
 +  params.title =
 +      l10n_util::GetStringUTF16(IDS_SETTINGS_REMOCODE_ACCOUNT_TITLE);
-+  // AccountService currently provides no image URL. Never reuse a Google image
-+  // or a local profile avatar as the Remocode account's identity.
++  // The default is also used while the verified account avatar is loading.
++  // Never reuse a Google image or a local profile avatar for this account.
 +  params.profile_image = ui::ImageModel::FromVectorIcon(
 +      vector_icons::kAccountCircleIcon, ui::kColorIcon, kIdentityInfoImageSize);
 +  params.subtitle =
@@ -322,6 +322,13 @@ diff --git a/chrome/browser/ui/views/profiles/profile_menu_view.cc b/chrome/brow
 +        l10n_util::GetStringUTF16(IDS_SETTINGS_REMOCODE_ACCOUNT_LOADING);
 +    params.button_text.clear();
 +  } else if (account_state && *account_state == "signedIn") {
++    if (auto* service =
++            remocode::AccountServiceFactory::GetForProfile(&profile());
++        service && !service->GetAvatarImage().isNull()) {
++      params.profile_image = ui::ImageModel::FromImage(profiles::GetSizedAvatarIcon(
++          gfx::Image(service->GetAvatarImage()), kIdentityInfoImageSize,
++          kIdentityInfoImageSize, profiles::SHAPE_CIRCLE));
++    }
 +    const std::string* name = state.FindString("displayName");
 +    const std::string* email = state.FindString("email");
 +    if (name && !name->empty()) {
@@ -612,7 +619,7 @@ diff --git a/chrome/browser/ui/views/profiles/profile_menu_view.cc b/chrome/brow
 +      service->Logout();
 +      break;
 +    case RemocodeAction::kManage:
-+      OpenRemocodeURL(host, GURL("https://remocode.cc/me"));
++      chrome::ShowSettingsSubPage(host.get(), chrome::kPeopleSubPage);
 +      break;
 +    case RemocodeAction::kRetry:
 +      service->Retry();
@@ -621,7 +628,7 @@ diff --git a/chrome/browser/ui/views/profiles/profile_menu_view.cc b/chrome/brow
  }
  
  void ProfileMenuView::MaybeBuildBatchUploadButton() {
-@@ -1217,26 +1006,11 @@
+@@ -1217,26 +1013,11 @@
  
  void ProfileMenuView::BuildFeatureButtons() {
    CHECK(!profile().IsGuestSession());
@@ -653,7 +660,7 @@ diff --git a/chrome/browser/ui/views/profiles/profile_menu_view.cc b/chrome/brow
  }
  
  #if BUILDFLAG(ENABLE_DICE_SUPPORT)
-@@ -1349,6 +1123,11 @@
+@@ -1349,6 +1130,11 @@
    CHECK(!profile().IsGuestSession());
  
    AddProfileManagementFeaturesSeparator();

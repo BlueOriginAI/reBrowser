@@ -124,3 +124,52 @@ diff --git a/chrome/browser/ui/webui/settings/settings_localized_strings_provide
        {"syncSettingsSavedToast", IDS_SETTINGS_SYNC_SETTINGS_SAVED_TOAST_LABEL},
        {"manageGoogleAccount", IDS_SETTINGS_MANAGE_GOOGLE_ACCOUNT},
        {"syncAndNonPersonalizedServices",
+@@ -2295,6 +2388,48 @@
+        IDS_SETTINGS_SYNC_DISCONNECT_DELETE_PROFILE_WARNING_WITHOUT_COUNTS},
+   };
+   html_source->AddLocalizedStrings(kLocalizedStrings);
++#if !BUILDFLAG(IS_CHROMEOS)
++  // Product-owned account overview labels; no Chromium resource IDs change.
++  const bool chinese =
++      g_browser_process->GetApplicationLocale().starts_with("zh");
++  static constexpr struct {
++    const char* name;
++    const char* english;
++    const char* chinese;
++  } kRemocodeOverviewStrings[] = {
++      {"remocodeOverviewAddProfile", "Add Profile", "添加 Profile"},
++      {"remocodeOverviewHeading", "Account", "账户"},
++      {"remocodeOverviewRefresh", "Refresh account", "刷新账户信息"},
++      {"remocodeOverviewSubscription", "Current subscription", "当前订阅"},
++      {"remocodeOverviewSubscribed", "Subscribed", "已订阅"},
++      {"remocodeOverviewFreePlan", "Free plan", "免费版"},
++      {"remocodeOverviewExpires", "Valid until", "有效期至"},
++      {"remocodeOverviewActive", "Your subscription is active", "订阅已生效"},
++      {"remocodeOverviewUpgradeHint", "Unlock cloud sync across your devices.", "升级以解锁跨设备云同步。"},
++      {"remocodeOverviewRefreshSubscription", "Refresh subscription", "刷新订阅"},
++      {"remocodeOverviewManageSubscription", "Manage subscription", "管理订阅"},
++      {"remocodeOverviewUpgrade", "Get reBrowser Pro", "升级 Pro"},
++      {"remocodeOverviewCloudSync", "Cloud sync", "云同步"},
++      {"remocodeOverviewCloudDescription", "Keep bookmarks and browsing history in sync across your devices.", "在多台设备间同步书签和浏览历史。"},
++      {"remocodeOverviewEnabled", "Enabled", "已开启"},
++      {"remocodeOverviewNotEnabled", "Not enabled", "未开启"},
++      {"remocodeOverviewProOnly", "Pro feature", "Pro 专享"},
++      {"remocodeOverviewBasic", "Browser and Agent tools", "浏览器与 Agent 工具"},
++      {"remocodeOverviewBasicDescription", "Browse the web, connect agents through MCP, and work locally.", "网页浏览、MCP 连接与本地浏览能力，始终可用。"},
++      {"remocodeOverviewFree", "Free to use", "免费可用"},
++      {"remocodeOverviewMore", "More from Remocode", "更多作品"},
++      {"remocodeOverviewTagline", "Made for your AI workflow.", "为你的 AI 工作流而作。"},
++      {"remocodeOverviewIdeDescription", "The native desktop IDE for agents", "Agent 原生桌面 IDE"},
++      {"remocodeOverviewBarDescription", "Your local Codex account and model gateway", "本地 Codex 账户与模型网关"},
++      {"remocodeOverviewUnavailable", "Temporarily unavailable", "暂不可用"},
++      {"remocodeOverviewSignInHint", "Sign in to see your subscription.", "登录后查看订阅与同步能力。"},
++      {"remocodeOverviewRequestFailed", "Could not refresh. Please try again.", "刷新失败，请重试。"},
++  };
++  for (const auto& text : kRemocodeOverviewStrings) {
++    html_source->AddString(text.name, chinese ? text.chinese : text.english);
++  }
++#endif
++
+ 
+ #if BUILDFLAG(IS_CHROMEOS)
+   html_source->AddLocalizedString("peopleSignInPrompt",
