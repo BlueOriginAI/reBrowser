@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/sync/sync_protocol.h b/chrome/browser/brow
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/sync_protocol.h
-@@ -0,0 +1,26 @@
+@@ -0,0 +1,38 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#ifndef CHROME_BROWSER_BROWSEROS_SYNC_SYNC_PROTOCOL_H_
@@ -18,10 +18,22 @@ new file mode 100644
 +                                             const base::DictValue& entry,
 +                                             bool inbound);
 +std::optional<double> WireNumber(const base::DictValue& data, std::string_view key);
++// Builds a bounded upload request without unchecked optional/list accesses.
++std::optional<base::DictValue> SnapshotUploadRequest(
++    const base::DictValue& registration, const base::DictValue& pending);
++// The first v2 preview persisted fractional milliseconds and could not dispatch
++// begin. Repair that timestamp in place while retaining all pending content.
++bool RepairPreviewUploadTimestamp(base::DictValue& pending, double now_ms);
 +// Select a dependency-closed batch; never upload children before their parent
 +// or predecessor, or delete a folder before explicitly handled descendants.
 +std::optional<base::ListValue> OrderBookmarkOperations(
 +    const base::ListValue& operations, const base::DictValue& known, size_t limit);
++// Three-way record merge: remote changes apply if local still equals baseline.
++// Divergent edits/deletes pause the cycle without changing either payload.
++bool HasMergeConflict(const base::DictValue* local,
++                      const base::DictValue* baseline,
++                      const base::DictValue& remote);
++bool ValidateBookmarkSnapshot(const base::DictValue& entries);
 +bool SamePayload(const base::DictValue& a, const base::DictValue& b);
 +// A remote record equal to the baseline must not undo a local pending edit.
 +bool PreserveLocalChange(const base::DictValue* local,

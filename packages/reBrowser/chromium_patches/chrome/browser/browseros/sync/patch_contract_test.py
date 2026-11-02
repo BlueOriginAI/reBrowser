@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/sync/patch_contract_test.py b/chrome/brows
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/patch_contract_test.py
-@@ -0,0 +1,140 @@
+@@ -0,0 +1,151 @@
 +#!/usr/bin/env python3
 +# Copyright 2026 The Chromium Authors
 +# Use of this source code is governed by a BSD-style license.
@@ -40,11 +40,11 @@ new file mode 100644
 +UI = 'chrome/browser/resources/settings/people_page/'
 +
 +class SyncPatchContractTest(unittest.TestCase):
-+    def test_fixed_origin_and_five_native_endpoints(self):
++    def test_fixed_origin_and_six_native_endpoints(self):
 +        text = source(ACCOUNT + 'cc').split('void AccountService::StartNextSyncRequest()')[1]
 +        self.assertIn('https://remocode.cc/account/api/desktop/sync', text)
 +        self.assertEqual(set(re.findall(r'path = "(/[a-z]+)"', text)),
-+                         {'/status', '/enrollment', '/pull', '/push', '/delete'})
++                         {'/status', '/enrollment', '/session', '/pull', '/push', '/delete'})
 +        self.assertIn('CredentialsMode::kOmit', text)
 +        self.assertIn('RedirectMode::kError', text)
 +        self.assertIn('SetHeader("Origin", "https://remocode.cc")', text)
@@ -103,17 +103,28 @@ new file mode 100644
 +        text = source(SYNC + 'remocode_sync_service.cc').split('void RemocodeSyncService::Push()')[1]
 +        self.assertLess(text.index('local_state_.Set("pending"'), text.index('SendPending();'))
 +        self.assertIn('Save();', text.split('local_state_.Set("pending"')[1].split('SendPending();')[0])
-+        self.assertIn('local_state_.FindDict("pending")->Clone()', text)
++        self.assertIn('pending->FindList("chunks")', text)
++        self.assertIn('pending->FindString("stage")', text)
++        self.assertIn('body.Set("syncSession", sync_session_)', source(SYNC + 'remocode_sync_service.cc'))
 +    def test_409_pulls_instead_of_blindly_overwriting(self):
 +        text = source(SYNC + 'remocode_sync_service.cc')
 +        push = text.split('void RemocodeSyncService::OnPush')[1].split('void RemocodeSyncService::OnLocalChanged')[0]
 +        self.assertIn('status == 409', push)
 +        self.assertIn('ReadLocal(); return;', push)
-+        self.assertIn('dirty && !SamePayload(*dirty, *entry)', text)
++        self.assertIn('HasMergeConflict(dirty, known, *entry)', text)
 +    def test_pagination_applies_only_complete_snapshot(self):
 +        text = source(SYNC + 'remocode_sync_service.cc').split('void RemocodeSyncService::OnPull')[1].split('void RemocodeSyncService::OnApplied')[0]
-+        self.assertLess(text.index('if (!cursor_.empty()) { Pull(); return; }'), text.index('adapters_->ApplyBookmarks'))
++        self.assertLess(text.index('if (!cursor_.empty()) {'), text.index('adapters_->ApplyBookmarks'))
 +        self.assertIn('pull_revision_ != *revision', text)
++    def test_download_resume_keeps_scope_and_rechecks_local_changes(self):
++        text = source(SYNC + 'remocode_sync_service.cc')
++        restore = text.split('void RemocodeSyncService::RestoreDownload()')[1].split('void RemocodeSyncService::Pull()')[0]
++        for field in ['spaceId', 'enrollmentId', 'generation']:
++            self.assertIn(field, restore)
++        self.assertIn('HasMergeConflict(dirty, known, entry)', restore)
++        self.assertIn('NormalizeEntry(stream_, value.GetDict(), true)', restore)
++        self.assertIn('stage->Set("cursor", cursor_)', text)
++        self.assertIn('if (local_state_.contains("download")) Save();', text)
 +    def test_account_owner_and_callback_epochs(self):
 +        text = source(SYNC + 'remocode_sync_service.cc')
 +        self.assertIn('if (!EnsureOwner()) return', text)
@@ -134,12 +145,12 @@ new file mode 100644
 +        self.assertNotIn('<settings-sync-page', html)
 +        self.assertNotIn('<settings-sync-controls-page', html)
 +        self.assertIn('Router.getInstance().navigateTo(routes.SYNC)', source(UI + 'people_page_index.ts'))
-+    def test_bookmark_batches_are_dependency_closed(self):
++    def test_full_snapshots_validate_parent_and_order_dependencies(self):
 +        text = source(SYNC + 'remocode_sync_service.cc')
-+        self.assertIn('OrderBookmarkOperations(operations, Known(), 100)', text)
++        self.assertIn('ValidateBookmarkSnapshot(snapshot)', text)
 +        protocol = source(SYNC + 'sync_protocol.cc')
-+        self.assertIn('satisfied(*parent)', protocol)
-+        self.assertIn('known.FindDict(id)', protocol)
++        self.assertIn('complete.contains(current)', protocol)
++        self.assertIn('entries.FindDict(*parent_id)', protocol)
 +
 +if __name__ == '__main__':
 +    unittest.main(argv=['patch_contract_test'] + extra)

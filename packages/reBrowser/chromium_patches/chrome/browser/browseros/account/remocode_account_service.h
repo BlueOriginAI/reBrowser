@@ -55,7 +55,7 @@ new file mode 100644
 +  friend class AccountServiceTestPeer;
 +  // Native-only capability: WebUI cannot choose URL, origin or bearer.
 +  friend class browseros::sync::RemocodeSyncService;
-+  enum class SyncEndpoint { kStatus, kEnrollment, kPull, kPush, kDelete };
++  enum class SyncEndpoint { kStatus, kEnrollment, kSession, kPull, kPush, kDelete };
 +  using SyncCallback = base::OnceCallback<void(int, base::DictValue)>;
 +  struct SyncRequest {
 +    SyncEndpoint endpoint;

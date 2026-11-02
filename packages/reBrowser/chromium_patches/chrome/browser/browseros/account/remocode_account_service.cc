@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/account/remocode_account_service.cc b/chro
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/account/remocode_account_service.cc
-@@ -0,0 +1,581 @@
+@@ -0,0 +1,582 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#include "chrome/browser/browseros/account/remocode_account_service.h"
@@ -526,6 +526,7 @@ new file mode 100644
 +  switch (pending.endpoint) {
 +    case SyncEndpoint::kStatus: path = "/status"; break;
 +    case SyncEndpoint::kEnrollment: path = "/enrollment"; break;
++    case SyncEndpoint::kSession: path = "/session"; break;
 +    case SyncEndpoint::kPull: path = "/pull"; break;
 +    case SyncEndpoint::kPush: path = "/push"; break;
 +    case SyncEndpoint::kDelete: path = "/delete"; break;

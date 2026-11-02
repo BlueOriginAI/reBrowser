@@ -2,7 +2,7 @@ diff --git a/chrome/browser/resources/settings/people_page/remocode_account_card
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/resources/settings/people_page/remocode_account_card.ts
-@@ -0,0 +1,596 @@
+@@ -0,0 +1,609 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -335,6 +335,19 @@ new file mode 100644
 +      this.refreshState_();
 +    }
 +    if (this.account_.state === 'signedIn') void this.onRefreshSubscription_();
++  }
++
++  private conflictSummary_(state: RemocodeSyncState): string {
++    return loadTimeData.getString('remocodeOverviewConflicts')
++        .replace('$1', String(state.conflictCount || 0));
++  }
++
++  private conflictTitle_(item: {id: string, localTitle: string}): string {
++    return item.id === 'structure' ? loadTimeData.getString('remocodeOverviewStructureConflict') : item.localTitle;
++  }
++
++  private conflictRemote_(item: {remoteDeleted: boolean, remoteTitle: string}): string {
++    return item.remoteDeleted ? loadTimeData.getString('remocodeOverviewRemoteDeleted') : item.remoteTitle;
 +  }
 +
 +  private async onRefreshSubscription_() {

@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/sync/remocode_sync_service.h b/chrome/brow
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/remocode_sync_service.h
-@@ -0,0 +1,114 @@
+@@ -0,0 +1,128 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#ifndef CHROME_BROWSER_BROWSEROS_SYNC_REMOCODE_SYNC_SERVICE_H_
@@ -58,6 +58,15 @@ new file mode 100644
 +  void Request(Endpoint endpoint, base::DictValue body,
 +               base::OnceCallback<void(int, base::DictValue)> callback);
 +  void OnStatus(int status, base::DictValue data);
++  void OnTransportResponse(base::OnceCallback<void(int, base::DictValue)> callback,
++                           int status, base::DictValue data);
++  bool retryable_failure_ = false;
++  int retry_delay_seconds_ = 30;
++  void OnSessionRequest(Endpoint endpoint, base::DictValue body,
++      base::OnceCallback<void(int, base::DictValue)> callback,
++      int status, base::DictValue data);
++  std::string sync_session_;
++  base::Time sync_session_expires_;
 +  void OnStatusOnly(int status, base::DictValue data);
 +  bool AcceptStatus(const base::DictValue& data);
 +  void Enroll();
@@ -67,9 +76,12 @@ new file mode 100644
 +  void NextStream();
 +  void ReadLocal();
 +  void OnLocalRead(Result result);
++  void RestoreDownload();
 +  void Pull();
 +  void OnPull(int status, base::DictValue data);
 +  void OnApplied(base::DictValue page, Result result);
++  void ReadLocalForPush();
++  void OnLocalReadForPush(Result result);
 +  void Push();
 +  void SendPending();
 +  void OnPush(int status, base::DictValue data);
@@ -91,6 +103,7 @@ new file mode 100644
 +  base::OneShotTimer entitlement_timer_;
 +  base::Time vip_expires_at_;
 +  base::TimeTicks last_status_request_;
++  bool sync_available_ = true;
 +  bool purchase_available_ = false;
 +  bool management_available_ = false;
 +  std::string deletion_status_ = "none";
@@ -104,6 +117,7 @@ new file mode 100644
 +  int pull_restarts_ = 0;
 +  int push_restarts_ = 0;
 +  int pull_pages_ = 0;
++  int throttle_retries_ = 0;
 +  std::string stream_;
 +  std::string cursor_;
 +  std::string entitlement_ = "loading";

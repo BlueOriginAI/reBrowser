@@ -124,7 +124,7 @@ diff --git a/chrome/browser/ui/webui/settings/settings_localized_strings_provide
        {"syncSettingsSavedToast", IDS_SETTINGS_SYNC_SETTINGS_SAVED_TOAST_LABEL},
        {"manageGoogleAccount", IDS_SETTINGS_MANAGE_GOOGLE_ACCOUNT},
        {"syncAndNonPersonalizedServices",
-@@ -2295,6 +2388,48 @@
+@@ -2295,6 +2388,52 @@
         IDS_SETTINGS_SYNC_DISCONNECT_DELETE_PROFILE_WARNING_WITHOUT_COUNTS},
    };
    html_source->AddLocalizedStrings(kLocalizedStrings);
@@ -151,6 +151,10 @@ diff --git a/chrome/browser/ui/webui/settings/settings_localized_strings_provide
 +      {"remocodeOverviewUpgrade", "Get reBrowser Pro", "升级 Pro"},
 +      {"remocodeOverviewCloudSync", "Cloud sync", "云同步"},
 +      {"remocodeOverviewCloudDescription", "Keep bookmarks and browsing history in sync across your devices.", "在多台设备间同步书签和浏览历史。"},
++      {"remocodeOverviewConflicts", "$1 sync conflicts; local changes preserved", "有 $1 项同步冲突，本地修改已保留"},
++      {"remocodeOverviewConflictsHelp", "Sync is paused. Compare your local entries with the cloud changes below and edit or move the local entries before retrying. Up to 50 conflicts are shown; all originals remain saved locally.", "同步已暂停。请核对以下本地条目与云端变化，编辑或移动本地条目后重试。最多展示 50 项，全部原始修改均保存在本机。"},
++      {"remocodeOverviewStructureConflict", "Bookmark structure conflict", "书签层级或排序冲突"},
++      {"remocodeOverviewRemoteDeleted", "Deleted in cloud", "云端已删除"},
 +      {"remocodeOverviewEnabled", "Enabled", "已开启"},
 +      {"remocodeOverviewNotEnabled", "Not enabled", "未开启"},
 +      {"remocodeOverviewProOnly", "Pro feature", "Pro 专享"},

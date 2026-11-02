@@ -2,7 +2,7 @@ diff --git a/chrome/browser/resources/settings/people_page/remocode_account_card
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/resources/settings/people_page/remocode_account_card.html
-@@ -0,0 +1,238 @@
+@@ -0,0 +1,245 @@
 +<style include="cr-shared-style settings-shared">
 +  :host {
 +    --overview-accent: light-dark(#b9573b, #d97757);
@@ -192,6 +192,13 @@ new file mode 100644
 +        disabled="[[cloudToggleDisabled_(account_, subscription_, cloudTogglePending_)]]">
 +    </cr-toggle>
 +  </div>
++  <details class="notice" hidden$="[[!subscription_.conflictCount]]">
++    <summary>[[conflictSummary_(subscription_)]]</summary>
++    <p>$i18n{remocodeOverviewConflictsHelp}</p>
++    <template is="dom-repeat" items="[[subscription_.conflicts]]">
++      <p>[[conflictTitle_(item)]] · [[conflictRemote_(item)]]</p>
++    </template>
++  </details>
 +  <div id="cloudSyncCategories" class="cloud-categories" role="group"
 +      aria-label="$i18n{remocodeOverviewCloudSync}">
 +    <div class="sync-category">

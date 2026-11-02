@@ -2,11 +2,14 @@ diff --git a/chrome/browser/browseros/sync/remocode_sync_service.cc b/chrome/bro
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/remocode_sync_service.cc
-@@ -0,0 +1,712 @@
+@@ -0,0 +1,974 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#include "chrome/browser/browseros/sync/remocode_sync_service.h"
 +#include <array>
++#include <set>
++#include <algorithm>
++#include "base/json/json_writer.h"
 +#include "base/check.h"
 +#include "base/functional/bind.h"
 +#include "base/task/single_thread_task_runner.h"
@@ -66,6 +69,7 @@ new file mode 100644
 +}
 +void RemocodeSyncService::Shutdown() {
 +  shutdown_ = true;
++  if (local_state_.contains("download")) Save();
 +  Invalidate();
 +  ResetEntitlement();
 +  account_subscription_ = {};
@@ -73,6 +77,7 @@ new file mode 100644
 +  adapters_->Shutdown();
 +}
 +void RemocodeSyncService::Invalidate() {
++  sync_session_.clear(); sync_session_expires_ = base::Time();
 +  operation_factory_.InvalidateWeakPtrs();
 +  timer_.Stop();
 +  if (account_) account_->CancelSyncRequests();
@@ -120,7 +125,7 @@ new file mode 100644
 +  return false;
 +}
 +bool RemocodeSyncService::CanSync() const {
-+  return !shutdown_ && SignedIn() && entitlement_ == "active" && AnyEnabled() &&
++  return sync_available_ && !shutdown_ && SignedIn() && entitlement_ == "active" && AnyEnabled() &&
 +      deletion_status_ != "pending" &&
 +      (vip_expires_at_.is_null() || vip_expires_at_ > base::Time::Now()) &&
 +      ValidRegistration(registration_);
@@ -138,14 +143,36 @@ new file mode 100644
 +  out.Set("deletionPending", deletion_status_ == "pending");
 +  out.Set("deletionStatus", deletion_status_);
 +  out.Set("errorCode", error_code_);
++  base::ListValue conflicts;
++  int conflict_count = 0;
++  if (const auto* groups = local_state_.FindDict("conflicts")) {
++    for (auto [stream, values] : *groups) {
++      if (!values.is_dict()) continue;
++      for (auto [id, value] : values.GetDict()) {
++        if (!value.is_dict()) continue;
++        ++conflict_count;
++        if (conflicts.size() >= 50) continue;
++        const auto& row = value.GetDict();
++        const auto* local = row.FindDict("local");
++        const auto* remote = row.FindDict("remote");
++        base::DictValue summary;
++        summary.Set("id", id); summary.Set("stream", stream);
++        summary.Set("localTitle", local && local->FindString("title") ? *local->FindString("title") : std::string(id));
++        summary.Set("remoteTitle", remote && remote->FindString("title") ? *remote->FindString("title") : std::string());
++        summary.Set("remoteDeleted", remote && remote->FindBool("deleted").value_or(false));
++        conflicts.Append(std::move(summary));
++      }
++    }
++  }
++  out.Set("conflictCount", conflict_count); out.Set("conflicts", std::move(conflicts));
 +  out.Set("needsReauth", operation_ == "reauthRequired");
 +  out.Set("canDelete", SignedIn() && (entitlement_ == "active" || entitlement_ == "free") &&
 +      !busy_ && deletion_status_ != "pending");
 +  out.Set("enabled", local_state_.FindDict("enabled") ?
 +      local_state_.FindDict("enabled")->Clone() : Disabled());
 +  base::DictValue available;
-+  available.Set("bookmarks", adapters_->IsAvailable(Stream::kBookmarks));
-+  available.Set("history", adapters_->IsAvailable(Stream::kHistory));
++  available.Set("bookmarks", sync_available_ && adapters_->IsAvailable(Stream::kBookmarks));
++  available.Set("history", sync_available_ && adapters_->IsAvailable(Stream::kHistory));
 +  // No authenticated, profile-bound native IPC exists for Rust metadata yet.
 +  // A global recording index is not a profile adapter.
 +  available.Set("agent_history", false);
@@ -203,6 +230,14 @@ new file mode 100644
 +  if (busy_) { rerun_ = true; return; }
 +  if (!SignedIn()) { entitlement_ = "signedOut"; Notify(); return; }
 +  if (!EnsureOwner()) return;
++  if (CanSync() && !sync_session_.empty() && sync_session_expires_ > base::Time::Now() + base::Seconds(20) &&
++      !local_state_.FindBool("enrollmentDirty").value_or(false)) {
++    busy_ = true;
++    if (auto* pending = local_state_.FindDict("pending")) {
++      if (const auto* stream = pending->FindString("stream")) { stream_ = *stream; SendPending(); return; }
++    }
++    StartCycle(); return;
++  }
 +  timer_.Stop();
 +  last_status_request_ = base::TimeTicks::Now();
 +  busy_ = true;
@@ -252,13 +287,50 @@ new file mode 100644
 +}
 +void RemocodeSyncService::Request(Endpoint endpoint, base::DictValue body,
 +    base::OnceCallback<void(int, base::DictValue)> callback) {
-+  account_->AuthenticatedSyncRequest(endpoint, std::move(body), std::move(callback));
++  if (endpoint == Endpoint::kPull || endpoint == Endpoint::kPush) {
++    if (sync_session_.empty() || sync_session_expires_ <= base::Time::Now() + base::Seconds(20)) {
++      auto scope = RegistrationBody(); scope.Set("protocolVersion", 2);
++      account_->AuthenticatedSyncRequest(Endpoint::kSession, std::move(scope),
++          base::BindOnce(&RemocodeSyncService::OnSessionRequest,
++              operation_factory_.GetWeakPtr(), endpoint, std::move(body), std::move(callback)));
++      return;
++    }
++    // The lease is native-memory-only. Never add it to persisted pending state
++    // or return it through GetState/WebUI.
++    body.Set("syncSession", sync_session_);
++  }
++  account_->AuthenticatedSyncRequest(endpoint, std::move(body), base::BindOnce(
++      &RemocodeSyncService::OnTransportResponse, operation_factory_.GetWeakPtr(), std::move(callback)));
++}
++void RemocodeSyncService::OnTransportResponse(
++    base::OnceCallback<void(int, base::DictValue)> callback, int status, base::DictValue data) {
++  const auto* error = data.FindDict("error");
++  const auto* code = error ? error->FindString("code") : nullptr;
++  retryable_failure_ = status == 0 || status == 429 || status >= 500 ||
++      (code && *code == "SYNC_SESSION_REVOKED");
++  std::move(callback).Run(status, std::move(data));
++}
++void RemocodeSyncService::OnSessionRequest(Endpoint endpoint, base::DictValue body,
++    base::OnceCallback<void(int, base::DictValue)> callback, int status, base::DictValue data) {
++  retryable_failure_ = status == 0 || status == 429 || status >= 500;
++  const auto* session = data.FindString("syncSession");
++  const auto expires = WireNumber(data, "expiresAt");
++  if (status != 200 || !session || !base::Uuid::ParseLowercase(*session).is_valid() ||
++      !expires || *expires <= base::Time::Now().InMillisecondsFSinceUnixEpoch()) {
++    std::move(callback).Run(status == 200 ? 0 : status, std::move(data)); return;
++  }
++  sync_session_ = *session;
++  sync_session_expires_ = base::Time::FromMillisecondsSinceUnixEpoch(*expires);
++  Request(endpoint, std::move(body), std::move(callback));
 +}
 +void RemocodeSyncService::RecordError(const base::DictValue& data) {
 +  error_code_.clear();
 +  // Worker failures are {error:{code,message}}, not {error:"CODE"}.
 +  const auto* error = data.FindDict("error");
 +  const auto* code = error ? error->FindString("code") : nullptr;
++  if (code && (*code == "SYNC_SESSION_EXPIRED" || *code == "SYNC_SESSION_REVOKED")) {
++    sync_session_.clear(); sync_session_expires_ = base::Time();
++  }
 +  if (code && !code->empty() && code->size() <= 128 &&
 +      code->find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-") ==
 +          std::string::npos) error_code_ = *code;
@@ -266,6 +338,8 @@ new file mode 100644
 +void RemocodeSyncService::CompleteDeletion() {
 +  // Only native metadata is cleared, never local bookmarks/history.
 +  local_state_.Remove("streams");
++  local_state_.Remove("streamRevisions"); local_state_.Remove("conflicts");
++  local_state_.Remove("download");
 +  local_state_.Remove("pending");
 +  registration_.clear();
 +  local_state_.Set("enabled", Disabled());
@@ -311,6 +385,9 @@ new file mode 100644
 +  for (const auto* key : {"purchaseAvailable", "managementAvailable"}) {
 +    if (data.Find(key) && !data.FindBool(key)) { entitlement_ = "error"; return false; }
 +  }
++  const auto* sync_value = data.Find("syncAvailable");
++  if (sync_value && !sync_value->is_bool()) { entitlement_ = "error"; return false; }
++  sync_available_ = data.FindBool("syncAvailable").value_or(true);
 +  const auto* vip = data.FindString("vip");
 +  const auto* enabled = data.FindDict("enabled");
 +  if (!vip || (*vip != "active" && *vip != "inactive") || !enabled) {
@@ -356,7 +433,9 @@ new file mode 100644
 +    const auto* previous_space = local_state_.FindString("spaceId");
 +    if (previous_space && *previous_space != space) {
 +      if (!adapters_->ResetSyncState()) { entitlement_ = "error"; return false; }
-+      local_state_.Remove("streams"); local_state_.Remove("pending");
++      local_state_.Remove("streams");
++  local_state_.Remove("streamRevisions"); local_state_.Remove("conflicts");
++  local_state_.Remove("download"); local_state_.Remove("pending");
 +      local_state_.Set("enabled", Disabled());
 +      local_state_.Set("enrollmentDirty", true);
 +    }
@@ -403,12 +482,13 @@ new file mode 100644
 +  if (!CanSync()) { busy_ = false; operation_ = "paused"; rerun_ = false; Notify(); return; }
 +  if (auto* pending = local_state_.FindDict("pending")) {
 +    const auto* pending_stream = pending->FindString("stream");
-+    if (!pending_stream || (*pending_stream != "bookmarks" && *pending_stream != "history") ||
-+        !pending->FindList("operations") || !pending->FindString("batchId") ||
++    if (WireNumber(*pending, "protocolVersion") != 2 || !pending_stream || (*pending_stream != "bookmarks" && *pending_stream != "history") ||
++        !pending->FindList("chunks") || !pending->FindString("uploadId") ||
 +        !WireNumber(*pending, "deviceSequence") || !WireNumber(*pending, "baseRevision") ||
 +        pending->FindString("enrollmentId") == nullptr ||
 +        *pending->FindString("enrollmentId") != *registration_.FindString("enrollmentId") ||
 +        WireNumber(*pending, "generation") != WireNumber(registration_, "generation")) {
++      local_state_.Set("rebaseIntent", pending->Clone());
 +      local_state_.Remove("pending"); Save();
 +    } else { stream_ = *pending->FindString("stream"); SendPending(); return; }
 +  }
@@ -424,7 +504,7 @@ new file mode 100644
 +    bool available = std::string(stream) == "bookmarks" ? adapters_->IsAvailable(Stream::kBookmarks) :
 +        std::string(stream) == "history" && adapters_->IsAvailable(Stream::kHistory);
 +    if (*next && !old && (busy_ || entitlement_ != "active" || !SignedIn() || !available ||
-+        (!vip_expires_at_.is_null() && vip_expires_at_ <= base::Time::Now()))) return false;
++        (!vip_expires_at_.is_null() && vip_expires_at_ <= base::Time::Now()) || !sync_available_)) return false;
 +  }
 +  Invalidate();
 +  for (const auto* stream : kStreams) {
@@ -466,6 +546,14 @@ new file mode 100644
 +}
 +void RemocodeSyncService::StartCycle() {
 +  stream_index_ = -1;
++  if (const auto* stage = local_state_.FindDict("download")) {
++    const auto* saved_stream = stage->FindString("stream");
++    for (size_t i = 0; saved_stream && i < kStreams.size(); ++i) {
++      if (*saved_stream == kStreams[i] && Enabled(local_state_, *saved_stream)) {
++        stream_index_ = static_cast<int>(i) - 1; break;
++      }
++    }
++  }
 +  conflict_ = false;
 +  operation_ = "pending";
 +  Notify(); NextStream();
@@ -506,20 +594,68 @@ new file mode 100644
 +    if (!entry) continue;
 +    local_entries_.Set(*entry->FindString("id"), std::move(*entry));
 +  }
++  RestoreDownload();
 +  Pull();
++}
++void RemocodeSyncService::RestoreDownload() {
++  const auto* saved = local_state_.FindDict("download");
++  if (!saved) return;
++  auto stage = saved->Clone();
++  const auto* stream = stage.FindString("stream");
++  const auto* cursor = stage.FindString("cursor");
++  const auto* rows = stage.FindDict("entries");
++  const auto revision = WireNumber(stage, "revision");
++  if (!stream || *stream != stream_) return;
++  if (!cursor || cursor->empty() || !rows || !revision ||
++      !stage.FindString("spaceId") || *stage.FindString("spaceId") != *registration_.FindString("spaceId") ||
++      !stage.FindString("enrollmentId") || *stage.FindString("enrollmentId") != *registration_.FindString("enrollmentId") ||
++      WireNumber(stage, "generation") != WireNumber(registration_, "generation")) {
++    local_state_.Remove("download"); return;
++  }
++  cursor_ = *cursor; pull_revision_ = *revision;
++  pull_pages_ = stage.FindInt("pages").value_or(0);
++  for (auto [id, value] : *rows) {
++    if (!value.is_dict()) { local_state_.Remove("download"); cursor_.clear(); remote_entries_.clear(); pull_revision_ = -1; return; }
++    auto normalized = NormalizeEntry(stream_, value.GetDict(), true);
++    if (!normalized || !normalized->FindString("id") || *normalized->FindString("id") != id ||
++        WireNumber(*normalized, "revision").value_or(-1) > *revision) {
++      local_state_.Remove("download"); cursor_.clear(); remote_entries_.clear(); pull_revision_ = -1; conflict_ = false; return;
++    }
++    const auto& entry = *normalized;
++    const auto* dirty = local_entries_.FindDict(id);
++    const auto* known = Known().FindDict(id);
++    if (HasMergeConflict(dirty, known, entry)) {
++      base::DictValue conflict;
++      conflict.Set("local", dirty->Clone()); if (known) conflict.Set("baseline", known->Clone());
++      conflict.Set("remote", entry.Clone());
++      local_state_.EnsureDict("conflicts")->EnsureDict(stream_)->Set(id, std::move(conflict));
++      conflict_ = true;
++    } else {
++      local_state_.EnsureDict("conflicts")->EnsureDict(stream_)->Remove(id);
++      remote_entries_.Set(id, entry.Clone());
++    }
++  }
 +}
 +void RemocodeSyncService::Pull() {
 +  if (!CanSync()) { Fail(); return; }
 +  auto body = RegistrationBody(); body.Set("stream", stream_);
++  body.Set("protocolVersion", 2);
++  body.Set("knownRevision", WireNumber(*local_state_.EnsureDict("streamRevisions"), stream_).value_or(0));
 +  body.Set("cursor", cursor_.empty() ? base::Value() : base::Value(cursor_));
 +  Request(Endpoint::kPull, std::move(body), base::BindOnce(
 +      &RemocodeSyncService::OnPull, operation_factory_.GetWeakPtr()));
 +}
 +void RemocodeSyncService::OnPull(int status, base::DictValue data) {
++  if (status == 429 && CanSync() && ++throttle_retries_ <= 3) {
++    timer_.Start(FROM_HERE, base::Seconds(60), this, &RemocodeSyncService::Pull);
++    return;
++  }
++  if (status == 200) throttle_retries_ = 0;
 +  if (status != 200) RecordError(data);
 +  if (status == 401 || status == 403) entitlement_ = "error";
 +  if (status == 409 && ++pull_restarts_ <= 2) {
 +    cursor_.clear(); remote_entries_.clear(); pull_revision_ = -1; conflict_ = false;
++    local_state_.Remove("download");
 +    Pull(); return;
 +  }
 +  if (++pull_pages_ > 1000) { Fail(); return; }
@@ -530,23 +666,45 @@ new file mode 100644
 +  if (!CanSync() || status != 200 || !entries || entries->size() > 200 || !revision ||
 +      !sequence || !next || (!next->is_none() && !next->is_string())) { Fail(); return; }
 +  if (pull_revision_ >= 0 && pull_revision_ != *revision) { Fail(); return; }
-+  pull_revision_ = *revision;
++  // Validate an entire page before advancing its durable prefix. If one row
++  // is malformed, the saved cursor must still refer to an untouched page.
++  base::ListValue normalized_entries;
++  std::set<std::string> page_ids;
 +  for (const auto& value : *entries) {
 +    if (!value.is_dict()) { Fail(); return; }
 +    auto entry = NormalizeEntry(stream_, value.GetDict(), true);
 +    if (!entry || WireNumber(*entry, "revision").value_or(0) > *revision) { Fail(); return; }
 +    const auto& id = *entry->FindString("id");
++    const auto* known = Known().FindDict(id);
++    if (!page_ids.insert(id).second || remote_entries_.contains(id) ||
++        (known && WireNumber(*entry, "revision") < WireNumber(*known, "revision"))) { Fail(); return; }
++    normalized_entries.Append(std::move(*entry));
++  }
++  pull_revision_ = *revision;
++  if (cursor_.empty()) {
++    auto stage = RegistrationBody(); stage.Set("stream", stream_);
++    stage.Set("revision", *revision); stage.Set("entries", base::DictValue());
++    local_state_.Set("download", std::move(stage));
++  }
++  for (const auto& value : normalized_entries) {
++    const auto* entry = &value.GetDict();
++    const auto& id = *entry->FindString("id");
++    local_state_.EnsureDict("download")->EnsureDict("entries")->Set(id, entry->Clone());
 +    const auto* dirty = local_entries_.FindDict(id);
 +    const auto* known = Known().FindDict(id);
-+    if (remote_entries_.contains(id) || (known && WireNumber(*entry, "revision") < WireNumber(*known, "revision"))) {
-+      Fail(); return;
-+    }
-+    if (dirty && !SamePayload(*dirty, *entry) &&
-+        (!known || !SamePayload(*known, *entry))) {
++    if (HasMergeConflict(dirty, known, *entry)) {
++      // Persist all three inputs for recovery; never replace a local edit or
++      // turn a remote tombstone into a fresh put with expectedRevision=0.
++      base::DictValue conflict;
++      conflict.Set("local", dirty->Clone());
++      if (known) conflict.Set("baseline", known->Clone());
++      conflict.Set("remote", entry->Clone());
++      local_state_.EnsureDict("conflicts")->EnsureDict(stream_)->Set(id, std::move(conflict));
 +      conflict_ = true;
 +      continue;
 +    }
-+    remote_entries_.Set(id, std::move(*entry));
++    local_state_.EnsureDict("conflicts")->EnsureDict(stream_)->Remove(id);
++    remote_entries_.Set(id, entry->Clone());
 +  }
 +  registration_.Set("revision", *revision);
 +  registration_.Set("deviceSequence", *sequence);
@@ -554,7 +712,32 @@ new file mode 100644
 +  if (!next_cursor.empty() && next_cursor == cursor_) { Fail(); return; }
 +  cursor_ = next_cursor;
 +  if (cursor_.size() > 4096) { Fail(); return; }
-+  if (!cursor_.empty()) { Pull(); return; }
++  if (!cursor_.empty()) {
++    auto* stage = local_state_.EnsureDict("download");
++    stage->Set("cursor", cursor_); stage->Set("pages", pull_pages_);
++    // Geometric checkpoints bound total successful-download serialization to
++    // O(body size). Errors and clean shutdown save the exact current cursor.
++    if ((pull_pages_ & (pull_pages_ - 1)) == 0) Save();
++    Pull(); return;
++  }
++  local_state_.Remove("download");
++  if (conflict_) { Save(); Fail("conflict"); return; }
++  if (stream_ == "bookmarks") {
++    auto merged = Known().Clone();
++    for (auto [id, value] : remote_entries_) merged.Set(id, value.Clone());
++    for (auto [id, value] : local_entries_) {
++      if (!remote_entries_.contains(id) || PreserveLocalChange(&value.GetDict(), Known().FindDict(id),
++          remote_entries_.FindDict(id) ? *remote_entries_.FindDict(id) : value.GetDict())) merged.Set(id, value.Clone());
++    }
++    if (!ValidateBookmarkSnapshot(merged)) {
++      base::DictValue conflict;
++      conflict.Set("local", local_entries_.Clone()); conflict.Set("baseline", Known().Clone());
++      conflict.Set("remote", remote_entries_.Clone()); conflict.Set("reason", "bookmark_structure");
++      local_state_.EnsureDict("conflicts")->EnsureDict(stream_)->Set("structure", std::move(conflict));
++      Save(); Fail("conflict"); return;
++    }
++    local_state_.EnsureDict("conflicts")->EnsureDict(stream_)->Remove("structure");
++  }
 +  base::ListValue apply;
 +  for (auto [id, value] : remote_entries_) {
 +    if (PreserveLocalChange(local_entries_.FindDict(id), Known().FindDict(id),
@@ -569,78 +752,149 @@ new file mode 100644
 +}
 +void RemocodeSyncService::OnApplied(base::DictValue page, Result result) {
 +  if (!CanSync() || !result.available || !result.success) {
++    if (CanSync() && rerun_ && result.error.find("conflict") != std::string::npos) {
++      rerun_ = false; local_state_.Remove("download"); ReadLocal(); return;
++    }
++    if (!result.error.empty()) error_code_ = "SYNC_LOCAL_APPLY_FAILED";
 +    Fail(result.error.find("conflict") != std::string::npos ||
 +         result.error == "bookmark_unresolved_parent_order_or_nonempty_folder" ? "conflict" : "failed"); return;
 +  }
-+  for (auto [id, entry] : page) Known().Set(id, entry.Clone());
++  for (auto [id, entry] : page) {
++    // Applying remote data must also advance the in-memory local snapshot.
++    // Otherwise Push would immediately upload the pre-pull payload as an edit.
++    if (!PreserveLocalChange(local_entries_.FindDict(id), Known().FindDict(id), entry.GetDict()))
++      local_entries_.Set(id, entry.Clone());
++    Known().Set(id, entry.Clone());
++  }
++  if (!conflict_)
++    local_state_.EnsureDict("streamRevisions")->Set(stream_, *WireNumber(registration_, "revision"));
 +  Save();
 +  if (!cursor_.empty()) { Pull(); return; }
 +  if (conflict_) { Fail("conflict"); return; }
-+  if (confirming_push_) { confirming_push_ = false; ReadLocal(); return; }
++  if (confirming_push_ || !page.empty()) {
++    confirming_push_ = false; ReadLocalForPush(); return;
++  }
++  Push();
++}
++void RemocodeSyncService::ReadLocalForPush() {
++  auto callback = base::BindOnce(&RemocodeSyncService::OnLocalReadForPush, operation_factory_.GetWeakPtr());
++  if (stream_ == "bookmarks") adapters_->ReadBookmarks(std::move(callback));
++  else {
++    const auto since = WireNumber(local_state_, "historySince");
++    if (!since || *since <= 0) { Fail(); return; }
++    adapters_->ReadHistory(base::Time::FromMillisecondsSinceUnixEpoch(*since), std::move(callback));
++  }
++}
++void RemocodeSyncService::OnLocalReadForPush(Result result) {
++  if (!CanSync() || !result.available || !result.success) { Fail(); return; }
++  local_entries_.clear();
++  for (const auto& value : result.entries) {
++    if (!value.is_dict()) { Fail(); return; }
++    auto entry = NormalizeEntry(stream_, value.GetDict(), false);
++    if (entry) local_entries_.Set(*entry->FindString("id"), std::move(*entry));
++  }
++  // Remote inserts/moves may change the predecessor of an otherwise untouched
++  // local node. Publish the actual post-apply adapter state, never a stale read.
 +  Push();
 +}
 +void RemocodeSyncService::Push() {
 +  if (!CanSync()) { Fail(); return; }
-+  base::ListValue operations;
++  auto snapshot = Known().Clone();
++  bool changed = false;
++  const double revision = *WireNumber(registration_, "revision") + 1;
 +  for (auto [id, value] : local_entries_) {
 +    const auto& entry = value.GetDict();
-+    auto* known = Known().FindDict(id);
++    const auto* known = Known().FindDict(id);
 +    if (known && SamePayload(entry, *known)) continue;
-+    bool deleted = entry.FindBool("deleted").value_or(false);
-+    if (deleted && !known && WireNumber(entry, "revision").value_or(0) == 0) continue;
-+    auto op = entry.Clone(); op.Remove("revision"); op.Remove("deleted");
-+    op.Set("opId", base::Uuid::GenerateRandomV4().AsLowercaseString());
-+    op.Set("kind", deleted ? "delete" : "put");
-+    op.Set("expectedRevision", known ? WireNumber(*known, "revision").value_or(0) :
-+                                       WireNumber(entry, "revision").value_or(0));
-+    operations.Append(std::move(op));
++    if (entry.FindBool("deleted").value_or(false) && !known) continue;
++    // A synchronized tombstone is never reused for a put, including after an
++    // offline edit. Conflicting payloads remain in local storage for resolution.
++    if (known && known->FindBool("deleted").value_or(false) &&
++        !entry.FindBool("deleted").value_or(false)) { Fail("conflict"); return; }
++    auto next = entry.Clone(); next.Set("revision", revision);
++    snapshot.Set(id, std::move(next)); changed = true;
 +  }
-+  if (operations.empty()) { NextStream(); return; }
-+  if (stream_ == "bookmarks") {
-+    auto ordered = OrderBookmarkOperations(operations, Known(), 100);
-+    if (!ordered || ordered->empty()) { Fail("conflict"); return; }
-+    operations = std::move(*ordered);
-+  } else {
-+    while (operations.size() > 100) operations.erase(operations.end() - 1);
++  if (!changed) { NextStream(); return; }
++  if (stream_ == "bookmarks" && !ValidateBookmarkSnapshot(snapshot)) { Fail("conflict"); return; }
++  base::ListValue chunks, page;
++  for (auto [id, value] : snapshot) {
++    page.Append(value.Clone());
++    const auto encoded = base::WriteJson(page);
++    if (!encoded || encoded->size() > 250 * 1024) {
++      auto last = std::move(page.back()); page.erase(page.end() - 1);
++      if (page.empty()) { Fail(); return; }
++      chunks.Append(std::move(page)); page = base::ListValue(); page.Append(std::move(last));
++    }
++    if (page.size() == 200) { chunks.Append(std::move(page)); page = base::ListValue(); }
 +  }
-+  auto batch = RegistrationBody();
-+  batch.Set("protocolVersion", 1); batch.Set("stream", stream_);
-+  batch.Set("batchId", base::Uuid::GenerateRandomV4().AsLowercaseString());
-+  batch.Set("deviceSequence", *WireNumber(registration_, "deviceSequence") + 1);
-+  batch.Set("baseRevision", *WireNumber(registration_, "revision"));
-+  batch.Set("operations", std::move(operations));
-+  local_state_.Set("pending", std::move(batch));
-+  Save();
-+  SendPending();
++  if (!page.empty()) chunks.Append(std::move(page));
++  if (chunks.size() > 512) { error_code_ = "SYNC_SNAPSHOT_LIMIT"; Fail(); return; }
++  auto pending = RegistrationBody();
++  pending.Set("protocolVersion", 2); pending.Set("stream", stream_);
++  pending.Set("uploadId", base::Uuid::GenerateRandomV4().AsLowercaseString());
++  pending.Set("baseRevision", revision - 1);
++  pending.Set("deviceSequence", *WireNumber(registration_, "deviceSequence") + 1);
++  pending.Set("createdAt", static_cast<double>(base::Time::Now().InMillisecondsSinceUnixEpoch()));
++  pending.Set("chunks", std::move(chunks)); pending.Set("nextChunk", 0);
++  pending.Set("stage", "begin");
++  local_state_.Set("pending", std::move(pending)); Save(); SendPending();
 +}
 +void RemocodeSyncService::SendPending() {
-+  if (!CanSync()) { Fail(); return; }
++  auto* pending = local_state_.FindDict("pending");
++  if (!CanSync() || !pending || !pending->FindList("chunks")) { Fail(); return; }
++  if (RepairPreviewUploadTimestamp(*pending,
++          static_cast<double>(base::Time::Now().InMillisecondsSinceUnixEpoch()))) Save();
++  auto body = SnapshotUploadRequest(registration_, *pending);
++  if (!body) { error_code_ = "SYNC_PENDING_STATE_INVALID"; Fail(); return; }
 +  busy_ = true; operation_ = "pending"; Notify();
-+  Request(Endpoint::kPush, local_state_.FindDict("pending")->Clone(), base::BindOnce(
++  Request(Endpoint::kPush, std::move(*body), base::BindOnce(
 +      &RemocodeSyncService::OnPush, operation_factory_.GetWeakPtr()));
 +}
 +void RemocodeSyncService::OnPush(int status, base::DictValue data) {
 +  auto* pending = local_state_.FindDict("pending");
 +  if (!CanSync() || !pending) { Fail(); return; }
++  if (status == 429 && ++throttle_retries_ <= 3) {
++    timer_.Start(FROM_HERE, base::Seconds(60), this, &RemocodeSyncService::SendPending);
++    return;
++  }
++  if (status == 200) throttle_retries_ = 0;
 +  if (status != 200) RecordError(data);
 +  if (status == 401 || status == 403) entitlement_ = "error";
 +  if (status == 409) {
++    if (error_code_ == "SYNC_SESSION_EXPIRED") { SendPending(); return; }
++    if (error_code_ == "SYNC_UPLOAD_INCOMPLETE") {
++      pending->Set("nextChunk", 0); pending->Set("stage", "chunk"); Save(); SendPending(); return;
++    }
++    if (error_code_ != "REVISION_CONFLICT" && error_code_ != "SYNC_UPLOAD_EXPIRED") { Fail("conflict"); return; }
 +    if (++push_restarts_ > 2) { Fail("conflict"); return; }
++    // Rebase from actual local data, while retaining the submitted intent as a
++    // recovery record until the next snapshot has been constructed.
++    local_state_.Set("rebaseIntent", pending->Clone());
 +    local_state_.Remove("pending"); Save();
 +    cursor_.clear(); confirming_push_ = false;
 +    ReadLocal(); return;
 +  }
-+  if (status != 200 || !WireNumber(data, "revision") || !data.FindString("batchId") ||
-+      *data.FindString("batchId") != *pending->FindString("batchId")) { Fail(); return; }
-+  const double revision = *WireNumber(data, "revision");
-+  for (const auto& value : *pending->FindList("operations")) {
-+    auto entry = value.GetDict().Clone();
-+    entry.Set("deleted", *entry.FindString("kind") == "delete");
-+    entry.Set("revision", revision);
-+    entry.Remove("kind"); entry.Remove("opId"); entry.Remove("expectedRevision");
-+    Known().Set(*entry.FindString("id"), std::move(entry));
++  if (status == 200 && *pending->FindString("stage") != "commit") {
++    if (!data.FindString("uploadId") || *data.FindString("uploadId") != *pending->FindString("uploadId")) { Fail(); return; }
++    const auto& chunks = *pending->FindList("chunks");
++    int next = pending->FindInt("nextChunk").value_or(0);
++    if (*pending->FindString("stage") == "chunk") ++next;
++    pending->Set("nextChunk", next);
++    pending->Set("stage", static_cast<size_t>(next) < chunks.size() ? "chunk" : "commit");
++    Save(); SendPending(); return;
 +  }
++  if (status != 200 || !WireNumber(data, "revision") || !data.FindString("batchId") ||
++      *data.FindString("batchId") != *pending->FindString("uploadId")) { Fail(); return; }
++  const double revision = *WireNumber(data, "revision");
++  for (const auto& chunk : *pending->FindList("chunks")) {
++    for (const auto& value : chunk.GetList()) {
++      auto entry = value.GetDict().Clone();
++      Known().Set(*entry.FindString("id"), std::move(entry));
++    }
++  }
++  local_state_.Remove("rebaseIntent");
 +  registration_.Set("revision", revision);
++  local_state_.EnsureDict("streamRevisions")->Set(stream_, 0.0);
 +  registration_.Set("deviceSequence", *WireNumber(*pending, "deviceSequence"));
 +  local_state_.Remove("pending"); Save();
 +  cursor_.clear(); remote_entries_.clear(); pull_revision_ = -1; confirming_push_ = true;
@@ -655,6 +909,7 @@ new file mode 100644
 +  timer_.Start(FROM_HERE, base::Seconds(1), this, &RemocodeSyncService::Refresh);
 +}
 +void RemocodeSyncService::FinishCycle() {
++  retry_delay_seconds_ = 30; retryable_failure_ = false;
 +  busy_ = false; operation_ = "success"; error_code_.clear();
 +  local_state_.Set("lastSuccess", base::Time::Now().InMillisecondsFSinceUnixEpoch()); Save(); Notify();
 +  bool immediate = rerun_; rerun_ = false;
@@ -662,12 +917,19 @@ new file mode 100644
 +               this, &RemocodeSyncService::Refresh);
 +}
 +void RemocodeSyncService::Fail(std::string operation) {
++  if (local_state_.contains("download")) Save();
 +  busy_ = false;
 +  if (error_code_ == "RECENT_AUTHENTICATION_REQUIRED") operation = "reauthRequired";
 +  operation_ = deletion_status_ == "pending" ? "deletePending" : std::move(operation);
 +  Notify();
-+  if (deletion_status_ == "pending" && SignedIn())
++  if (deletion_status_ == "pending" && SignedIn()) {
 +    timer_.Start(FROM_HERE, base::Seconds(30), this, &RemocodeSyncService::Refresh);
++  } else if (operation_ != "conflict" && SignedIn() && AnyEnabled() && retryable_failure_) {
++    // Keep durable upload intent while offline. Retry at 30, 60, 120, 240,
++    // then 300 seconds; successful sync resets the delay.
++    timer_.Start(FROM_HERE, base::Seconds(retry_delay_seconds_), this, &RemocodeSyncService::Refresh);
++    retry_delay_seconds_ = std::min(300, retry_delay_seconds_ * 2);
++  }
 +}
 +std::string RemocodeSyncService::PrepareCloudDeletion() {
 +  if (!SignedIn() || busy_ || deletion_status_ == "pending" ||

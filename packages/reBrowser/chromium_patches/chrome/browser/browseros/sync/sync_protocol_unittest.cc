@@ -2,10 +2,12 @@ diff --git a/chrome/browser/browseros/sync/sync_protocol_unittest.cc b/chrome/br
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/sync_protocol_unittest.cc
-@@ -0,0 +1,114 @@
+@@ -0,0 +1,210 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#include "chrome/browser/browseros/sync/sync_protocol.h"
++#include "chrome/browser/browseros/sync/adapters/sync_adapter_util.h"
++#include "base/uuid.h"
 +#include "testing/gtest/include/gtest/gtest.h"
 +namespace browseros::sync {
 +namespace {
@@ -17,6 +19,26 @@ new file mode 100644
 +  value.Set("url", "https://example.com/path?q=secret#token");
 +  value.Set("prompt", "never leave the device");
 +  return value;
++}
++TEST(RemocodeSyncProtocol, AdapterAcceptsLargeSnapshotAndRejectsLateMalformedEntry) {
++  base::ListValue snapshot;
++  for (int i = 0; i < 19166; ++i) {
++    base::DictValue tombstone;
++    tombstone.Set("id", base::Uuid::GenerateRandomV4().AsLowercaseString());
++    tombstone.Set("revision", 63); tombstone.Set("deleted", true);
++    snapshot.Append(std::move(tombstone));
++  }
++  auto normalized = internal::NormalizeBatch(snapshot, true);
++  ASSERT_TRUE(normalized); EXPECT_EQ(normalized->size(), 19166u);
++  snapshot.back().GetDict().Set("id", "invalid-late-id");
++  EXPECT_FALSE(internal::NormalizeBatch(snapshot, true));
++  EXPECT_FALSE(internal::NormalizeBatch(snapshot, false));
++}
++TEST(RemocodeSyncProtocol, AdapterRejectsSnapshotBeyondProtocolChunkBudget) {
++  base::ListValue snapshot;
++  for (size_t i = 0; i <= internal::kMaxBatchSize; ++i) snapshot.Append(base::Value());
++  EXPECT_FALSE(internal::NormalizeBatch(snapshot, true));
++  EXPECT_FALSE(internal::NormalizeBatch(snapshot, false));
 +}
 +TEST(RemocodeSyncProtocol, WhitelistAndSanitizeWithoutMutatingLocal) {
 +  auto local = Entry();
@@ -85,6 +107,20 @@ new file mode 100644
 +  EXPECT_FALSE(PreserveLocalChange(nullptr, &known, known));
 +  EXPECT_FALSE(PreserveLocalChange(&local, nullptr, known));
 +}
++TEST(RemocodeSyncProtocol, ThreeWayMergeAppliesRemoteEditsAndDeletesWithoutUndo) {
++  const auto baseline = Entry();
++  auto remote = baseline.Clone(); remote.Set("title", "remote edit");
++  EXPECT_FALSE(HasMergeConflict(&baseline, &baseline, remote));
++  auto local = baseline.Clone(); local.Set("title", "offline edit");
++  EXPECT_FALSE(HasMergeConflict(&local, &baseline, baseline));
++  EXPECT_TRUE(PreserveLocalChange(&local, &baseline, baseline));
++  EXPECT_TRUE(HasMergeConflict(&local, &baseline, remote));
++  remote.Set("deleted", true);
++  EXPECT_FALSE(HasMergeConflict(&baseline, &baseline, remote));
++  EXPECT_TRUE(HasMergeConflict(&local, &baseline, remote));
++  EXPECT_FALSE(HasMergeConflict(nullptr, &baseline, remote));
++  EXPECT_TRUE(HasMergeConflict(&local, nullptr, remote));
++}
 +TEST(RemocodeSyncProtocol, TitlesUsePerStreamUTF8ByteBudgetsWithoutInboundTruncation) {
 +  auto history = Entry(); history.Set("url", "https://example.com/path");
 +  std::string chinese;
@@ -116,4 +152,64 @@ new file mode 100644
 +  EXPECT_FALSE(OrderBookmarkOperations(ops, known, 100));
 +}
 +}  // namespace
++TEST(RemocodeSyncProtocol, FullSnapshotRejectsMissingParentsAndOrderingCycles) {
++  base::DictValue all;
++  auto folder = Entry(); folder.Set("id", "folder"); folder.Set("url", base::Value());
++  folder.Set("parentId", "root:toolbar"); folder.Set("afterId", base::Value());
++  all.Set("folder", folder.Clone());
++  auto child = folder.Clone(); child.Set("id", "child"); child.Set("parentId", "folder");
++  all.Set("child", child.Clone()); EXPECT_TRUE(ValidateBookmarkSnapshot(all));
++  all.FindDict("folder")->Set("deleted", true); EXPECT_FALSE(ValidateBookmarkSnapshot(all));
++  all.FindDict("folder")->Set("deleted", false);
++  all.FindDict("folder")->Set("parentId", "child"); EXPECT_FALSE(ValidateBookmarkSnapshot(all));
++  all.FindDict("folder")->Set("parentId", "root:toolbar");
++  all.FindDict("child")->Set("parentId", "root:toolbar");
++  all.FindDict("folder")->Set("afterId", "child");
++  all.FindDict("child")->Set("afterId", "folder"); EXPECT_FALSE(ValidateBookmarkSnapshot(all));
++}
++namespace {
++base::DictValue UploadScope() {
++  base::DictValue s; s.Set("spaceId", "10000000-0000-4000-8000-000000000001");
++  s.Set("enrollmentId", "20000000-0000-4000-8000-000000000001"); s.Set("generation", 1); return s;
++}
++base::DictValue UploadPending() {
++  auto s = UploadScope(); s.Set("protocolVersion", 2); s.Set("stream", "bookmarks");
++  s.Set("uploadId", "30000000-0000-4000-8000-000000000001");
++  s.Set("stage", "begin"); s.Set("baseRevision", 62); s.Set("deviceSequence", 63);
++  s.Set("createdAt", 1793630000123.0); s.Set("nextChunk", 0);
++  auto entry = Entry(); entry.Set("url", "https://example.com/path"); entry.Set("parentId", "root:toolbar"); entry.Set("afterId", base::Value()); entry.Remove("visitedAt"); entry.Remove("prompt");
++  base::ListValue rows; rows.Append(std::move(entry)); base::ListValue chunks; chunks.Append(std::move(rows)); s.Set("chunks", std::move(chunks)); return s;
++}
++}
++TEST(RemocodeSyncProtocol, UploadBeginRejectsFractionalTimestampWithoutCrashing) {
++  auto pending = UploadPending(); pending.Set("createdAt", 1793630000123.456);
++  EXPECT_FALSE(SnapshotUploadRequest(UploadScope(), pending));
++  EXPECT_TRUE(RepairPreviewUploadTimestamp(pending, 1793630002000.0));
++  auto request = SnapshotUploadRequest(UploadScope(), pending); ASSERT_TRUE(request);
++  EXPECT_EQ(WireNumber(*request, "createdAt"), 1793630002000.0);
++  EXPECT_EQ(pending.FindList("chunks")->size(), 1u);
++}
++TEST(RemocodeSyncProtocol, UploadRequestsKeepCredentialsOutAndRejectMissingState) {
++  auto pending = UploadPending(); auto request = SnapshotUploadRequest(UploadScope(), pending); ASSERT_TRUE(request);
++  EXPECT_FALSE(request->contains("chunks")); EXPECT_FALSE(request->contains("syncSession"));
++  pending.Remove("deviceSequence"); EXPECT_FALSE(SnapshotUploadRequest(UploadScope(), pending));
++  pending = UploadPending(); pending.Set("stage", "unknown"); EXPECT_FALSE(SnapshotUploadRequest(UploadScope(), pending));
++}
++TEST(RemocodeSyncProtocol, UploadChunkBoundsCannotIndexEmptyOrMissingRows) {
++  auto pending = UploadPending(); pending.Set("stage", "chunk");
++  auto request = SnapshotUploadRequest(UploadScope(), pending); ASSERT_TRUE(request);
++  EXPECT_EQ(*request->FindString("lowerBound"), ""); EXPECT_EQ(*request->FindString("upperBound"), "~");
++  pending.Set("nextChunk", 1); EXPECT_FALSE(SnapshotUploadRequest(UploadScope(), pending));
++  pending.Set("nextChunk", 0); pending.FindList("chunks")->front() = base::Value(base::ListValue());
++  EXPECT_FALSE(SnapshotUploadRequest(UploadScope(), pending));
++}
++TEST(RemocodeSyncProtocol, UploadScopeNeverCrossesEnrollmentOrAccountSpace) {
++  auto pending = UploadPending(); auto registration = UploadScope(); registration.Set("generation", 2);
++  EXPECT_FALSE(SnapshotUploadRequest(registration, pending));
++  registration = UploadScope(); registration.Set("spaceId", "40000000-0000-4000-8000-000000000001");
++  EXPECT_FALSE(SnapshotUploadRequest(registration, pending));
++  pending.Set("stage", "commit"); EXPECT_TRUE(SnapshotUploadRequest(UploadScope(), pending));
++  pending.Set("stage", "chunk"); pending.Set("createdAt", 1793630000123.456);
++  EXPECT_FALSE(RepairPreviewUploadTimestamp(pending, 1793630002000.0));
++}
 +}  // namespace browseros::sync

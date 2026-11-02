@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/sync/adapters/sync_adapter_util.cc b/chrom
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/adapters/sync_adapter_util.cc
-@@ -0,0 +1,187 @@
+@@ -0,0 +1,204 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -19,6 +19,23 @@ new file mode 100644
 +#include "net/base/url_util.h"
 +
 +namespace browseros::sync::internal {
++
++std::optional<base::ListValue> NormalizeBatch(const base::ListValue& entries,
++                                            bool bookmark) {
++  if (entries.size() > kMaxBatchSize) {
++    return std::nullopt;
++  }
++  base::ListValue result;
++  std::set<std::string> ids;
++  for (const auto& value : entries) {
++    auto entry = NormalizeEntry(value, bookmark);
++    if (!entry || !ids.insert(*entry->FindString("id")).second) {
++      return std::nullopt;
++    }
++    result.Append(std::move(*entry));
++  }
++  return result;
++}
 +
 +std::optional<GURL> SanitizeURL(const GURL& url) {
 +  if (!url.is_valid() || !url.SchemeIsHTTPOrHTTPS() ||

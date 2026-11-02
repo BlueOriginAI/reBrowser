@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/sync/adapters/local_sync_adapters.cc b/chr
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/adapters/local_sync_adapters.cc
-@@ -0,0 +1,1034 @@
+@@ -0,0 +1,1017 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -99,23 +99,6 @@ new file mode 100644
 +  entry.Set("deleted", true);
 +  CopyRevision(metadata, entry);
 +  return entry;
-+}
-+
-+std::optional<base::ListValue> NormalizeBatch(const base::ListValue& entries,
-+                                            bool bookmark) {
-+  if (entries.size() > internal::kMaxBatchSize) {
-+    return std::nullopt;
-+  }
-+  base::ListValue result;
-+  std::set<std::string> ids;
-+  for (const auto& value : entries) {
-+    auto entry = internal::NormalizeEntry(value, bookmark);
-+    if (!entry || !ids.insert(*entry->FindString("id")).second) {
-+      return std::nullopt;
-+    }
-+    result.Append(std::move(*entry));
-+  }
-+  return result;
 +}
 +
 +// This task is scheduled ONLY through the profile's HistoryService. It calls
@@ -551,7 +534,7 @@ new file mode 100644
 +      Complete(std::move(callback), Error(false, "bookmarks_unavailable"));
 +      return;
 +    }
-+    auto entries = NormalizeBatch(values, true);
++    auto entries = internal::NormalizeBatch(values, true);
 +    if (!entries) {
 +      Complete(std::move(callback), Error(true, "invalid_bookmark_batch"));
 +      return;
@@ -719,7 +702,7 @@ new file mode 100644
 +      Complete(std::move(callback), Error(true, "history_busy"));
 +      return;
 +    }
-+    auto entries = NormalizeBatch(values, false);
++    auto entries = internal::NormalizeBatch(values, false);
 +    if (!entries) {
 +      Complete(std::move(callback), Error(true, "invalid_history_batch"));
 +      return;

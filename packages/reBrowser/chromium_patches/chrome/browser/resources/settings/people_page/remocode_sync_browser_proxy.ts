@@ -2,7 +2,7 @@ diff --git a/chrome/browser/resources/settings/people_page/remocode_sync_browser
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/resources/settings/people_page/remocode_sync_browser_proxy.ts
-@@ -0,0 +1,47 @@
+@@ -0,0 +1,49 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +import {sendWithPromise} from 'chrome://resources/js/cr.js';
@@ -19,6 +19,8 @@ new file mode 100644
 +  deletionPending: boolean;
 +  deletionStatus: 'none'|'pending'|'completed'|'failed';
 +  errorCode: string;
++  conflictCount?: number;
++  conflicts?: Array<{id: string, stream: SyncStream, localTitle: string, remoteTitle: string, remoteDeleted: boolean}>;
 +  canDelete: boolean;
 +  needsReauth: boolean;
 +  enabled: SyncEnabled;

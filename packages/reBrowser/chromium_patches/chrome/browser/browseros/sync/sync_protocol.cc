@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/sync/sync_protocol.cc b/chrome/browser/bro
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/sync_protocol.cc
-@@ -0,0 +1,184 @@
+@@ -0,0 +1,292 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#include "chrome/browser/browseros/sync/sync_protocol.h"
@@ -56,6 +56,73 @@ new file mode 100644
 +  if (!std::isfinite(n) || n < 0 || n > 9007199254740991.0 || std::floor(n) != n)
 +    return std::nullopt;
 +  return n;
++}
++bool RepairPreviewUploadTimestamp(base::DictValue& pending, double now_ms) {
++  const auto* stage = pending.FindString("stage");
++  const auto* created = pending.Find("createdAt");
++  if (!stage || *stage != "begin" || !created || !created->is_double() ||
++      !std::isfinite(created->GetDouble()) || created->GetDouble() < 0 ||
++      created->GetDouble() > 9007199254740991.0 ||
++      std::floor(created->GetDouble()) == created->GetDouble() ||
++      !std::isfinite(now_ms) || now_ms < 0 || std::floor(now_ms) != now_ms) return false;
++  pending.Set("createdAt", now_ms); return true;
++}
++std::optional<base::DictValue> SnapshotUploadRequest(
++    const base::DictValue& registration, const base::DictValue& pending) {
++  const auto* upload = pending.FindString("uploadId");
++  const auto* stage = pending.FindString("stage");
++  const auto* stream = pending.FindString("stream");
++  const auto* chunks = pending.FindList("chunks");
++  const auto revision = WireNumber(pending, "baseRevision");
++  const auto sequence = WireNumber(pending, "deviceSequence");
++  const auto created = WireNumber(pending, "createdAt");
++  const auto generation = WireNumber(pending, "generation");
++  if (!upload || !base::Uuid::ParseLowercase(*upload).is_valid() || !stage || !stream ||
++      (*stream != "bookmarks" && *stream != "history") || !chunks || chunks->size() > 512 ||
++      !revision || !sequence || *sequence < 1 || !created || !generation || *generation < 1 ||
++      WireNumber(pending, "protocolVersion") != 2 ||
++      WireNumber(registration, "generation") != generation) return std::nullopt;
++  base::DictValue request;
++  for (const auto* key : {"spaceId", "enrollmentId"}) {
++    const auto* value = pending.FindString(key);
++    const auto* expected = registration.FindString(key);
++    if (!value || !expected || *value != *expected || !base::Uuid::ParseLowercase(*value).is_valid()) return std::nullopt;
++    request.Set(key, *value);
++  }
++  request.Set("protocolVersion", 2); request.Set("generation", *generation);
++  request.Set("stream", *stream); request.Set("uploadId", *upload); request.Set("action", *stage);
++  if (*stage == "begin") {
++    request.Set("baseRevision", *revision); request.Set("deviceSequence", *sequence);
++    request.Set("createdAt", *created); request.Set("chunkCount", static_cast<int>(chunks->size()));
++  } else if (*stage == "chunk") {
++    const auto next = WireNumber(pending, "nextChunk");
++    if (!next || *next >= chunks->size()) return std::nullopt;
++    const auto index = static_cast<size_t>(*next);
++    const auto* rows = (*chunks)[index].GetIfList();
++    if (!rows || rows->empty() || rows->size() > 200) return std::nullopt;
++    base::ListValue normalized;
++    for (const auto& value : *rows) {
++      if (!value.is_dict()) return std::nullopt;
++      auto entry = NormalizeEntry(*stream, value.GetDict(), true);
++      if (!entry) return std::nullopt;
++      normalized.Append(std::move(*entry));
++    }
++    std::string lower;
++    if (index > 0) {
++      const auto* previous = (*chunks)[index - 1].GetIfList();
++      if (!previous || previous->empty() || !previous->back().is_dict()) return std::nullopt;
++      const auto* id = previous->back().GetDict().FindString("id");
++      if (!id || !base::Uuid::ParseLowercase(*id).is_valid()) return std::nullopt;
++      lower = *id;
++    }
++    const auto* last = normalized.back().GetDict().FindString("id");
++    if (!last) return std::nullopt;
++    request.Set("index", static_cast<int>(index));
++    request.Set("lowerBound", lower);
++    request.Set("upperBound", index + 1 == chunks->size() ? std::string("~") : *last);
++    request.Set("entries", std::move(normalized));
++  } else if (*stage != "commit") return std::nullopt;
++  return request;
 +}
 +std::optional<base::DictValue> NormalizeEntry(std::string_view stream,
 +                                             const base::DictValue& entry,
@@ -179,6 +246,47 @@ new file mode 100644
 +  auto left = a.Clone(); auto right = b.Clone();
 +  left.Remove("revision"); right.Remove("revision");
 +  return left == right;
++}
++bool ValidateBookmarkSnapshot(const base::DictValue& entries) {
++  for (auto [id, value] : entries) {
++    const auto& row = value.GetDict();
++    if (row.FindBool("deleted").value_or(false)) continue;
++    const auto* parent_id = row.FindString("parentId");
++    if (!parent_id) return false;
++    if (*parent_id != "root:toolbar" && *parent_id != "root:other" && *parent_id != "root:mobile") {
++      const auto* parent = entries.FindDict(*parent_id);
++      if (!parent || parent->FindBool("deleted").value_or(false) || !parent->Find("url") || !parent->Find("url")->is_none()) return false;
++    }
++    if (const auto* after = row.FindString("afterId")) {
++      const auto* anchor = entries.FindDict(*after);
++      if (!anchor || anchor->FindBool("deleted").value_or(false) ||
++          !anchor->FindString("parentId") || *anchor->FindString("parentId") != *parent_id) return false;
++    }
++  }
++  for (const auto* field : {"parentId", "afterId"}) {
++    std::set<std::string> complete;
++    for (auto [id, value] : entries) {
++      if (value.GetDict().FindBool("deleted").value_or(false)) continue;
++      std::set<std::string> path;
++      std::string current(id);
++      while (!complete.contains(current)) {
++        if (!path.insert(current).second) return false;
++        const auto* row = entries.FindDict(current);
++        const auto* next = row ? row->FindString(field) : nullptr;
++        if (!next) break;
++        current = *next;
++      }
++      complete.insert(path.begin(), path.end());
++    }
++  }
++  return true;
++}
++bool HasMergeConflict(const base::DictValue* local,
++                      const base::DictValue* baseline,
++                      const base::DictValue& remote) {
++  return local && !SamePayload(*local, remote) &&
++      (!baseline || (!SamePayload(*local, *baseline) &&
++                     !SamePayload(*baseline, remote)));
 +}
 +bool PreserveLocalChange(const base::DictValue* local,
 +                         const base::DictValue* known,

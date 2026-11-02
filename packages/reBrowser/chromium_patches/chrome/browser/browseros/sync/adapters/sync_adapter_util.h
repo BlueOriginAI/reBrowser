@@ -2,7 +2,7 @@ diff --git a/chrome/browser/browseros/sync/adapters/sync_adapter_util.h b/chrome
 new file mode 100644
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/adapters/sync_adapter_util.h
-@@ -0,0 +1,34 @@
+@@ -0,0 +1,38 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license that can be
 +// found in the LICENSE file.
@@ -19,7 +19,8 @@ new file mode 100644
 +namespace browseros::sync::internal {
 +inline constexpr size_t kBookmarkTitleBytes = 2048;
 +inline constexpr size_t kHistoryTitleBytes = 1024;
-+inline constexpr size_t kMaxBatchSize = 10000;
++// One validated protocol-2 snapshot: at most 512 chunks of 200 entries.
++inline constexpr size_t kMaxBatchSize = 512 * 200;
 +
 +// No resolver/network access. Rejects non-public literals, non-unique names,
 +// internal suffixes and authorization/payment paths; strips query/fragment.
@@ -32,6 +33,9 @@ new file mode 100644
 +// Strict allowlist; normalizes first-sibling null to "" and removes revision
 +// for content comparisons. The returned dictionary never carries private fields.
 +std::optional<base::DictValue> NormalizeEntry(const base::Value& value,
++                                               bool bookmark);
++// Validates the entire snapshot before any local model/database mutation.
++std::optional<base::ListValue> NormalizeBatch(const base::ListValue& entries,
 +                                               bool bookmark);
 +base::DictValue Content(const base::DictValue& entry);
 +}  // namespace browseros::sync::internal
