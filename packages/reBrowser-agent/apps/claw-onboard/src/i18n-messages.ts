@@ -65,7 +65,7 @@ export const extraEnglish: Catalog = {
     'Open the pull requests assigned to me on GitHub and summarize each.',
   'agent.title': 'Set up your agent',
   'agent.copy':
-    'BrowserOS runs on the provider you bring. Connect an LLM provider or a coding agent harness you already use, and we will open BrowserOS so you can finish.',
+    'reBrowser runs on the provider you bring. Connect an LLM provider or a coding agent harness you already use, and we will open reBrowser so you can finish.',
   'agent.provider': 'Any LLM provider',
   'agent.harness': 'Or a coding agent harness you already use',
   'agent.acp': 'or any other ACP compatible agent',
@@ -143,7 +143,7 @@ export const extraChinese: Catalog = {
   'prompt.github': '打开 GitHub 上分配给我的拉取请求，并逐个概述。',
   'agent.title': '设置你的智能体',
   'agent.copy':
-    'BrowserOS 使用你选择的服务。连接大模型服务或已有的编程智能体工具，然后打开 BrowserOS 完成配置。',
+    'reBrowser 使用你选择的服务。连接大模型服务或已有的编程智能体工具，然后打开 reBrowser 完成配置。',
   'agent.provider': '任意大模型服务',
   'agent.harness': '或你已在使用的编程智能体工具',
   'agent.acp': '或其他兼容 ACP 的智能体',

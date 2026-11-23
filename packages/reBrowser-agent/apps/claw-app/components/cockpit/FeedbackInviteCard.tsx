@@ -219,7 +219,9 @@ export function FeedbackInviteCardView({
           {t("You're one of our most active users")}
         </p>
         <p className="text-[13px] text-cyanotype-soft leading-5">
-          {t("We'd like to hear what you use neo for and what we should fix.")}
+          {t(
+            "We'd like to hear what you use reBrowser for and what we should fix.",
+          )}
         </p>
         <div className="mt-2.5 flex flex-wrap items-center gap-2">
           <Button

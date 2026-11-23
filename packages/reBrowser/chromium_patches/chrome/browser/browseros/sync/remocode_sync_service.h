@@ -1,8 +1,9 @@
 diff --git a/chrome/browser/browseros/sync/remocode_sync_service.h b/chrome/browser/browseros/sync/remocode_sync_service.h
 new file mode 100644
+index 0000000000000000000000000000000000000000..fc45dc51fcc22fd37efe92a3e5eca8abe541e034
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/remocode_sync_service.h
-@@ -0,0 +1,128 @@
+@@ -0,0 +1,139 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#ifndef CHROME_BROWSER_BROWSEROS_SYNC_REMOCODE_SYNC_SERVICE_H_
@@ -50,6 +51,10 @@ new file mode 100644
 +  void RecordError(const base::DictValue& data);
 +  void Save();
 +  void Notify();
++  bool IsDefaultBridgeProfile() const;
++  void ClearRelayTicket();
++  void RefreshRelayTicket();
++  void OnRelayTicketResponse(int status, base::DictValue data);
 +  void WriteAccountBridge() const;
 +  void Fail(std::string operation = "failed");
 +  bool SignedIn() const;
@@ -125,10 +130,16 @@ new file mode 100644
 +  std::string operation_ = "paused";
 +  std::string deletion_nonce_;
 +  base::Time deletion_expires_;
++  std::string relay_url_;
++  std::string relay_ticket_;
++  base::Time relay_ticket_expires_;
++  bool relay_ticket_in_flight_ = false;
++  base::OneShotTimer relay_ticket_timer_;
 +  // Operation callbacks are invalidated on consent changes; lifetime observers
 +  // must survive that invalidation so re-login and re-enable remain functional.
 +  base::WeakPtrFactory<RemocodeSyncService> weak_factory_{this};
 +  base::WeakPtrFactory<RemocodeSyncService> operation_factory_{this};
++  base::WeakPtrFactory<RemocodeSyncService> relay_ticket_factory_{this};
 +};
 +}  // namespace browseros::sync
 +#endif

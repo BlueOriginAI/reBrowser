@@ -18,6 +18,8 @@ use tokio::sync::Mutex;
 use std::sync::atomic::{AtomicUsize, Ordering};
 
 const DEFAULT_POSTHOG_HOST: &str = "https://us.i.posthog.com";
+const BUILD_REBROWSER_POSTHOG_KEY: Option<&str> = option_env!("REBROWSER_POSTHOG_KEY");
+const BUILD_REBROWSER_POSTHOG_HOST: Option<&str> = option_env!("REBROWSER_POSTHOG_HOST");
 const BUILD_POSTHOG_KEY: Option<&str> = option_env!("CLAW_POSTHOG_KEY");
 const BUILD_POSTHOG_HOST: Option<&str> = option_env!("CLAW_POSTHOG_HOST");
 const REQUEST_TIMEOUT_SECONDS: u64 = 2;
@@ -31,7 +33,7 @@ const PRODUCT: &str = "product";
 const SURFACE: &str = "surface";
 const PROCESS_PERSON_PROFILE: &str = "$process_person_profile";
 const IS_SERVER: &str = "$is_server";
-const PRODUCT_BROWSERCLAW: &str = "browserclaw";
+const PRODUCT_BROWSERCLAW: &str = "rebrowser";
 const SURFACE_SERVER: &str = "server";
 
 #[derive(Debug, Clone)]
@@ -43,10 +45,14 @@ struct AnalyticsConfig {
 
 impl AnalyticsConfig {
     fn from_env() -> Self {
+        let rebrowser_key = env::var("REBROWSER_POSTHOG_KEY").ok();
         let runtime_project_key = env::var("CLAW_POSTHOG_KEY").ok();
+        let rebrowser_host = env::var("REBROWSER_POSTHOG_HOST").ok();
         let runtime_host = env::var("CLAW_POSTHOG_HOST").ok();
-        let project_key = configured_value(runtime_project_key.as_deref(), BUILD_POSTHOG_KEY);
-        let host = configured_value(runtime_host.as_deref(), BUILD_POSTHOG_HOST)
+        let project_key = configured_value(rebrowser_key.as_deref(), BUILD_REBROWSER_POSTHOG_KEY)
+            .or_else(|| configured_value(runtime_project_key.as_deref(), BUILD_POSTHOG_KEY));
+        let host = configured_value(rebrowser_host.as_deref(), BUILD_REBROWSER_POSTHOG_HOST)
+            .or_else(|| configured_value(runtime_host.as_deref(), BUILD_POSTHOG_HOST))
             .unwrap_or_else(|| DEFAULT_POSTHOG_HOST.to_string());
         let environment_enabled = env::var("CLAW_ANALYTICS_ENABLED").ok().is_none_or(|value| {
             !matches!(value.trim().to_ascii_lowercase().as_str(), "0" | "false")
@@ -482,7 +488,7 @@ mod tests {
                 "server_version": env!("CARGO_PKG_VERSION"),
                 "os_platform": events::platform_token(),
                 "install_id": stable_id,
-                "product": "browserclaw",
+                "product": "rebrowser",
                 "surface": "server",
                 "$process_person_profile": false,
                 "$is_server": true
@@ -543,7 +549,7 @@ mod tests {
                 "server_version": env!("CARGO_PKG_VERSION"),
                 "os_platform": events::platform_token(),
                 "install_id": stable_id,
-                "product": "browserclaw",
+                "product": "rebrowser",
                 "surface": "server",
                 "$process_person_profile": false,
                 "$is_server": true,

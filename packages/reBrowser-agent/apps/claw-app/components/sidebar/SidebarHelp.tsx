@@ -1,5 +1,5 @@
 import { useLocale } from '@browseros/i18n/react'
-import { Activity, BookOpen, RotateCcw } from 'lucide-react'
+import { Activity, BookOpen, MessageSquare, RotateCcw } from 'lucide-react'
 import type { ComponentType, SVGProps } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 import {
@@ -23,8 +23,13 @@ interface HelpItem {
 export const helpItems: HelpItem[] = [
   {
     name: 'Docs',
-    url: 'https://docs.browseros.com/browserclaw',
+    url: 'https://github.com/BlueOriginAI/reBrowser#readme',
     icon: BookOpen,
+  },
+  {
+    name: 'Feedback',
+    url: 'https://github.com/BlueOriginAI/reBrowser/issues/new/choose',
+    icon: MessageSquare,
   },
   {
     name: 'Revisit Onboarding',

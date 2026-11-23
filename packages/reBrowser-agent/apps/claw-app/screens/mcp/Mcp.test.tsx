@@ -198,7 +198,7 @@ describe('Mcp (editorial)', () => {
 
   it('keeps the install walkthrough closed until the callout is activated', () => {
     const html = renderApp()
-    expect(html).not.toContain('Install BrowserOS neo')
+    expect(html).not.toContain('Install reBrowser')
     expect(html).not.toContain(EXTENSION_DOWNLOAD_URL)
   })
 
@@ -245,9 +245,9 @@ describe('Mcp (editorial)', () => {
   it('scopes the skill install command to the one user-facing skill', () => {
     // `npx skills add <pack>` with no flag pulls in five skills, four of
     // them internal to this repo. Verified by running both forms.
-    expect(SKILL_INSTALL_COMMAND).toContain('--skill browseros-neo')
+    expect(SKILL_INSTALL_COMMAND).toContain('--skill rebrowser')
     expect(SKILL_INSTALL_COMMAND).toBe(
-      `npx skills add ${SKILLS_PACK} --skill browseros-neo`,
+      `npx skills add ${SKILLS_PACK} --skill rebrowser`,
     )
   })
 

@@ -11,7 +11,7 @@ index dd9d93e518b3665fa3745bf03cbc126804f55e65..63e0191dd755c2cbeb98b5a6b0b0afd8
 +
    protected onHelpClick_() {
 -    this.aboutBrowserProxy_.openHelpPage();
-+    window.open('http://docs.browseros.com/');
++    window.open('https://github.com/BlueOriginAI/reBrowser#readme');
    }
  
    protected onRelaunchClick_() {

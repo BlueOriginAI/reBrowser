@@ -1,7 +1,7 @@
 import type { Catalog } from '@browseros/i18n/core'
 
 export const en: Catalog = {
-  'app.loading': 'Loading BrowserClaw…',
+  'app.loading': 'Loading reBrowser…',
   'common.back': 'Back',
   'common.cancel': 'Cancel',
   'common.close': 'Close',
@@ -57,10 +57,10 @@ export const en: Catalog = {
   'audit.tokenCount': '{{count}} tokens',
   'skills.title': 'Tasks',
   'skills.description':
-    'Skills BrowserOS neo linked into your coding agents. Re-run one by name.',
+    'Skills reBrowser linked into your coding agents. Re-run one by name.',
   'skills.new': 'New task',
   'skills.loadError':
-    'Could not load your tasks. Check that BrowserOS neo is running and try again.',
+    'Could not load your tasks. Check that reBrowser is running and try again.',
   'skills.column.task': 'Task',
   'skills.column.runs': 'Runs',
   'skills.column.tokensSaved': 'Tokens saved',
@@ -69,7 +69,7 @@ export const en: Catalog = {
   'skills.notMeasured': 'not measured',
   'skills.emptyTitle': 'No tasks yet',
   'skills.emptyDescription':
-    'When your coding agent saves a repeatable browser task with BrowserOS neo, it shows up here, linked into your agents and re-runnable by name. You can also write one yourself.',
+    'When your coding agent saves a repeatable browser task with reBrowser, it shows up here, linked into your agents and re-runnable by name. You can also write one yourself.',
   'skills.deleting': 'Deleting {{name}}…',
   'skills.deleted': 'Deleted {{name}}',
   'skills.deleteError': 'Could not delete the task',
@@ -117,9 +117,9 @@ export const en: Catalog = {
   'mcp.resolvingEndpoint': 'Resolving the endpoint',
   'mcp.commandCopied': 'Command copied',
   'mcp.copyCommand': 'Copy command',
-  'mcp.installTitle': 'Install BrowserOS neo',
+  'mcp.installTitle': 'Install reBrowser',
   'mcp.installRequirement':
-    'To use BrowserOS neo with Claude Cowork, you need to install this extension.',
+    'To use reBrowser with Claude Cowork, you need to install this extension.',
   'mcp.stepOf': 'Step {{current}} of {{total}}',
   'mcp.screenshotLoadFailed':
     'Screenshot could not be loaded — the steps above still apply.',
@@ -129,7 +129,7 @@ export const en: Catalog = {
   'mcp.next': 'Next',
   'skillDetail.back': 'Tasks',
   'skillDetail.loadError':
-    'Could not load this task. Check that BrowserOS neo is running and try again.',
+    'Could not load this task. Check that reBrowser is running and try again.',
   'skillDetail.operatesOn': 'operates on {{site}}',
   'skillDetail.edit': 'Edit',
   'skillDetail.tokensSaved': 'Tokens saved',
@@ -156,7 +156,7 @@ export const en: Catalog = {
   'skillForm.saveFailed': 'Could not save the task',
   'skillForm.newTitle': 'New task',
   'skillForm.newDescription':
-    'A task is a skill BrowserOS neo links into your agents and you re-run by name.',
+    'A task is a skill reBrowser links into your agents and you re-run by name.',
   'skillForm.name': 'Name',
   'skillForm.namePlaceholder': 'inbox-sweep',
   'skillForm.nameHint':
@@ -188,8 +188,8 @@ export const en: Catalog = {
   'Claude Desktop Settings with Extensions selected under Desktop app and the Advanced settings button highlighted':
     'Claude Desktop Settings with Extensions selected under Desktop app and the Advanced settings button highlighted',
   Download: 'Download',
-  'Download the BrowserOS neo extension. It saves to your Downloads folder as browseros-neo-0.5.0.mcpb.':
-    'Download the BrowserOS neo extension. It saves to your Downloads folder as browseros-neo-0.5.0.mcpb.',
+  'Download the reBrowser extension. It saves to your Downloads folder as browseros-neo-0.5.0.mcpb.':
+    'Download the reBrowser extension. It saves to your Downloads folder as browseros-neo-0.5.0.mcpb.',
   'Install Extension': 'Install Extension',
   'On the Advanced settings page, scroll down to Extension Developer and click Install Extension.':
     'On the Advanced settings page, scroll down to Extension Developer and click Install Extension.',
@@ -201,13 +201,13 @@ export const en: Catalog = {
   'A macOS file picker open over Claude Desktop Settings with the downloaded .mcpb extension file listed':
     'A macOS file picker open over Claude Desktop Settings with the downloaded .mcpb extension file listed',
   'Click Install': 'Click Install',
-  'Claude shows the BrowserOS neo extension details. Click Install to finish \u2014 Claude can now drive BrowserOS neo.':
-    'Claude shows the BrowserOS neo extension details. Click Install to finish \u2014 Claude can now drive BrowserOS neo.',
-  "Claude Desktop's BrowserOS neo extension details sheet with the Install button in the top right":
-    "Claude Desktop's BrowserOS neo extension details sheet with the Install button in the top right",
+  'Claude shows the reBrowser extension details. Click Install to finish \u2014 Claude can now drive reBrowser.':
+    'Claude shows the reBrowser extension details. Click Install to finish \u2014 Claude can now drive reBrowser.',
+  "Claude Desktop's reBrowser extension details sheet with the Install button in the top right":
+    "Claude Desktop's reBrowser extension details sheet with the Install button in the top right",
   'Add the MCP server': 'Add the MCP server',
-  'Point your agent at the endpoint URL from this page and add it as a streamable HTTP MCP server named browseros-neo. Where that setting lives depends on the agent, so check its own MCP documentation.':
-    'Point your agent at the endpoint URL from this page and add it as a streamable HTTP MCP server named browseros-neo. Where that setting lives depends on the agent, so check its own MCP documentation.',
+  'Point your agent at the endpoint URL from this page and add it as a streamable HTTP MCP server named reBrowser. Where that setting lives depends on the agent, so check its own MCP documentation.':
+    'Point your agent at the endpoint URL from this page and add it as a streamable HTTP MCP server named reBrowser. Where that setting lives depends on the agent, so check its own MCP documentation.',
   'Read the URL from the top of this page rather than assuming a port. It is a loopback address and the port is not the same across builds.':
     'Read the URL from the top of this page rather than assuming a port. It is a loopback address and the port is not the same across builds.',
   'Install the skill': 'Install the skill',
@@ -240,4 +240,35 @@ export const en: Catalog = {
     'Your other devices appear here once signed in. Upgrade to reBrowser Pro to route local MCP calls to a remote computer.',
   'reroute.offline': 'Relay offline',
   'reroute.onlineCount': '{{count}} online',
+  'proHub.eyebrow': 'reBrowser Pro',
+  'proHub.titleActive': 'Cross-Device Routing & Pro Skills Active',
+  'proHub.titleUpgrade': 'Unlock Cross-Device Routing & Pro Workflows',
+  'proHub.subtitle':
+    'Route local MCP calls straight to your home or office browser—reusing live sessions, residential IP, and high-complexity verified workflows.',
+  'proHub.statusActive': 'Pro Active',
+  'proHub.statusFree': 'Free Plan',
+  'proHub.statusSignedOut': 'Signed out',
+  'proHub.ctaManage': 'Manage Pro Account',
+  'proHub.ctaUpgrade': 'Upgrade to reBrowser Pro',
+  'proHub.ctaSignIn': 'Sign in to unlock',
+  'proHub.rerouteTitle': 'Cross-Device Browser Reroute',
+  'proHub.rerouteDesc':
+    'Sign in on two computers to forward MCP browser automation transparently.',
+  'proHub.reroutePoint1': 'Zero MCP config changes on your travel laptop',
+  'proHub.reroutePoint2':
+    'Share remote logged-in sessions, residential IP & intranet',
+  'proHub.reroutePoint3':
+    'Screenshots, PDFs & large files stream straight back locally',
+  'proHub.rerouteManage': 'Configure routing',
+  'proHub.reroutePeers': 'Online peers: {{count}}',
+  'proHub.skillsTitle': 'Verified & Pro Skills Packs',
+  'proHub.skillsDesc':
+    'Curated multi-platform operations, publishing & research skills ready in one click.',
+  'proHub.skillsBrowse': 'Browse all skills',
+  'proHub.fallbackSkill1': 'Multi-Platform Content Matrix Publisher',
+  'proHub.fallbackSkill2': 'WeChat Official Account Draft Publisher',
+  Feedback: 'Feedback',
+  "We'd like to hear what you use reBrowser for and what we should fix.":
+    "We'd like to hear what you use reBrowser for and what we should fix.",
+  'proHub.fallbackSkill3': 'Feishu Reliable Large File Sender',
 }

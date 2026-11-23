@@ -16,7 +16,7 @@ export const MCPB_FILENAME = EXTENSION_DOWNLOAD_URL.slice(
 )
 
 export const COWORK_REQUIREMENT_LINE =
-  'To use BrowserOS neo with Claude Cowork, you need to install this extension.'
+  'To use reBrowser with Claude Cowork, you need to install this extension.'
 
 /**
  * Screenshots live in the `browserclaw` R2 bucket rather than the extension
@@ -64,7 +64,7 @@ export const INSTALL_STEPS: readonly InstallStep[] = [
     id: 'download',
     title: 'Download',
     kind: 'download',
-    body: `Download the BrowserOS neo extension. It saves to your Downloads folder as ${MCPB_FILENAME}.`,
+    body: `Download the reBrowser extension. It saves to your Downloads folder as ${MCPB_FILENAME}.`,
   },
   {
     id: 'install-extension',
@@ -87,10 +87,10 @@ export const INSTALL_STEPS: readonly InstallStep[] = [
   {
     id: 'confirm-install',
     title: 'Click Install',
-    body: 'Claude shows the BrowserOS neo extension details. Click Install to finish — Claude can now drive BrowserOS neo.',
+    body: 'Claude shows the reBrowser extension details. Click Install to finish — Claude can now drive reBrowser.',
     image: {
       src: `${IMAGE_BASE}/step-confirm-install.webp`,
-      alt: "Claude Desktop's BrowserOS neo extension details sheet with the Install button in the top right",
+      alt: "Claude Desktop's reBrowser extension details sheet with the Install button in the top right",
     },
   },
 ]
@@ -104,10 +104,10 @@ export const INSTALL_STEPS: readonly InstallStep[] = [
  */
 
 /** The skills.sh pack this repository publishes. */
-export const SKILLS_PACK = 'browseros-ai/browseros'
+export const SKILLS_PACK = 'BlueOriginAI/reBrowser'
 
 /** The one skill in that pack meant for users, rather than for working on this repo. */
-export const SKILL_NAME = 'browseros-neo'
+export const SKILL_NAME = 'rebrowser'
 
 /**
  * Scoped to the single skill on purpose. `npx skills add <pack>` with no
@@ -119,9 +119,10 @@ export const SKILL_NAME = 'browseros-neo'
 export const SKILL_INSTALL_COMMAND = `npx skills add ${SKILLS_PACK} --skill ${SKILL_NAME}`
 
 /** The name the MCP server should be given, matching what the skill looks for. */
-export const MCP_SERVER_NAME = 'browseros-neo'
+export const MCP_SERVER_NAME = 'reBrowser'
 
-export const MANUAL_SETUP_DOCS_URL = 'https://docs.browseros.com/neo/mcp/manual'
+export const MANUAL_SETUP_DOCS_URL =
+  'https://github.com/BlueOriginAI/reBrowser#readme'
 
 export const MANUAL_SETUP_CARD_LINE =
   'Connect it by hand: add the endpoint, then install the skill.'

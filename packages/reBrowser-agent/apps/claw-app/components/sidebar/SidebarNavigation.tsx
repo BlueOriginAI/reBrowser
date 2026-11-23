@@ -1,5 +1,5 @@
 import { useLocale } from '@browseros/i18n/react'
-import { LayoutDashboard, PlugZap, Repeat, ScrollText } from 'lucide-react'
+import { LayoutDashboard, PlugZap, Repeat } from 'lucide-react'
 import type { ComponentType, SVGProps } from 'react'
 import { NavLink, useLocation } from 'react-router'
 import {
@@ -14,7 +14,7 @@ export interface SidebarNavigationProps {
 }
 
 interface NavItem {
-  nameKey: 'nav.cockpit' | 'nav.mcp' | 'nav.tasks' | 'nav.audit'
+  nameKey: 'nav.cockpit' | 'nav.mcp' | 'nav.tasks'
   to: string
   icon: ComponentType<SVGProps<SVGSVGElement>>
 }
@@ -23,7 +23,6 @@ const navItems: NavItem[] = [
   { nameKey: 'nav.cockpit', to: '/', icon: LayoutDashboard },
   { nameKey: 'nav.mcp', to: '/mcp', icon: PlugZap },
   { nameKey: 'nav.tasks', to: '/skills', icon: Repeat },
-  { nameKey: 'nav.audit', to: '/audit', icon: ScrollText },
 ]
 
 function isNavItemActive(item: NavItem, pathname: string): boolean {
@@ -47,8 +46,9 @@ export function SidebarNavigation({ expanded = true }: SidebarNavigationProps) {
             <NavLink
               to={item.to}
               className={cn(
-                'flex h-9 items-center gap-3 overflow-hidden whitespace-nowrap rounded-md px-2.5 font-medium text-sm transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground',
-                isActive && 'bg-sidebar-accent text-sidebar-accent-foreground',
+                'relative flex h-9 items-center gap-3 overflow-hidden whitespace-nowrap rounded-lg px-2.5 font-medium text-sm transition-all hover:bg-sidebar-accent/70 hover:text-sidebar-accent-foreground',
+                isActive &&
+                  'bg-primary/10 font-semibold text-primary hover:bg-primary/15 hover:text-primary',
               )}
             >
               <Icon className="size-5 shrink-0" />

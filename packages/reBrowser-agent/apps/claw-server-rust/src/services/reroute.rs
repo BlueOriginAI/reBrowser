@@ -20,7 +20,7 @@ use std::{
 use tokio::sync::{Mutex, RwLock, mpsc, oneshot};
 use tokio_tungstenite::{connect_async, tungstenite::Message};
 use tokio_util::sync::CancellationToken;
-use tracing::warn;
+use tracing::{info, warn};
 use uuid::Uuid;
 
 const SETTINGS_FILENAME: &str = "reroute-settings.json";
@@ -431,6 +431,7 @@ impl RerouteService {
         bridge: &AccountBridgeSnapshot,
         shutdown: CancellationToken,
     ) -> AppResult<()> {
+        let _ = rustls::crypto::ring::default_provider().install_default();
         let separator = if relay_url.contains('?') { '&' } else { '?' };
         let ws_url = format!("{relay_url}{separator}ticket={ticket}");
         let (stream, _) = connect_async(&ws_url)
@@ -451,6 +452,7 @@ impl RerouteService {
 
         *self.outbound_tx.write().await = Some(tx);
         self.relay_connected.store(true, Ordering::SeqCst);
+        info!(relay_url, "connected to reBrowser reroute relay");
 
         let self_iid = bridge.installation_id.clone();
         let this_writer = Arc::clone(self);

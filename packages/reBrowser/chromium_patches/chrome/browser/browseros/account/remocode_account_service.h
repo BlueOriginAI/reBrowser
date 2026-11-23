@@ -1,8 +1,9 @@
 diff --git a/chrome/browser/browseros/account/remocode_account_service.h b/chrome/browser/browseros/account/remocode_account_service.h
 new file mode 100644
+index 0000000000000000000000000000000000000000..9e72f16cee24c134c9acb06473ba2182a29a6395
 --- /dev/null
 +++ b/chrome/browser/browseros/account/remocode_account_service.h
-@@ -0,0 +1,122 @@
+@@ -0,0 +1,130 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#ifndef CHROME_BROWSER_BROWSEROS_ACCOUNT_REMOCODE_ACCOUNT_SERVICE_H_
@@ -55,7 +56,15 @@ new file mode 100644
 +  friend class AccountServiceTestPeer;
 +  // Native-only capability: WebUI cannot choose URL, origin or bearer.
 +  friend class browseros::sync::RemocodeSyncService;
-+  enum class SyncEndpoint { kStatus, kEnrollment, kSession, kPull, kPush, kDelete };
++  enum class SyncEndpoint {
++    kStatus,
++    kEnrollment,
++    kSession,
++    kPull,
++    kPush,
++    kDelete,
++    kRelayTicket,
++  };
 +  using SyncCallback = base::OnceCallback<void(int, base::DictValue)>;
 +  struct SyncRequest {
 +    SyncEndpoint endpoint;

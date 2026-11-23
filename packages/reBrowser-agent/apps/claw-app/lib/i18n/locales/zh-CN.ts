@@ -1,7 +1,7 @@
 import type { Catalog } from '@browseros/i18n/core'
 
 export const zhCN: Catalog = {
-  'app.loading': '正在加载 BrowserClaw…',
+  'app.loading': '正在加载 reBrowser…',
   'common.back': '返回',
   'common.cancel': '取消',
   'common.close': '关闭',
@@ -57,9 +57,9 @@ export const zhCN: Catalog = {
   'audit.tokenCount': '{{count}} 个令牌',
   'skills.title': '任务',
   'skills.description':
-    '由 BrowserOS neo 连接到编码智能体的技能。可按名称再次运行。',
+    '由 reBrowser 连接到编码智能体的技能。可按名称再次运行。',
   'skills.new': '新建任务',
-  'skills.loadError': '无法加载任务。请确认 BrowserOS neo 正在运行，然后重试。',
+  'skills.loadError': '无法加载任务。请确认 reBrowser 正在运行，然后重试。',
   'skills.column.task': '任务',
   'skills.column.runs': '运行次数',
   'skills.column.tokensSaved': '节省的令牌',
@@ -68,7 +68,7 @@ export const zhCN: Catalog = {
   'skills.notMeasured': '未统计',
   'skills.emptyTitle': '暂无任务',
   'skills.emptyDescription':
-    '当编码智能体使用 BrowserOS neo 保存可重复的浏览任务后，它会显示在这里，并连接到你的智能体，可按名称再次运行。你也可以自行编写一个。',
+    '当编码智能体使用 reBrowser 保存可重复的浏览任务后，它会显示在这里，并连接到你的智能体，可按名称再次运行。你也可以自行编写一个。',
   'skills.deleting': '正在删除 {{name}}…',
   'skills.deleted': '已删除 {{name}}',
   'skills.deleteError': '无法删除该任务',
@@ -114,9 +114,9 @@ export const zhCN: Catalog = {
   'mcp.resolvingEndpoint': '正在解析端点',
   'mcp.commandCopied': '命令已复制',
   'mcp.copyCommand': '复制命令',
-  'mcp.installTitle': '安装 BrowserOS neo',
+  'mcp.installTitle': '安装 reBrowser',
   'mcp.installRequirement':
-    '若要在 Claude Cowork 中使用 BrowserOS neo，需要安装此扩展。',
+    '若要在 Claude Cowork 中使用 reBrowser，需要安装此扩展。',
   'mcp.stepOf': '第 {{current}} 步，共 {{total}} 步',
   'mcp.screenshotLoadFailed': '无法加载截图，但仍可按照上方步骤完成操作。',
   'mcp.downloadExtension': '下载扩展',
@@ -125,7 +125,7 @@ export const zhCN: Catalog = {
   'mcp.next': '下一步',
   'skillDetail.back': '任务',
   'skillDetail.loadError':
-    '无法加载此任务。请确认 BrowserOS neo 正在运行，然后重试。',
+    '无法加载此任务。请确认 reBrowser 正在运行，然后重试。',
   'skillDetail.operatesOn': '适用网站：{{site}}',
   'skillDetail.edit': '编辑',
   'skillDetail.tokensSaved': '节省的令牌',
@@ -152,7 +152,7 @@ export const zhCN: Catalog = {
   'skillForm.saveFailed': '无法保存任务',
   'skillForm.newTitle': '新建任务',
   'skillForm.newDescription':
-    '任务是 BrowserOS neo 连接到你的智能体、可按名称再次运行的技能。',
+    '任务是 reBrowser 连接到你的智能体、可按名称再次运行的技能。',
   'skillForm.name': '名称',
   'skillForm.namePlaceholder': 'inbox-sweep',
   'skillForm.nameHint':
@@ -184,8 +184,8 @@ export const zhCN: Catalog = {
   'Claude Desktop Settings with Extensions selected under Desktop app and the Advanced settings button highlighted':
     'Claude Desktop 设置：在“桌面应用”下选中了“扩展”，并高亮显示“高级设置”按钮。',
   Download: '下载',
-  'Download the BrowserOS neo extension. It saves to your Downloads folder as browseros-neo-0.5.0.mcpb.':
-    '下载 BrowserOS neo 扩展。它将以 browseros-neo-0.5.0.mcpb 保存到“下载”文件夹。',
+  'Download the reBrowser extension. It saves to your Downloads folder as browseros-neo-0.5.0.mcpb.':
+    '下载 reBrowser 扩展。它将以 browseros-neo-0.5.0.mcpb 保存到“下载”文件夹。',
   'Install Extension': '安装扩展',
   'On the Advanced settings page, scroll down to Extension Developer and click Install Extension.':
     '在“高级设置”页面中，向下滚动到“扩展开发者”，然后点击“安装扩展”。',
@@ -197,13 +197,13 @@ export const zhCN: Catalog = {
   'A macOS file picker open over Claude Desktop Settings with the downloaded .mcpb extension file listed':
     '覆盖在 Claude Desktop 设置上的 macOS 文件选择器，其中列出了下载的 .mcpb 扩展文件。',
   'Click Install': '点击安装',
-  'Claude shows the BrowserOS neo extension details. Click Install to finish — Claude can now drive BrowserOS neo.':
-    'Claude 会显示 BrowserOS neo 扩展详情。点击“安装”即可完成；之后 Claude 可以驱动 BrowserOS neo。',
-  "Claude Desktop's BrowserOS neo extension details sheet with the Install button in the top right":
-    'Claude Desktop 的 BrowserOS neo 扩展详情面板，右上角有“安装”按钮。',
+  'Claude shows the reBrowser extension details. Click Install to finish — Claude can now drive reBrowser.':
+    'Claude 会显示 reBrowser 扩展详情。点击“安装”即可完成；之后 Claude 可以驱动 reBrowser。',
+  "Claude Desktop's reBrowser extension details sheet with the Install button in the top right":
+    'Claude Desktop 的 reBrowser 扩展详情面板，右上角有“安装”按钮。',
   'Add the MCP server': '添加 MCP 服务器',
-  'Point your agent at the endpoint URL from this page and add it as a streamable HTTP MCP server named browseros-neo. Where that setting lives depends on the agent, so check its own MCP documentation.':
-    '让智能体使用本页端点 URL，并将其添加为名为 browseros-neo 的流式 HTTP MCP 服务器。不同智能体的设置位置不同，请查阅其 MCP 文档。',
+  'Point your agent at the endpoint URL from this page and add it as a streamable HTTP MCP server named reBrowser. Where that setting lives depends on the agent, so check its own MCP documentation.':
+    '让智能体使用本页端点 URL，并将其添加为名为 reBrowser 的流式 HTTP MCP 服务器。不同智能体的设置位置不同，请查阅其 MCP 文档。',
   'Read the URL from the top of this page rather than assuming a port. It is a loopback address and the port is not the same across builds.':
     '请从本页顶部读取 URL，而不要假定端口。它是回环地址，且不同构建的端口并不相同。',
   'Install the skill': '安装技能',
@@ -235,4 +235,33 @@ export const zhCN: Catalog = {
     '登录即可看到其他在线电脑；升级 reBrowser Pro 后可零配置将本机 MCP 操作路由到家里或公司主机执行。',
   'reroute.offline': '中继未连接',
   'reroute.onlineCount': '{{count}} 台在线',
+  'proHub.eyebrow': 'reBrowser Pro 会员权益',
+  'proHub.titleActive': '跨设备路由与高阶商业技能已激活',
+  'proHub.titleUpgrade': '解锁跨设备浏览器路由与高阶自动化技能',
+  'proHub.subtitle':
+    '控制端零配置一键调度远端主力机浏览器，直接复用已登录会话、住宅 IP 与多平台高阶工作流。',
+  'proHub.statusActive': 'Pro 已激活',
+  'proHub.statusFree': '免费版',
+  'proHub.statusSignedOut': '未登录',
+  'proHub.ctaManage': '管理 Pro 账号',
+  'proHub.ctaUpgrade': '升级 reBrowser Pro',
+  'proHub.ctaSignIn': '登录解锁权益',
+  'proHub.rerouteTitle': '同账号跨设备浏览器路由',
+  'proHub.rerouteDesc':
+    '双端登录同一账号即可透明路由 MCP 调用到远端主力电脑执行。',
+  'proHub.reroutePoint1': '本地 Agent 零改配置，一键切换执行电脑',
+  'proHub.reroutePoint2': '直连远端微信/飞书/电商后台会话、住宅 IP 与内网',
+  'proHub.reroutePoint3': '远端截图、PDF 与大文件自动分片回传落盘至本机',
+  'proHub.rerouteManage': '配置设备路由',
+  'proHub.reroutePeers': '当前在线主机：{{count}} 台',
+  'proHub.skillsTitle': '官方 & Pro 精选技能包',
+  'proHub.skillsDesc':
+    '经过实测验证的高复杂度多平台运营、学术与内容矩阵技能一键安装。',
+  'proHub.skillsBrowse': '浏览全部技能',
+  'proHub.fallbackSkill1': '多平台内容矩阵同步分发',
+  'proHub.fallbackSkill2': '微信公众号自动排版存草稿',
+  Feedback: '反馈',
+  "We'd like to hear what you use reBrowser for and what we should fix.":
+    '我们很想听听你用 reBrowser 做什么，以及有哪些需要改进的地方。',
+  'proHub.fallbackSkill3': '飞书大文件完整直发与校验',
 }

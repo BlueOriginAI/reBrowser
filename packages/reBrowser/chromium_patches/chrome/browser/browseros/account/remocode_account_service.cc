@@ -1,8 +1,9 @@
 diff --git a/chrome/browser/browseros/account/remocode_account_service.cc b/chrome/browser/browseros/account/remocode_account_service.cc
 new file mode 100644
+index 0000000000000000000000000000000000000000..62652c618cd7147fdb55c9ea1be52d76e764de8d
 --- /dev/null
 +++ b/chrome/browser/browseros/account/remocode_account_service.cc
-@@ -0,0 +1,582 @@
+@@ -0,0 +1,587 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#include "chrome/browser/browseros/account/remocode_account_service.h"
@@ -530,9 +531,14 @@ new file mode 100644
 +    case SyncEndpoint::kPull: path = "/pull"; break;
 +    case SyncEndpoint::kPush: path = "/push"; break;
 +    case SyncEndpoint::kDelete: path = "/delete"; break;
++    case SyncEndpoint::kRelayTicket: break;
 +  }
 +  auto request = std::make_unique<network::ResourceRequest>();
-+  request->url = GURL(std::string("https://remocode.cc/account/api/desktop/sync") + path);
++  if (pending.endpoint == SyncEndpoint::kRelayTicket) {
++    request->url = GURL("https://reroute.remocode.cc/v1/rebrowser/ticket");
++  } else {
++    request->url = GURL(std::string("https://remocode.cc/account/api/desktop/sync") + path);
++  }
 +  request->method = pending.endpoint == SyncEndpoint::kStatus ? "GET" : "POST";
 +  request->credentials_mode = network::mojom::CredentialsMode::kOmit;
 +  request->redirect_mode = network::mojom::RedirectMode::kError;

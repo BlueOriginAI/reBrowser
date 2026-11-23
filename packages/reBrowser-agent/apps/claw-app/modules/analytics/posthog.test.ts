@@ -101,7 +101,7 @@ describe('BrowserClaw PostHog privacy', () => {
         initiatorType: 'fetch',
       }),
     ).toEqual({
-      name: 'browserclaw://redacted',
+      name: 'rebrowser://redacted',
       initiatorType: 'fetch',
     })
   })

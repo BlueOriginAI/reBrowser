@@ -31,6 +31,7 @@ const POSTHOG_KEY_MARKER: Option<&str> = option_env!("CLAW_POSTHOG_KEY_MARKER");
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
+    let _ = rustls::crypto::ring::default_provider().install_default();
     std::hint::black_box(VERSION_MARKER);
     std::hint::black_box(managed_instance::POLICY_MARKER);
     std::hint::black_box(claw_server_rust::api::http::HTTP_REQUEST_POLICY_MARKER);

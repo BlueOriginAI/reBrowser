@@ -29,7 +29,7 @@ const COHORT_FLAG_KEY: &str = "feedback-call-cohort";
 /// Deliberately constant rather than the installation id. The payload is identical for
 /// everyone, so sending the real id would tell PostHog which installations are polling
 /// without changing the answer.
-const REMOTE_CONFIG_IDENTITY: &str = "browserclaw-remote-config";
+const REMOTE_CONFIG_IDENTITY: &str = "rebrowser-remote-config";
 
 /// Overrides the PostHog source with a plain JSON document. For local testing, and as an
 /// escape hatch if remote configuration is ever unavailable.

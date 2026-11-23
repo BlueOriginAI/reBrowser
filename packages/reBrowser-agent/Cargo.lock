@@ -506,6 +506,7 @@ dependencies = [
  "reqwest 0.12.28",
  "ress",
  "rmcp",
+ "rustls",
  "sea-orm",
  "sea-orm-migration",
  "sentry",

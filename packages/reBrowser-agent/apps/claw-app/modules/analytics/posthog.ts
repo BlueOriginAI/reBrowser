@@ -28,13 +28,16 @@
 import posthog, { type PostHog, type PostHogConfig } from 'posthog-js'
 import 'posthog-js/dist/posthog-recorder'
 
-const KEY = import.meta.env.VITE_CLAW_POSTHOG_KEY as string | undefined
+const KEY =
+  (import.meta.env.VITE_REBROWSER_POSTHOG_KEY as string | undefined) ||
+  (import.meta.env.VITE_CLAW_POSTHOG_KEY as string | undefined)
 // Optional release secrets arrive as empty strings. Passing one to PostHog
 // overrides its default host and resolves requests against chrome-extension://.
 const HOST =
+  (import.meta.env.VITE_REBROWSER_POSTHOG_HOST as string | undefined)?.trim() ||
   (import.meta.env.VITE_CLAW_POSTHOG_HOST as string | undefined)?.trim() ||
   'https://us.i.posthog.com'
-const REDACTED_REPLAY_URL = 'browserclaw://redacted'
+const REDACTED_REPLAY_URL = 'rebrowser://redacted'
 
 /** Auto-added properties that could carry a url/referrer; always removed. */
 const STRIPPED_PROPS = [

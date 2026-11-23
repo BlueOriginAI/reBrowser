@@ -253,15 +253,20 @@ describe('Cockpit (v2)', () => {
     }
   })
 
-  it('renders measured idle stats between the hero and recent activity', () => {
+  it('renders measured idle stats with hero in header between the hero and recent activity', () => {
     const html = renderApp({ stats: 'measured' })
+    const document = parseHTML(html).document
+    const header = document.querySelector('[data-saved-stats-header]')
+
+    expect(header?.querySelector('[data-cockpit-hero]')).not.toBeNull()
+    expect(html).not.toContain('Since you started')
 
     const heroIndex = html.indexOf('working on')
-    const savedStatsIndex = html.indexOf('Since you started')
+    const savedStatsCardIndex = html.indexOf('data-saved-stats-card')
     const recentActivityIndex = html.indexOf('Recent activity')
     expect(heroIndex).toBeGreaterThan(-1)
-    expect(savedStatsIndex).toBeGreaterThan(heroIndex)
-    expect(recentActivityIndex).toBeGreaterThan(savedStatsIndex)
+    expect(savedStatsCardIndex).toBeGreaterThan(heroIndex)
+    expect(recentActivityIndex).toBeGreaterThan(savedStatsCardIndex)
     expect(html).not.toContain('Running now')
     expect(statsQueryEnabled()).toBe(true)
   })
@@ -273,6 +278,7 @@ describe('Cockpit (v2)', () => {
     })
 
     expect(html).toContain('Running now')
+    expect(html).not.toContain('data-saved-stats')
     expect(html).not.toContain('Since you started')
     expect(statsQueryEnabled()).toBe(false)
   })
@@ -286,6 +292,7 @@ describe('Cockpit (v2)', () => {
     expect(firstRun).toContain('You watch. Your agent')
     expect(firstRun).toContain('Hand off your first task')
     expect(firstRun).toContain('feed-onboarding/first-run-demo.mp4')
+    expect(firstRun).not.toContain('data-saved-stats')
     expect(firstRun).not.toContain('Since you started')
     expect(statsQueryEnabled()).toBe(false)
 
@@ -296,6 +303,7 @@ describe('Cockpit (v2)', () => {
     })
     expect(waiting).toContain('Waiting for your first run')
     expect(waiting).toContain('Manage agents')
+    expect(waiting).not.toContain('data-saved-stats')
     expect(waiting).not.toContain('Since you started')
     expect(statsQueryEnabled()).toBe(false)
   })
@@ -305,6 +313,7 @@ describe('Cockpit (v2)', () => {
       const html = renderApp({ stats })
 
       expect(html).toContain('Recent activity')
+      expect(html).not.toContain('data-saved-stats')
       expect(html).not.toContain('Since you started')
       expect(html).not.toContain('Running now')
       expect(statsQueryEnabled()).toBe(true)
@@ -320,6 +329,7 @@ describe('Cockpit (v2)', () => {
 
     expect(html).toContain('Recent activity')
     expect(html).toContain('No recent activity')
+    expect(html).not.toContain('data-saved-stats')
     expect(html).not.toContain('Since you started')
     expect(statsQueryEnabled()).toBe(false)
   })
@@ -343,8 +353,22 @@ describe('Cockpit (v2)', () => {
     expect(html).toContain('data-stop-session="session-connected"')
     expect(html).not.toContain('You watch. Your agent')
     expect(html).not.toContain('Set up MCP endpoint')
+    expect(html).not.toContain('data-saved-stats')
     expect(html).not.toContain('Since you started')
     expect(statsQueryEnabled()).toBe(false)
+  })
+
+  it('places stats and activity on the left and ProShowcaseHub on the right', () => {
+    const html = renderApp({ stats: 'measured' })
+    const layoutIdx = html.indexOf('data-testid="cockpit-main-layout"')
+    const statsCardIdx = html.indexOf('data-saved-stats-card')
+    const activityIdx = html.indexOf('Recent activity')
+    const proHubIdx = html.indexOf('data-testid="pro-showcase-hub"')
+
+    expect(layoutIdx).toBeGreaterThan(-1)
+    expect(statsCardIdx).toBeGreaterThan(layoutIdx)
+    expect(activityIdx).toBeGreaterThan(statsCardIdx)
+    expect(proHubIdx).toBeGreaterThan(activityIdx)
   })
 })
 

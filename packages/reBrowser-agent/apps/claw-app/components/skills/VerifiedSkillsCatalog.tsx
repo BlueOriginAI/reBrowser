@@ -1,6 +1,6 @@
 import { useLocale } from '@browseros/i18n/react'
 import { useQueryClient } from '@tanstack/react-query'
-import { Check, Download, Sparkles } from 'lucide-react'
+import { Check, Crown, Download, ShieldCheck, Sparkles } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
@@ -57,13 +57,19 @@ export function VerifiedSkillsCatalog() {
   }
 
   return (
-    <section className="flex flex-col gap-4 pt-4">
+    <section className="flex flex-col gap-4 pt-6">
       <header className="flex flex-col gap-1">
         <div className="flex items-center gap-2">
-          <Sparkles className="size-4 text-primary" />
-          <h2 className="font-bold text-ink text-lg">
+          <div className="flex size-7 items-center justify-center rounded-lg bg-primary/12 text-primary">
+            <Sparkles className="size-4" />
+          </div>
+          <h2 className="font-bold text-ink text-lg tracking-tight">
             {t('skills.catalog.title')}
           </h2>
+          <span className="inline-flex items-center gap-1 rounded-full bg-green-tint px-2 py-0.5 font-medium text-[11px] text-green">
+            <ShieldCheck className="size-3" />
+            Verified
+          </span>
         </div>
         <p className="text-ink-2 text-sm">{t('skills.catalog.subtitle')}</p>
       </header>
@@ -71,13 +77,13 @@ export function VerifiedSkillsCatalog() {
       {notice ? (
         <div
           role="status"
-          className="rounded-9 border border-primary/30 bg-card-tint px-4 py-3 text-ink text-sm"
+          className="rounded-xl border border-primary/30 bg-card-tint px-4 py-3 text-ink text-sm"
         >
           {notice}
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {items.map((item) => {
           const title = isZh ? item.title.zh : item.title.en
           const description = isZh ? item.description.zh : item.description.en
@@ -87,33 +93,36 @@ export function VerifiedSkillsCatalog() {
             <div
               key={item.id}
               data-testid={`catalog-skill-${item.id}`}
-              className="flex flex-col justify-between gap-3 rounded-9 border border-ledger-border bg-card p-4"
+              className="flex flex-col justify-between gap-4 rounded-2xl border border-border bg-card p-5 shadow-card transition-colors hover:border-primary/40"
             >
-              <div className="flex flex-col gap-1.5">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-ink text-sm">
+              <div className="flex flex-col gap-2">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-semibold text-base text-ink leading-snug">
                     {title}
                   </span>
                   {item.proOnly ? (
-                    <span className="rounded bg-primary/10 px-1.5 py-0.5 font-semibold text-[11px] text-primary">
+                    <span className="inline-flex shrink-0 items-center gap-1 rounded-full bg-primary/12 px-2 py-0.5 font-bold text-[11px] text-primary">
+                      <Crown className="size-3" />
                       {t('skills.catalog.proBadge')}
                     </span>
                   ) : null}
                 </div>
-                <p className="line-clamp-2 text-ink-2 text-xs">{description}</p>
+                <p className="line-clamp-2 text-ink-2 text-xs leading-relaxed">
+                  {description}
+                </p>
               </div>
 
-              <div className="flex items-center justify-between gap-2 border-ledger-divider border-t pt-3">
-                <div className="flex flex-wrap items-center gap-2 text-[11.5px] text-ink-3">
-                  <span className="rounded bg-muted px-1.5 py-0.5 font-mono">
+              <div className="flex items-center justify-between gap-3 border-border border-t pt-3.5">
+                <div className="flex flex-wrap items-center gap-1.5 text-[11px] text-ink-3">
+                  <span className="rounded-md border border-border bg-muted px-2 py-0.5 font-mono text-ink-2">
                     {item.site}
                   </span>
-                  <span>
+                  <span className="rounded-md bg-card-tint px-2 py-0.5 text-ink-2">
                     {t('skills.catalog.tokensSaved', {
                       count: formatTokens(item.avgTokensSaved, locale),
                     })}
                   </span>
-                  <span>
+                  <span className="px-1">
                     {t('skills.catalog.verifiedRuns', {
                       count: item.verifiedCleanRuns,
                     })}
@@ -129,7 +138,7 @@ export function VerifiedSkillsCatalog() {
                   }
                   disabled={busy || (item.installed && !item.updateAvailable)}
                   onClick={() => handleInstall(item)}
-                  className="shrink-0 rounded-9"
+                  className="shrink-0 rounded-full px-3.5"
                 >
                   {item.installed && !item.updateAvailable ? (
                     <>

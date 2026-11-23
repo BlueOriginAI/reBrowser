@@ -14,35 +14,11 @@ import { SupportingTile } from './SupportingTile'
 const HOME_GRID_COUNT = 6
 const HOME_TASK_LIMIT = 12
 
-// The header collapses the body, and the choice is remembered per machine so a
-// section collapsed once stays collapsed on every new tab after it. Default is
-// expanded, so a first run still shows that activity exists. Same localStorage
-// shape as ProductHuntBanner, try/catch included: a tab without storage access
-// must fall back to the default rather than throw.
-const COLLAPSED_KEY = 'cockpitRecentActivityCollapsed'
 const BODY_ID = 'recent-activity-body'
-
-function readCollapsed(): boolean {
-  try {
-    return localStorage.getItem(COLLAPSED_KEY) === 'true'
-  } catch {
-    return false
-  }
-}
-
-function persistCollapsed(collapsed: boolean): void {
-  try {
-    localStorage.setItem(COLLAPSED_KEY, collapsed ? 'true' : 'false')
-  } catch {
-    // A tab without storage access simply forgets the preference.
-  }
-}
 
 export function RecentActivity() {
   const { t } = useLocale()
-  // Lazy initialiser: the persisted value is read during the first render, so
-  // a collapsed section never flashes open on mount.
-  const [collapsed, setCollapsed] = useState(readCollapsed)
+  const [collapsed, setCollapsed] = useState(false)
   const query = useSessions({
     variables: { limit: HOME_TASK_LIMIT },
     // Homepage feed: poll so new sessions surface without a manual refresh.
@@ -55,9 +31,7 @@ export function RecentActivity() {
   const ordered = orderByLiveThenRecency(tasks)
 
   const handleToggle = () => {
-    const next = !collapsed
-    setCollapsed(next)
-    persistCollapsed(next)
+    setCollapsed((prev) => !prev)
   }
 
   return (
@@ -166,7 +140,7 @@ function ActivityBody({
   const listTasks = tasks.slice(HOME_GRID_COUNT)
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3">
         {gridTasks.map((task) => (
           <SupportingTile key={task.sessionId} task={task} now={now} />
         ))}
@@ -227,7 +201,7 @@ function ActivityList({ tasks, now }: { tasks: TaskSummary[]; now: number }) {
 
 function ActivityGridSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 2xl:grid-cols-3">
       {['s1', 's2', 's3', 's4', 's5', 's6'].map((id) => (
         <Skeleton key={id} className="min-h-[240px] rounded-[9px]" />
       ))}

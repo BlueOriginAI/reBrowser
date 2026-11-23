@@ -44,6 +44,7 @@ thiserror.workspace = true
 time.workspace = true
 tempfile.workspace = true
 tokio.workspace = true
+rustls.workspace = true
 tokio-tungstenite.workspace = true
 tokio-util.workspace = true
 toml.workspace = true

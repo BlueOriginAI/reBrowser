@@ -1,7 +1,7 @@
 import { CockpitHero } from '@/components/cockpit/CockpitHero'
 import { CockpitOnboarding } from '@/components/cockpit/CockpitOnboarding'
 import { FeedbackInviteCard } from '@/components/cockpit/FeedbackInviteCard'
-import { ProductHuntBanner } from '@/components/cockpit/ProductHuntBanner'
+import { ProShowcaseHub } from '@/components/cockpit/ProShowcaseHub'
 import { RecentActivity } from '@/components/cockpit/RecentActivity'
 import { RunningGrid } from '@/components/cockpit/RunningGrid'
 import { SavedStatsBand } from '@/components/cockpit/SavedStatsBand'
@@ -74,25 +74,45 @@ export function Cockpit() {
 
   const content =
     state !== 'ready' ? (
-      <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-8 px-8 pt-12 pb-16">
-        <ProductHuntBanner />
-        <FeedbackInviteCard />
-        <CockpitOnboarding
-          state={state}
-          connectedHarnesses={connectedHarnesses}
-        />
+      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-6 pt-5 pb-16 lg:px-8">
+        <div
+          data-testid="cockpit-main-layout"
+          className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_480px] xl:grid-cols-[minmax(0,1fr)_540px] 2xl:grid-cols-[minmax(0,1fr)_580px]"
+        >
+          <div className="flex min-w-0 flex-col gap-6">
+            <FeedbackInviteCard />
+            <CockpitOnboarding
+              state={state}
+              connectedHarnesses={connectedHarnesses}
+            />
+          </div>
+          <aside className="min-w-0 lg:sticky lg:top-5">
+            <ProShowcaseHub />
+          </aside>
+        </div>
       </div>
     ) : (
-      <div className="mx-auto flex w-full max-w-[1040px] flex-col gap-8 px-8 pt-12 pb-16">
-        <CockpitHero />
-        {shouldLoadStats && stats.data?.hasMeasuredStats ? (
-          <SavedStatsBand stats={stats.data} />
-        ) : (
-          <RunningGrid sessions={sessions} />
-        )}
-        <ProductHuntBanner />
-        <FeedbackInviteCard />
-        <RecentActivity />
+      <div className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-6 pt-5 pb-16 lg:px-8">
+        <div
+          data-testid="cockpit-main-layout"
+          className="grid grid-cols-1 items-start gap-8 lg:grid-cols-[minmax(0,1fr)_480px] xl:grid-cols-[minmax(0,1fr)_540px] 2xl:grid-cols-[minmax(0,1fr)_580px]"
+        >
+          <div className="flex min-w-0 flex-col gap-6">
+            {shouldLoadStats && stats.data?.hasMeasuredStats ? (
+              <SavedStatsBand stats={stats.data} leading={<CockpitHero />} />
+            ) : (
+              <>
+                <CockpitHero />
+                <RunningGrid sessions={sessions} />
+              </>
+            )}
+            <FeedbackInviteCard />
+            <RecentActivity />
+          </div>
+          <aside className="min-w-0 lg:sticky lg:top-5">
+            <ProShowcaseHub />
+          </aside>
+        </div>
       </div>
     )
 

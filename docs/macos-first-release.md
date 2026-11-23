@@ -6,6 +6,15 @@
 
 后续版本使用本机已保留的 Chromium 增量构建链。先核对实际编译源码和组件版本，再在独立 staging 中签名、公证、打包及校验，最后创建对应版本的 draft、上传并核验后公开。以下版本记录为历史发行依据。
 
+## 0.1.6 界面改版、品牌重塑与安全加固
+
+本版在保留原生跨设备路由与认证技能框架的基础上，完成以下重点更新：
+
+- **Cockpit UI 改版**：右侧整合为 `ProShowcaseHub`（精选技能包与跨设备浏览器路由上下堆叠），顶部状态栏布局紧凑化，“最近活动”默认展开，并将“审计”入口移至侧边栏左下角。
+- **跨设备中继自动票据签发与稳定连接**：完善 `RemocodeAccountService` 与 `RemocodeSyncService` 自动签发/刷新云端中继票据并写入 `.browseros/account-bridge.json`（`0600` 权限）；修复 `claw-server-rust` 中 `rustls 0.23` CryptoProvider 初始化问题以保障中继 WebSocket 稳定建连。
+- **全量 reBrowser 品牌替换与安全隔离**：界面、诊断文案及 Chromium 关于/引导页统一更名为 `reBrowser`；文档与反馈入口指向本仓库 GitHub 页面与 Issues；清空 Chromium 内置上游 BrowserOS PostHog Key（空 Key 时安全早退）；私有云端中继服务源码及商业化规划已迁入私有仓库 `BlueOriginAI/remocode-saas` 维护（发布构建按本机配置注入自有 PostHog 项目标识，不向仓库写入任何密钥）。
+- **组件版本**：本次项目发行版本为 `0.1.6`，Chromium 显示版本为 `151.0.8163.137`，Rust 后端为 `0.0.63`，内置扩展为 `0.2.40`。
+
 ## 0.1.5 跨设备浏览器路由与认证技能目录
 
 本版取消设置页旧云同步前端控制项，新增两项核心商业化与账号能力：

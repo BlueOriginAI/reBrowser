@@ -25,12 +25,13 @@ describe('SidebarHelp', () => {
     )
     expect(html).toContain('帮助')
     expect(html).toContain('文档')
+    expect(html).toContain('反馈')
     expect(html).toContain('重新查看引导')
     expect(html).toContain('诊断')
     expect(html).not.toContain('Revisit Onboarding')
   })
 
-  it('renders the help label and both entries when expanded', () => {
+  it('renders the help label and all entries when expanded', () => {
     const html = renderToStaticMarkup(
       <TooltipProvider>
         <MemoryRouter initialEntries={['/diagnostics']}>
@@ -40,14 +41,19 @@ describe('SidebarHelp', () => {
     )
     expect(html).toContain('Help')
     expect(html).toContain('Docs')
+    expect(html).toContain('Feedback')
     expect(html).toContain('Revisit Onboarding')
     expect(html).toContain('Diagnostics')
     expect(html).toContain('aria-current="page"')
   })
 
-  it('pins Docs and onboarding to their exact targets', () => {
+  it('pins Docs, Feedback, and onboarding to their exact targets', () => {
     expect(helpItems.map((item) => [item.name, item.url])).toEqual([
-      ['Docs', 'https://docs.browseros.com/browserclaw'],
+      ['Docs', 'https://github.com/BlueOriginAI/reBrowser#readme'],
+      [
+        'Feedback',
+        'https://github.com/BlueOriginAI/reBrowser/issues/new/choose',
+      ],
       ['Revisit Onboarding', 'chrome://browseros-onboarding'],
       ['Diagnostics', '/diagnostics'],
     ])

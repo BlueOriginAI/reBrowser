@@ -29,21 +29,15 @@ mock.module('@/modules/api/audit.hooks', () => ({
   useTaskScreenshotBaseUrl: () => screenshotBaseUrl,
 }))
 
-// Bun has no localStorage; the collapse preference needs one that can also be
-// made to throw, the way a tab without storage access does.
+// Bun has no localStorage; keep a mock so tests can seed stale keys.
 const COLLAPSED_KEY = 'cockpitRecentActivityCollapsed'
 const memoryStore: Record<string, string> = {}
-let storageThrows = false
 
 Object.defineProperty(globalThis, 'localStorage', {
   configurable: true,
   value: {
-    getItem: (key: string) => {
-      if (storageThrows) throw new Error('storage access denied')
-      return memoryStore[key] ?? null
-    },
+    getItem: (key: string) => memoryStore[key] ?? null,
     setItem: (key: string, value: string) => {
-      if (storageThrows) throw new Error('storage access denied')
       memoryStore[key] = value
     },
     removeItem: (key: string) => {
@@ -95,9 +89,7 @@ function fullFeed(): TaskSummary[] {
   }))
 }
 
-// Every test starts from a machine that has never toggled the section.
 beforeEach(() => {
-  storageThrows = false
   delete memoryStore[COLLAPSED_KEY]
 })
 
@@ -224,7 +216,7 @@ describe('RecentActivity', () => {
     expect(html).toContain('aria-expanded="true"')
   })
 
-  it('renders the body collapsed when the preference was persisted', () => {
+  it('renders expanded by default even when stale collapsed state is in localStorage', () => {
     screenshotBaseUrl = null
     memoryStore[COLLAPSED_KEY] = 'true'
     queryOverride = {
@@ -233,29 +225,11 @@ describe('RecentActivity', () => {
     }
 
     const html = render()
-    // The body is gone...
-    expect(html).not.toContain('data-testid="recent-activity-list"')
-    expect(html).not.toContain('data-testid="support-tile-')
-    // ...but the header, its count, and the way through to /audit remain.
-    expect(html).toContain('Recent activity')
-    expect(html).toContain('12 sessions')
-    expect(html).toContain('View all activity')
-    expect(html).toContain('aria-expanded="false"')
-    expect(html).toContain('aria-controls="recent-activity-body"')
-  })
-
-  it('falls back to expanded when localStorage throws', () => {
-    screenshotBaseUrl = null
-    storageThrows = true
-    queryOverride = {
-      isPending: false,
-      data: { pages: [{ items: fullFeed() }] },
-    }
-
-    const html = render()
     expect(html).toContain('Recent activity')
     expect(html).toContain('data-testid="recent-activity-list"')
+    expect(html).toContain('data-testid="support-tile-')
     expect(html).toContain('aria-expanded="true"')
+    expect(html).toContain('aria-controls="recent-activity-body"')
   })
 })
 
@@ -356,7 +330,7 @@ describe('RecentActivity collapse', () => {
     )
   }
 
-  it('collapses the body on click and leaves the header and audit link', async () => {
+  it('toggles between collapsed and expanded on click and opens expanded on remount', async () => {
     await mount()
     expect(bodyIsVisible()).toBe(true)
 
@@ -368,41 +342,17 @@ describe('RecentActivity collapse', () => {
     expect(container.textContent).toContain('Recent activity')
     expect(container.textContent).toContain('12 sessions')
     expect(container.textContent).toContain('View all activity')
-  })
-
-  it('remembers a collapsed section across a remount', async () => {
-    await mount()
-    await clickToggle()
-    expect(memoryStore[COLLAPSED_KEY]).toBe('true')
-
-    await remount()
-
-    expect(bodyIsVisible()).toBe(false)
-    expect(toggle().getAttribute('aria-expanded')).toBe('false')
-  })
-
-  it('remembers an expanded section across a remount', async () => {
-    memoryStore[COLLAPSED_KEY] = 'true'
-    await mount()
-    expect(bodyIsVisible()).toBe(false)
 
     await clickToggle()
-    expect(memoryStore[COLLAPSED_KEY]).toBe('false')
+    expect(bodyIsVisible()).toBe(true)
+    expect(toggle().getAttribute('aria-expanded')).toBe('true')
+
+    await clickToggle()
+    expect(bodyIsVisible()).toBe(false)
 
     await remount()
 
     expect(bodyIsVisible()).toBe(true)
     expect(toggle().getAttribute('aria-expanded')).toBe('true')
-  })
-
-  it('still toggles when localStorage writes throw', async () => {
-    storageThrows = true
-    await mount()
-
-    await clickToggle()
-
-    // The tab forgets the choice, but the section still collapses.
-    expect(bodyIsVisible()).toBe(false)
-    expect(memoryStore[COLLAPSED_KEY]).toBeUndefined()
   })
 })

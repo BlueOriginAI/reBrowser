@@ -1,8 +1,9 @@
 diff --git a/chrome/browser/browseros/sync/remocode_sync_service.cc b/chrome/browser/browseros/sync/remocode_sync_service.cc
 new file mode 100644
+index 0000000000000000000000000000000000000000..5df5e27f2db2db56876e703add8eecdcca7930c7
 --- /dev/null
 +++ b/chrome/browser/browseros/sync/remocode_sync_service.cc
-@@ -0,0 +1,974 @@
+@@ -0,0 +1,1092 @@
 +// Copyright 2026 The Chromium Authors
 +// Use of this source code is governed by a BSD-style license.
 +#include "chrome/browser/browseros/sync/remocode_sync_service.h"
@@ -76,6 +77,7 @@ new file mode 100644
 +  if (local_state_.contains("download")) Save();
 +  Invalidate();
 +  ResetEntitlement();
++  ClearRelayTicket();
 +  account_subscription_ = {};
 +  weak_factory_.InvalidateWeakPtrs();
 +  adapters_->Shutdown();
@@ -86,6 +88,7 @@ new file mode 100644
 +  operation_factory_.InvalidateWeakPtrs();
 +  timer_.Stop();
 +  if (account_) account_->CancelSyncRequests();
++  ClearRelayTicket();
 +  busy_ = false;
 +  rerun_ = false;
 +  cursor_.clear();
@@ -97,6 +100,7 @@ new file mode 100644
 +  last_status_request_ = base::TimeTicks();
 +  entitlement_timer_.Stop();
 +  vip_expires_at_ = base::Time();
++  ClearRelayTicket();
 +  purchase_available_ = false;
 +  management_available_ = false;
 +  error_code_.clear();
@@ -119,9 +123,73 @@ new file mode 100644
 +  WriteAccountBridge();
 +  observers_.Notify();
 +}
++bool RemocodeSyncService::IsDefaultBridgeProfile() const {
++  return profile_ && !profile_->IsOffTheRecord() &&
++      profile_->GetPath().BaseName().value() == FILE_PATH_LITERAL("Default");
++}
++void RemocodeSyncService::ClearRelayTicket() {
++  relay_ticket_factory_.InvalidateWeakPtrs();
++  relay_ticket_timer_.Stop();
++  relay_ticket_in_flight_ = false;
++  relay_url_.clear();
++  relay_ticket_.clear();
++  relay_ticket_expires_ = base::Time();
++}
++void RemocodeSyncService::RefreshRelayTicket() {
++  if (shutdown_ || !IsDefaultBridgeProfile() || !SignedIn() || !account_ ||
++      account_->installation_id_.empty() || relay_ticket_in_flight_) {
++    return;
++  }
++  const base::Time now = base::Time::Now();
++  if (!relay_url_.empty() && !relay_ticket_.empty() &&
++      relay_ticket_expires_ > now + base::Minutes(5)) {
++    const base::TimeDelta delay = std::max(
++        base::Seconds(30), relay_ticket_expires_ - now - base::Minutes(5));
++    relay_ticket_timer_.Start(FROM_HERE, delay, this,
++                              &RemocodeSyncService::RefreshRelayTicket);
++    return;
++  }
++  base::DictValue body;
++  body.Set("installationId", account_->installation_id_);
++  body.Set("deviceName", base::SysInfo::HardwareModelName());
++  body.Set("os", "macos");
++  body.Set("appVersion", "0.1.5");
++  relay_ticket_in_flight_ = true;
++  account_->AuthenticatedSyncRequest(
++      Endpoint::kRelayTicket, std::move(body),
++      base::BindOnce(&RemocodeSyncService::OnRelayTicketResponse,
++                     relay_ticket_factory_.GetWeakPtr()));
++}
++void RemocodeSyncService::OnRelayTicketResponse(int status,
++                                                base::DictValue data) {
++  relay_ticket_in_flight_ = false;
++  if (shutdown_ || !SignedIn()) {
++    ClearRelayTicket();
++    WriteAccountBridge();
++    return;
++  }
++  const auto* url = data.FindString("relayUrl");
++  const auto* ticket = data.FindString("ticket");
++  const auto expires = WireNumber(data, "expiresAt");
++  const base::Time now = base::Time::Now();
++  if (status == 200 && url && url->starts_with("wss://") && ticket &&
++      !ticket->empty() && expires &&
++      *expires > now.InMillisecondsFSinceUnixEpoch()) {
++    relay_url_ = *url;
++    relay_ticket_ = *ticket;
++    relay_ticket_expires_ = base::Time::FromMillisecondsSinceUnixEpoch(*expires);
++    WriteAccountBridge();
++    const base::TimeDelta delay = std::max(
++        base::Seconds(30), relay_ticket_expires_ - now - base::Minutes(5));
++    relay_ticket_timer_.Start(FROM_HERE, delay, this,
++                              &RemocodeSyncService::RefreshRelayTicket);
++    return;
++  }
++  relay_ticket_timer_.Start(FROM_HERE, base::Seconds(60), this,
++                            &RemocodeSyncService::RefreshRelayTicket);
++}
 +void RemocodeSyncService::WriteAccountBridge() const {
-+  if (!profile_ || profile_->IsOffTheRecord()) return;
-+  if (profile_->GetPath().BaseName().value() != FILE_PATH_LITERAL("Default")) return;
++  if (!IsDefaultBridgeProfile()) return;
 +  base::DictValue bridge;
 +  const bool signed_in = !shutdown_ && SignedIn();
 +  bridge.Set("version", 1);
@@ -135,6 +203,17 @@ new file mode 100644
 +  bridge.Set("installationId", signed_in && account_ ? account_->installation_id_ : std::string());
 +  bridge.Set("deviceName", base::SysInfo::HardwareModelName());
 +  bridge.Set("os", "macos");
++  if (signed_in && !relay_url_.empty() && !relay_ticket_.empty() &&
++      relay_ticket_expires_ > base::Time::Now()) {
++    bridge.Set("relayUrl", relay_url_);
++    bridge.Set("relayTicket", relay_ticket_);
++    bridge.Set("relayTicketExpiresAt",
++               relay_ticket_expires_.InMillisecondsFSinceUnixEpoch());
++  } else {
++    bridge.Set("relayUrl", base::Value());
++    bridge.Set("relayTicket", base::Value());
++    bridge.Set("relayTicketExpiresAt", base::Value());
++  }
 +  auto serialized = base::WriteJson(bridge);
 +  if (!serialized) return;
 +  const base::FilePath bridge_dir = profile_->GetPath().DirName().AppendASCII(".browseros");
@@ -309,6 +388,7 @@ new file mode 100644
 +  }
 +  if (!AcceptStatus(data)) { Fail(); return; }
 +  RecordError(data);
++  RefreshRelayTicket();
 +  busy_ = false;
 +  const bool background_due = rerun_;
 +  rerun_ = false;
@@ -506,6 +586,7 @@ new file mode 100644
 +  }
 +  if (!AcceptStatus(data)) { Fail(); return; }
 +  RecordError(data);
++  RefreshRelayTicket();
 +  if (deletion_status_ == "pending") {
 +    busy_ = false; operation_ = "deletePending"; Notify();
 +    timer_.Start(FROM_HERE, base::Seconds(30), this, &RemocodeSyncService::Refresh);

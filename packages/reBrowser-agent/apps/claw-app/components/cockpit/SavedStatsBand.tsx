@@ -1,13 +1,14 @@
 import type { CockpitStats, CockpitStatsWindow } from '@browseros/claw-api'
 import type { Locale } from '@browseros/i18n/core'
 import { useLocale } from '@browseros/i18n/react'
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export type { CockpitStats, CockpitStatsWindow } from '@browseros/claw-api'
 
 interface SavedStatsBandProps {
   stats: CockpitStats
+  leading?: ReactNode
 }
 
 const WINDOWS = [
@@ -18,7 +19,7 @@ const WINDOWS = [
 
 type WindowKey = (typeof WINDOWS)[number]['key']
 
-export function SavedStatsBand({ stats }: SavedStatsBandProps) {
+export function SavedStatsBand({ stats, leading }: SavedStatsBandProps) {
   const { t } = useLocale()
   const [selectedWindow, setSelectedWindow] = useState<WindowKey>('allTime')
 
@@ -38,9 +39,11 @@ export function SavedStatsBand({ stats }: SavedStatsBandProps) {
         className="flex flex-wrap items-center gap-3"
         data-saved-stats-header
       >
-        <h2 className="font-semibold text-[18px] text-cyanotype-ink leading-7">
-          {t('Since you started')}
-        </h2>
+        {leading ?? (
+          <h2 className="font-semibold text-[18px] text-cyanotype-ink leading-7">
+            {t('Since you started')}
+          </h2>
+        )}
         <TabsList
           activateOnFocus
           aria-label={t('Saved stats window')}
