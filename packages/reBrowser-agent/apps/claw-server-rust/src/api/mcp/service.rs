@@ -802,7 +802,32 @@ impl ServerHandler for ClawMcpService {
         let tool_started_at = tokio::time::Instant::now();
         let tool_name = request.name.to_string();
 
-        let result = if is_name_session {
+        let result = if let Some(dst_iid) = self.state.reroute.target_device_id().await {
+            let remote_cancel = linked_cancel_token(
+                started.session.child_token(),
+                context.ct.clone(),
+                CancellationToken::new(),
+            );
+            match self
+                .state
+                .reroute
+                .forward_tool_call(
+                    &dst_iid,
+                    &tool_name,
+                    raw_args,
+                    started.session.client_name(),
+                    started.session.id().as_str(),
+                    remote_cancel,
+                )
+                .await
+            {
+                Ok(value) => serde_json::from_value::<CallToolResult>(value)
+                    .map_err(|error| McpError::internal_error(error.to_string(), None)),
+                Err((code, message)) => Ok(CallToolResult::error(vec![
+                    rmcp::model::ContentBlock::text(format!("{code}: {message}")),
+                ])),
+            }
+        } else if is_name_session {
             Ok(self.call_name_session(&started, &raw_args).await)
         } else if is_save_skill {
             Ok(self.call_save_skill(&started, &raw_args).await)
@@ -859,6 +884,64 @@ impl ServerHandler for ClawMcpService {
         .await;
         attach_session_handle(finished, session_handle, presented_handle).map(Into::into)
     }
+}
+
+/// Builds the local execution hook used by `RerouteService` when an authenticated
+/// peer device routes a tool call to this machine.
+#[must_use]
+pub fn build_remote_tool_executor(
+    state: AppState,
+) -> crate::services::reroute::LocalToolExecutor {
+    let catalog = Arc::new(catalog());
+    Arc::new(move |req, cancel| {
+        let state = state.clone();
+        let catalog = Arc::clone(&catalog);
+        Box::pin(async move {
+            let Some(tool_index) = catalog.iter().position(|tool| tool.name == req.tool_name) else {
+                return Err(format!("Unsupported remote tool: {}", req.tool_name));
+            };
+            let output_files = browseros_mcp::output_file::create_browser_output_file_access();
+            let browser_session = state.browser.session().await;
+            let remote_session_id = SessionId::new(format!("reroute-{}", req.session_id));
+            let dispatch_cancel = CancellationToken::new();
+            let combined_cancel = CancellationToken::new();
+            let trigger = combined_cancel.clone();
+            let cancel_watch = tokio::spawn(async move {
+                cancel.cancelled().await;
+                trigger.cancel();
+            });
+            let call = ToolCall::new(
+                catalog,
+                tool_index,
+                req.arguments,
+                remote_session_id,
+                None,
+                browser_session,
+                combined_cancel,
+                CancellationToken::new(),
+                dispatch_cancel,
+                None,
+                state.clone(),
+                output_files.clone(),
+            );
+            let outcome = dispatch_tool_call(call).await;
+            cancel_watch.abort();
+            match outcome {
+                Ok(result) => {
+                    let is_error = result.is_error.unwrap_or(false);
+                    let result_json =
+                        serde_json::to_value(&result).map_err(|err| err.to_string())?;
+                    let attachment_paths = output_files.lock().await.iter().cloned().collect();
+                    Ok(crate::services::reroute::RemoteToolOutput {
+                        result_json,
+                        is_error,
+                        attachment_paths,
+                    })
+                }
+                Err(error) => Err(error.message.into_owned()),
+            }
+        })
+    })
 }
 
 async fn finish_tool_call(

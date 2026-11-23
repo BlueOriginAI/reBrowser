@@ -21,6 +21,7 @@ use rmcp::transport::streamable_http_server::{
 use std::sync::Arc;
 
 pub use service::ClawMcpService;
+pub use service::build_remote_tool_executor;
 // Re-exported so the route tests assert against the real text instead of keeping a
 // copy of it, which is what let the two drift apart.
 pub use service::SESSION_ARG_DESCRIPTION;

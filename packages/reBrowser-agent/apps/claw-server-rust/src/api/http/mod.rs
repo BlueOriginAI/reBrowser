@@ -26,6 +26,7 @@ mod previews;
 mod recordings;
 mod replay;
 mod request_security;
+mod reroute;
 mod screenshots;
 mod sessions;
 mod settings;
@@ -97,11 +98,19 @@ pub fn router(state: AppState) -> Router<AppState> {
             put(connections::connect).delete(connections::disconnect),
         )
         .route("/api/v1/skills", get(skills::list).post(skills::create))
+        .route("/api/v1/skills/catalog", get(skills::catalog))
+        .route(
+            "/api/v1/skills/catalog/{id}/install",
+            post(skills::install_catalog),
+        )
         .route(
             "/api/v1/skills/{name}",
             get(skills::get).put(skills::update).delete(skills::delete),
         )
         .route("/api/v1/skills/{name}/runs", get(skills::list_runs))
+        .route("/api/v1/reroute/state", get(reroute::state))
+        .route("/api/v1/reroute/target", put(reroute::set_target))
+        .route("/api/v1/reroute/preferences", put(reroute::set_preferences))
         .nest_service(
             "/mcp",
             Router::new()

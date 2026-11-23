@@ -6,6 +6,14 @@
 
 后续版本使用本机已保留的 Chromium 增量构建链。先核对实际编译源码和组件版本，再在独立 staging 中签名、公证、打包及校验，最后创建对应版本的 draft、上传并核验后公开。以下版本记录为历史发行依据。
 
+## 0.1.5 跨设备浏览器路由与认证技能目录
+
+本版取消设置页旧云同步前端控制项，新增两项核心商业化与账号能力：
+
+- **同账号跨设备浏览器路由（reBrowser Reroute）**：`RemocodeSyncService` 向 `.browseros/account-bridge.json`（`0600` 权限，不含原始 OAuth Token）同步账号、Pro 权益与安装身份；`claw-server-rust` 通过 `RerouteService` 连接自托管云端中继服务（后端代码位于私有仓库 `BlueOriginAI/remocode-saas`），支持同账号多设备在线状态（`presence_snapshot`）、Pro 鉴权的透明 MCP 远程执行及二进制文件回传（截图/PDF 自动落盘并重写返回路径）。
+- **Verified Skills / Site Helpers 认证目录与自动脱敏回流**：新增 `/api/v1/skills/catalog` 与 `/api/v1/skills/catalog/{id}/install`（登录门控与 `proOnly` 权益门控）、本地清洁运行计数（`clean_run_count >= 2`）触发的自动脱敏投稿（`SkillContributor`），并发布种子目录 `verified-skills.json`。
+- 本次发行版本为 `0.1.5`，Chromium 显示版本为 `151.0.8163.137`，Rust 后端为 `0.0.63`，内置扩展为 `0.2.32`。
+
 ## 0.1.4 账户与同步设置
 
 本版包含原生账户头像、Profile 入口与订阅卡片，以及位于卡片内的书签、浏览历史、Agent 浏览记录开关。Agent 浏览记录继续标为不可用，不因界面或订阅状态自动开启任何同步类别。

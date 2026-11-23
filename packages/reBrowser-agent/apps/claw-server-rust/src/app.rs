@@ -8,6 +8,7 @@ use crate::{
     error::{AppError, AppResult},
     runtime::ShutdownHandle,
     services::{
+        account_bridge::AccountBridgeService,
         audit::AuditWorker,
         browser::{BrowserService, TabRegistry},
         cockpit::{CockpitQuery, SessionVisualService, TabActivityRecord, TabActivityService},
@@ -16,9 +17,11 @@ use crate::{
         profiles::ProfileService,
         recordings::{LiveRecordingBus, RecordingIngestService, RecordingStore},
         replay::ReplayService,
+        reroute::RerouteService,
         screenshots::ScreenshotService,
         session_efficiency::SessionEfficiencyService,
         sessions::Sessions,
+        skill_contributor::SkillContributor,
         skill_runs::SkillRunService,
         skills::SkillService,
     },
@@ -44,6 +47,9 @@ pub struct AppState {
     pub harness: Arc<HarnessService>,
     pub skills: Arc<SkillService>,
     pub skill_runs: Arc<SkillRunService>,
+    pub skill_contributor: Arc<SkillContributor>,
+    pub account_bridge: Arc<AccountBridgeService>,
+    pub reroute: Arc<RerouteService>,
     pub analytics: Arc<AnalyticsService>,
     pub run_failures: Arc<crate::services::run_failures::RunFailureReporter>,
     pub feedback_cohort: Arc<crate::services::feedback_cohort::FeedbackCohort>,
@@ -99,6 +105,11 @@ impl AppState {
         let feedback_invites = Arc::new(crate::db::feedback_invite::FeedbackInviteRepository::new(
             database.clone(),
         ));
+        let account_bridge = Arc::new(AccountBridgeService::new(&config.browserclaw_dir, &home_dir));
+        let reroute = Arc::new(RerouteService::new(
+            &config.browserclaw_dir,
+            account_bridge.clone(),
+        ));
         let skill = load_browserclaw_skill(&config.resources_dir)?;
         let harness = Arc::new(HarnessService::new_with_managed_skill(
             config.browserclaw_dir.join("mcp-manager"),
@@ -116,6 +127,25 @@ impl AppState {
             SkillsRepository::new(database.clone()),
             audit_log.clone(),
         ));
+        let contribute_endpoint = match env::var("REBROWSER_SKILLS_CONTRIBUTE_URL") {
+            Ok(value) => {
+                let trimmed = value.trim().to_string();
+                (!trimmed.is_empty()).then_some(trimmed)
+            }
+            Err(_) => Some("https://reroute.remocode.cc/v1/rebrowser/skills/contribute".to_string()),
+        };
+        let skill_contributor = Arc::new(SkillContributor::new(
+            SkillsRepository::new(database.clone()),
+            account_bridge.clone(),
+            config.browserclaw_dir.clone(),
+            contribute_endpoint,
+        ));
+        skill_runs.set_clean_run_hook(Arc::new({
+            let contributor = skill_contributor.clone();
+            move |skill_name| {
+                contributor.spawn_evaluate(skill_name);
+            }
+        }));
         let profiles = Arc::new(ProfileService::new(store.clone()));
         let session_efficiency = Arc::new(SessionEfficiencyService::new_with_analytics(
             database,
@@ -177,7 +207,7 @@ impl AppState {
             browser.clone(),
             tab_activity.clone(),
         ));
-        Ok(Self {
+        let app_state = Self {
             config,
             audit_log,
             audit_worker,
@@ -193,6 +223,9 @@ impl AppState {
             harness,
             skills,
             skill_runs,
+            skill_contributor,
+            account_bridge,
+            reroute: reroute.clone(),
             analytics,
             run_failures,
             feedback_cohort,
@@ -204,7 +237,11 @@ impl AppState {
             visuals,
             cockpit,
             shutdown: ShutdownHandle::new(),
-        })
+        };
+        reroute.set_tool_executor(crate::api::mcp::build_remote_tool_executor(
+            app_state.clone(),
+        ));
+        Ok(app_state)
     }
 
     pub async fn live_tab_activity(&self) -> Vec<TabActivityRecord> {

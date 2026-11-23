@@ -50,6 +50,7 @@ new file mode 100644
 +  void RecordError(const base::DictValue& data);
 +  void Save();
 +  void Notify();
++  void WriteAccountBridge() const;
 +  void Fail(std::string operation = "failed");
 +  bool SignedIn() const;
 +  bool EnsureOwner();

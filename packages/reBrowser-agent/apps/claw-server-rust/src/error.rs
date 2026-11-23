@@ -83,6 +83,14 @@ impl AppError {
     }
 
     #[must_use]
+    pub fn unauthorized(message: impl Into<String>) -> Self {
+        Self::Http {
+            status: StatusCode::UNAUTHORIZED,
+            message: message.into(),
+        }
+    }
+
+    #[must_use]
     pub fn unsupported_media_type(message: impl Into<String>) -> Self {
         Self::Http {
             status: StatusCode::UNSUPPORTED_MEDIA_TYPE,

@@ -9,10 +9,14 @@ new file mode 100644
 +#include <array>
 +#include <set>
 +#include <algorithm>
++#include "base/files/file_path.h"
++#include "base/files/file_util.h"
 +#include "base/json/json_writer.h"
 +#include "base/check.h"
 +#include "base/functional/bind.h"
++#include "base/system/sys_info.h"
 +#include "base/task/single_thread_task_runner.h"
++#include "base/task/thread_pool.h"
 +#include "base/uuid.h"
 +#include "chrome/browser/browseros/sync/sync_protocol.h"
 +#include "chrome/browser/profiles/profile.h"
@@ -75,6 +79,7 @@ new file mode 100644
 +  account_subscription_ = {};
 +  weak_factory_.InvalidateWeakPtrs();
 +  adapters_->Shutdown();
++  WriteAccountBridge();
 +}
 +void RemocodeSyncService::Invalidate() {
 +  sync_session_.clear(); sync_session_expires_ = base::Time();
@@ -110,7 +115,40 @@ new file mode 100644
 +  profile_->GetPrefs()->SetDict(kSyncStatePref, local_state_.Clone());
 +  profile_->GetPrefs()->CommitPendingWrite();
 +}
-+void RemocodeSyncService::Notify() { observers_.Notify(); }
++void RemocodeSyncService::Notify() {
++  WriteAccountBridge();
++  observers_.Notify();
++}
++void RemocodeSyncService::WriteAccountBridge() const {
++  if (!profile_ || profile_->IsOffTheRecord()) return;
++  if (profile_->GetPath().BaseName().value() != FILE_PATH_LITERAL("Default")) return;
++  base::DictValue bridge;
++  const bool signed_in = !shutdown_ && SignedIn();
++  bridge.Set("version", 1);
++  bridge.Set("signedIn", signed_in);
++  bridge.Set("email", signed_in && account_ ? account_->email_ : std::string());
++  bridge.Set("displayName", signed_in && account_ ? account_->display_name_ : std::string());
++  bridge.Set("entitlement", signed_in ? entitlement_ : "signedOut");
++  bridge.Set("vipExpiresAt", signed_in && !vip_expires_at_.is_null()
++      ? base::Value(vip_expires_at_.InMillisecondsFSinceUnixEpoch())
++      : base::Value());
++  bridge.Set("installationId", signed_in && account_ ? account_->installation_id_ : std::string());
++  bridge.Set("deviceName", base::SysInfo::HardwareModelName());
++  bridge.Set("os", "macos");
++  auto serialized = base::WriteJson(bridge);
++  if (!serialized) return;
++  const base::FilePath bridge_dir = profile_->GetPath().DirName().AppendASCII(".browseros");
++  const base::FilePath bridge_path = bridge_dir.AppendASCII("account-bridge.json");
++  base::ThreadPool::PostTask(
++      FROM_HERE, {base::MayBlock(), base::TaskPriority::BEST_EFFORT},
++      base::BindOnce([](base::FilePath dir, base::FilePath path, std::string payload) {
++        if (!base::CreateDirectory(dir)) return;
++        base::WriteFile(path, payload);
++#if BUILDFLAG(IS_POSIX)
++        base::SetPosixFilePermissions(path, 0600);
++#endif
++      }, bridge_dir, bridge_path, std::move(*serialized)));
++}
 +base::CallbackListSubscription RemocodeSyncService::Observe(base::RepeatingClosure observer) {
 +  return observers_.Add(std::move(observer));
 +}

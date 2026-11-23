@@ -13,6 +13,7 @@ import { useLocation, useNavigate } from 'react-router'
 import { DeleteSkillDialog } from '@/components/skills/DeleteSkillDialog'
 import { RunSkillButton } from '@/components/skills/RunSkillButton'
 import { SkillFormDialog } from '@/components/skills/SkillFormDialog'
+import { VerifiedSkillsCatalog } from '@/components/skills/VerifiedSkillsCatalog'
 import { Button } from '@/components/ui/button'
 import {
   Table,
@@ -123,6 +124,8 @@ export function Skills() {
           </Table>
         </LedgerCard>
       )}
+
+      <VerifiedSkillsCatalog />
     </div>
   )
 }

@@ -26,6 +26,7 @@ impl MigratorTrait for Migrator {
             Box::new(m0017_add_run_error_budget::Migration),
             Box::new(m0018_add_feedback_invite::Migration),
             Box::new(m0019_add_feedback_invite_dismissal::Migration),
+            Box::new(m0020_add_skill_contribution_metadata::Migration),
         ]
     }
 }
@@ -2300,5 +2301,68 @@ mod m0019_add_feedback_invite_dismissal {
     enum FeedbackInvite {
         Table,
         DismissedAtMs,
+    }
+}
+
+mod m0020_add_skill_contribution_metadata {
+    use super::*;
+
+    pub struct Migration;
+
+    impl MigrationName for Migration {
+        fn name(&self) -> &str {
+            "m0020_add_skill_contribution_metadata"
+        }
+    }
+
+    #[async_trait::async_trait]
+    impl MigrationTrait for Migration {
+        async fn up(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+            if !manager.has_column("skills", "last_contributed_hash").await? {
+                manager
+                    .alter_table(
+                        Table::alter()
+                            .table(Alias::new("skills"))
+                            .add_column(ColumnDef::new(Alias::new("last_contributed_hash")).text())
+                            .to_owned(),
+                    )
+                    .await?;
+            }
+            if !manager.has_column("skills", "catalog_id").await? {
+                manager
+                    .alter_table(
+                        Table::alter()
+                            .table(Alias::new("skills"))
+                            .add_column(ColumnDef::new(Alias::new("catalog_id")).text())
+                            .to_owned(),
+                    )
+                    .await?;
+            }
+            Ok(())
+        }
+
+        async fn down(&self, manager: &SchemaManager) -> Result<(), DbErr> {
+            if manager.has_column("skills", "catalog_id").await? {
+                manager
+                    .alter_table(
+                        Table::alter()
+                            .table(Alias::new("skills"))
+                            .drop_column(Alias::new("catalog_id"))
+                            .to_owned(),
+                    )
+                    .await?;
+            }
+            if manager.has_column("skills", "last_contributed_hash").await? {
+                manager
+                    .alter_table(
+                        Table::alter()
+                            .table(Alias::new("skills"))
+                            .drop_column(Alias::new("last_contributed_hash"))
+                            .to_owned(),
+                    )
+                    .await?;
+            }
+            Ok(())
+        }
     }
 }

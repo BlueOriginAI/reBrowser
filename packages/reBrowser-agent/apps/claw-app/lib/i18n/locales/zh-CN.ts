@@ -211,4 +211,28 @@ export const zhCN: Catalog = {
     'MCP 服务器为智能体提供工具；技能则告诉它如何使用：在自己的标签页而不是你的标签页中工作、为会话命名以便你在控制台中找到它，以及优先使用此浏览器而不是自己的抓取器。',
   'Run this in your project, or add -g to install it for every project.':
     '在你的项目中运行此命令，或添加 -g 以为所有项目安装。',
+  'skills.catalog.title': '官方精选技能市场',
+  'skills.catalog.subtitle':
+    '一键安装经过验证的高频网站自动化技能到已连接的编码智能体。',
+  'skills.catalog.install': '一键安装',
+  'skills.catalog.installed': '已安装',
+  'skills.catalog.update': '更新',
+  'skills.catalog.proBadge': 'PRO',
+  'skills.catalog.tokensSaved': '约省 {{count}} 令牌',
+  'skills.catalog.verifiedRuns': '已验证 {{count}} 次',
+  'skills.catalog.loginPrompt':
+    '请在浏览器设置（chrome://settings/people）免费登录 Remocode 账号后一键安装精选技能。',
+  'skills.catalog.proPrompt':
+    '请在浏览器设置（chrome://settings/people）升级 reBrowser Pro 以安装 Pro 专享商业技能。',
+  'skills.catalog.installFailed': '安装技能失败，请重试。',
+  'reroute.title': '跨设备浏览器路由 (reBrowser Reroute)',
+  'reroute.localTarget': '本机执行（默认）',
+  'reroute.remoteTarget': '正在路由至 {{device}}',
+  'reroute.allowIncoming': '允许同账号下的其他电脑远程调用本机浏览器',
+  'reroute.signInHint':
+    '在浏览器设置登录 Remocode 账号后，即可看到你的其他电脑并开启跨设备 Reroute。',
+  'reroute.proHint':
+    '登录即可看到其他在线电脑；升级 reBrowser Pro 后可零配置将本机 MCP 操作路由到家里或公司主机执行。',
+  'reroute.offline': '中继未连接',
+  'reroute.onlineCount': '{{count}} 台在线',
 }

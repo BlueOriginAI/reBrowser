@@ -1,0 +1,198 @@
+{
+  "version": 1,
+  "updatedAt": 1795367650268,
+  "items": [
+    {
+      "id": "wechat-default-draft",
+      "name": "neo-wechat-default-draft",
+      "title": {
+        "zh": "微信公众号自动排版存草稿",
+        "en": "WeChat Official Account Draft Publisher"
+      },
+      "description": {
+        "zh": "将已核实的 Markdown 用 default 主题渲染，通过 reBrowser 自动填写公众号草稿、上传封面并验证文字原创及持久化。",
+        "en": "Render verified Markdown with the default theme, fill WeChat drafts via reBrowser, upload cover art, and verify originality persistence."
+      },
+      "site": "mp.weixin.qq.com",
+      "category": "content",
+      "proOnly": false,
+      "avgTokensSaved": 42000,
+      "verifiedCleanRuns": 25,
+      "skillCreation": {
+        "description": "将已核实的公众号Markdown用default主题渲染，通过reBrowser填写成草稿，上传封面并验证文字原创及持久化。",
+        "site": "mp.weixin.qq.com",
+        "steps": [
+          "Call the mark_skill_run tool with name: neo-wechat-default-draft so this run is recorded.",
+          "先确认用户已授权保存新草稿；本地保存article.md、default主题渲染的article.html和已核对文字的封面。发布不用公众号API或文档导入。",
+          "用browser.pages.list()识别现有后台页；browser.page(id).evaluate()读取当前登录URL信息。用browser.open()创建保留token的独立首页，在page.evaluate()中找到.new-creation__menu-item的“文章”项并click()，再用browser.pages.list()取得新编辑页，确认没有旧草稿ID和现有正文。",
+          "在新编辑页通过一次page.evaluate()批量填写title、author、js_description并触发input/change/blur。browser.open('file:///.../article.html')打开本地渲染稿，page.evaluate()读取#output内容。按1000字符分块读取完整HTML，传入编辑页page.evaluate()，聚焦.rich_media_content .ProseMirror并通过document.execCommand('insertHTML')及input事件写入。",
+          "通过page.evaluate()点击#js_cover_area .js_imagedialog；用mcp__browseros-neo__snapshot或grep观察控件。若原生文件输入隐藏，可仅临时显示该控件并加aria-label，再用mcp__browseros-neo__upload按新ref上传封面。用mcp__browseros-neo__act点击下一步、确认。仅当用户要求原创时打开原创对话框，确认文字原创、作者及协议，不更改其他开关。",
+          "用mcp__browseros-neo__act点击保存为草稿，mcp__browseros-neo__wait等待#js_submit:not(.btn_loading) button:not([disabled])，mcp__browseros-neo__navigate执行reload。用page.evaluate()核对标题/作者/摘要、可见.origined__setting-group中的文字原创、封面背景、7个标题等实际排版及正文SHA-256；检查草稿箱，使用mcp__browseros-neo__screenshot保留截图，只报告真实持久化结果。"
+        ],
+        "learnedNotes": [
+          "只保存草稿，绝不点击发表、群发或排期；原创声明仅在用户明确要求且文章符合原创条件时确认。",
+          "从现有已登录公众号后台URL读取当前token，仅用于同一浏览器页面导航，不能把token或完整带token URL写进技能、报告或交付包。",
+          "用browser.open打开保留token的独立首页；不要使用无token的首页，也不要导航或修改现有文章标签页。",
+          "BrowserOS run中的page.evaluate返回{page,value}；文本过长会改为文件结果。跨页面传输HTML时可按1000字符分块读取，避免长结果被写入文件后value为空。",
+          "快捷键粘贴可能不触发正文输入。已验证与baoyu-post-to-wechat相同的document.execCommand('insertHTML')流程能保留default内联样式，保存前与本地渲染正文去空白SHA-256比较。",
+          "不要批量操作原创对话框复选框。确认文字原创、0xFF作者与协议状态，保持赞赏、付费及快捷转载等未请求设置不变。",
+          "渲染器可能将0xFF作者meta解析成255；交付HTML和微信作者字段需单独核对。"
+        ],
+        "body": "---\nname: neo-wechat-default-draft\ndescription: \"将已核实的公众号Markdown用default主题渲染，通过reBrowser填写成草稿，上传封面并验证文字原创及持久化。\"\ntools: browseros-neo\n---\n\n## Steps\n1. Call the mark_skill_run tool with name: neo-wechat-default-draft so this run is recorded.\n2. 先确认用户已授权保存新草稿；本地保存article.md、default主题渲染的article.html和已核对文字的封面。发布不用公众号API或文档导入。\n3. 用browser.pages.list()识别现有后台页；browser.page(id).evaluate()读取当前登录URL信息。用browser.open()创建保留token的独立首页，在page.evaluate()中找到.new-creation__menu-item的“文章”项并click()，再用browser.pages.list()取得新编辑页，确认没有旧草稿ID和现有正文。\n4. 在新编辑页通过一次page.evaluate()批量填写title、author、js_description并触发input/change/blur。browser.open('file:///.../article.html')打开本地渲染稿，page.evaluate()读取#output内容。按1000字符分块读取完整HTML，传入编辑页page.evaluate()，聚焦.rich_media_content .ProseMirror并通过document.execCommand('insertHTML')及input事件写入。\n5. 通过page.evaluate()点击#js_cover_area .js_imagedialog；用mcp__browseros-neo__snapshot或grep观察控件。若原生文件输入隐藏，可仅临时显示该控件并加aria-label，再用mcp__browseros-neo__upload按新ref上传封面。用mcp__browseros-neo__act点击下一步、确认。仅当用户要求原创时打开原创对话框，确认文字原创、作者及协议，不更改其他开关。\n6. 用mcp__browseros-neo__act点击保存为草稿，mcp__browseros-neo__wait等待#js_submit:not(.btn_loading) button:not([disabled])，mcp__browseros-neo__navigate执行reload。用page.evaluate()核对标题/作者/摘要、可见.origined__setting-group中的文字原创、封面背景、7个标题等实际排版及正文SHA-256；检查草稿箱，使用mcp__browseros-neo__screenshot保留截图，只报告真实持久化结果。\n\n## Learned from past runs\n- 只保存草稿，绝不点击发表、群发或排期；原创声明仅在用户明确要求且文章符合原创条件时确认。\n- 从现有已登录公众号后台URL读取当前token，仅用于同一浏览器页面导航，不能把token或完整带token URL写进技能、报告或交付包。\n- 用browser.open打开保留token的独立首页；不要使用无token的首页，也不要导航或修改现有文章标签页。\n- BrowserOS run中的page.evaluate返回{page,value}；文本过长会改为文件结果。跨页面传输HTML时可按1000字符分块读取，避免长结果被写入文件后value为空。\n- 快捷键粘贴可能不触发正文输入。已验证与baoyu-post-to-wechat相同的document.execCommand('insertHTML')流程能保留default内联样式，保存前与本地渲染正文去空白SHA-256比较。\n- 不要批量操作原创对话框复选框。确认文字原创、0xFF作者与协议状态，保持赞赏、付费及快捷转载等未请求设置不变。\n- 渲染器可能将0xFF作者meta解析成255；交付HTML和微信作者字段需单独核对。\n"
+      },
+      "helpers": [],
+      "contentHash": "sha256:43cd32f0ee17ea88aa49b1e63b8867723f7763f73a9b920476a7d385aeb77b4b"
+    },
+    {
+      "id": "feishu-send-large-file",
+      "name": "neo-feishu-send-large-file",
+      "title": {
+        "zh": "飞书网页版发送完整大文件",
+        "en": "Feishu Web Large File Delivery"
+      },
+      "description": {
+        "zh": "通过飞书网页版直接发送完整大文件（绕过 CLI 文件接口限制），并刷新聊天核验文件已持久化、可下载。",
+        "en": "Send large attachments directly through Feishu Web without splitting archives, then reload to verify persistence and downloadability."
+      },
+      "site": "www.feishu.cn",
+      "category": "productivity",
+      "proOnly": false,
+      "avgTokensSaved": 31000,
+      "verifiedCleanRuns": 18,
+      "skillCreation": {
+        "description": "通过飞书网页版发送完整大文件，并刷新聊天核验文件已持久化、可下载；不拆分附件。",
+        "site": "www.feishu.cn",
+        "steps": [
+          "Call the mark_skill_run tool with name: neo-feishu-send-large-file so this run is recorded.",
+          "使用 tabs(action=\"list\") 记录会话和组；name_session 命名；用 tabs(action=\"new\",url=\"https://www.feishu.cn/messenger/\") 打开自己的标签页。若未登录，请用户完成登录。",
+          "用 snapshot、read 或 evaluate 核实收件人，打开目标聊天。必要时 evaluate 对已观察到的联系人行执行 click；收件人有歧义先确认。",
+          "用 evaluate 读取聊天输入区按钮的 data-icon；本次通过 act 点击 MoreAddOutlined 按钮，然后点击菜单中的“本地文件”。若 input 是 detached，按 learnedNotes 暴露真实文件输入元素。",
+          "使用 grep(over=\"ax\",pattern=文件输入的aria-label) 获取上传 ref，然后 upload(file=用户指定的绝对路径,page=当前页,ref=上传ref)。核实发送确认框中的收件人、完整文件名和大小，再 act 点击“发送”。",
+          "使用 evaluate 确认完整文件卡片出现，且存在 DownloadOutlined、无上传失败状态。使用 navigate(action=\"reload\") 后再次 evaluate 核实文件仍在并可下载；恢复本次临时切换的读屏标签状态，再报告实际发送结果。"
+        ],
+        "learnedNotes": [
+          "本次 98.2 MB APK 被飞书 CLI 消息文件接口以 234006 拒绝，但网页版可直接作为完整附件发送。用户明确不接受 ZIP 分卷。",
+          "CLI OAuth 授权后，浏览器可能已有飞书登录态；应重新打开 messenger 检查，不要一直假设未登录。",
+          "飞书关闭读屏标签时，AX 中大量按钮无名称。可用 evaluate 读取 DOM 中 data-icon 等属性定位控件；不要凭未知选择器猜测。",
+          "本地文件菜单创建的是 detached input[type=file]。本次临时包装 HTMLInputElement.prototype.click，只截获一次 file input 并立即还原原型：给真实 input 设置 aria-label、追加到 DOM，保留原 onchange，再通过 grep(over=ax) 获取 ref 并用 upload 填入文件。完成后 reload 清除临时 DOM。",
+          "收件人昵称和通讯录名称可能不同；核实聊天标题、个人资料或自身聊天提示，不要仅凭相同头像推断身份。"
+        ],
+        "body": "---\nname: neo-feishu-send-large-file\ndescription: \"通过飞书网页版发送完整大文件，并刷新聊天核验文件已持久化、可下载；不拆分附件。\"\ntools: browseros-neo\n---\n\n## Steps\n1. Call the mark_skill_run tool with name: neo-feishu-send-large-file so this run is recorded.\n2. 使用 tabs(action=\"list\") 记录会话和组；name_session 命名；用 tabs(action=\"new\",url=\"https://www.feishu.cn/messenger/\") 打开自己的标签页。若未登录，请用户完成登录。\n3. 用 snapshot、read 或 evaluate 核实收件人，打开目标聊天。必要时 evaluate 对已观察到的联系人行执行 click；收件人有歧义先确认。\n4. 用 evaluate 读取聊天输入区按钮的 data-icon；本次通过 act 点击 MoreAddOutlined 按钮，然后点击菜单中的“本地文件”。若 input 是 detached，按 learnedNotes 暴露真实文件输入元素。\n5. 使用 grep(over=\"ax\",pattern=文件输入的aria-label) 获取上传 ref，然后 upload(file=用户指定的绝对路径,page=当前页,ref=上传ref)。核实发送确认框中的收件人、完整文件名和大小，再 act 点击“发送”。\n6. 使用 evaluate 确认完整文件卡片出现，且存在 DownloadOutlined、无上传失败状态。使用 navigate(action=\"reload\") 后再次 evaluate 核实文件仍在并可下载；恢复本次临时切换的读屏标签状态，再报告实际发送结果。\n\n## Learned from past runs\n- 本次 98.2 MB APK 被飞书 CLI 消息文件接口以 234006 拒绝，但网页版可直接作为完整附件发送。用户明确不接受 ZIP 分卷。\n- CLI OAuth 授权后，浏览器可能已有飞书登录态；应重新打开 messenger 检查，不要一直假设未登录。\n- 飞书关闭读屏标签时，AX 中大量按钮无名称。可用 evaluate 读取 DOM 中 data-icon 等属性定位控件；不要凭未知选择器猜测。\n- 本地文件菜单创建的是 detached input[type=file]。本次临时包装 HTMLInputElement.prototype.click，只截获一次 file input 并立即还原原型：给真实 input 设置 aria-label、追加到 DOM，保留原 onchange，再通过 grep(over=ax) 获取 ref 并用 upload 填入文件。完成后 reload 清除临时 DOM。\n- 收件人昵称和通讯录名称可能不同；核实聊天标题、个人资料或自身聊天提示，不要仅凭相同头像推断身份。\n"
+      },
+      "helpers": [],
+      "contentHash": "sha256:f655cb9a3d3caf304bc8e2bdbd6ea9eaa9e9f0dddc66eca22ca5b27c9979079d"
+    },
+    {
+      "id": "modelscope-daily-magicube",
+      "name": "neo-modelscope-daily-magicube",
+      "title": {
+        "zh": "魔搭社区每日领取登录魔粒",
+        "en": "ModelScope Daily Magicube Reward"
+      },
+      "description": {
+        "zh": "复用魔搭已登录会话领取每日登录魔粒，并跳转到发放记录页核验当日到账明细。",
+        "en": "Reuse your live ModelScope login session to claim daily Magicube rewards and verify the issuance ledger."
+      },
+      "site": "modelscope.cn",
+      "category": "automation",
+      "proOnly": false,
+      "avgTokensSaved": 18500,
+      "verifiedCleanRuns": 32,
+      "skillCreation": {
+        "description": "复用魔搭登录会话领取每日登录魔粒，并核验当日发放记录。",
+        "site": "modelscope.cn",
+        "steps": [
+          "Call the mark_skill_run tool with name: neo-modelscope-daily-magicube so this run is recorded.",
+          "调用 browser.pages.list() 确认标签页归属，使用 browser.open('https://www.modelscope.cn/magicube/usage?tab=earn') 打开自己的领取页，复用已有登录，不读取密码或会话存储。",
+          "使用 page.waitForText('每日') 等待加载，再通过 page.read() 读取余额与每日发放状态。日常访问会触发登录奖励；已显示「今日已完成」时不要重复操作。",
+          "使用 page.goto('https://www.modelscope.cn/magicube/usage?tab=record')，page.waitForText('发放记录')，page.read() 核验北京时间当日注册登录及已绑定阿里云奖励的发放记录。",
+          "简短记录领取或已领取状态、当日记录和当前余额；未到账时明确说明。登录失效、验证码或浏览器断连时停止并报告具体阻碍。"
+        ],
+        "learnedNotes": [
+          "2026-11-16 已验证：基础登录奖励200魔粒，已绑定阿里云额外50魔粒，发放记录有效期1天。规则以当日实际页面为准。",
+          "本任务仅领取已有账户的每日免费登录奖励；不自动点赞收藏、发布、邀请、修改资料、绑定新账号、兑换或消费。",
+          "余额可能随其他使用变化，以当日发放记录作为领取证据，不以余额增减单独判定。"
+        ],
+        "body": "---\nname: neo-modelscope-daily-magicube\ndescription: \"复用魔搭登录会话领取每日登录魔粒，并核验当日发放记录。\"\ntools: reBrowser\n---\n\n## Steps\n1. Call the mark_skill_run tool with name: neo-modelscope-daily-magicube so this run is recorded.\n2. 调用 browser.pages.list() 确认标签页归属，使用 browser.open('https://www.modelscope.cn/magicube/usage?tab=earn') 打开自己的领取页，复用已有登录，不读取密码或会话存储。\n3. 使用 page.waitForText('每日') 等待加载，再通过 page.read() 读取余额与每日发放状态。日常访问会触发登录奖励；已显示「今日已完成」时不要重复操作。\n4. 使用 page.goto('https://www.modelscope.cn/magicube/usage?tab=record')，page.waitForText('发放记录')，page.read() 核验北京时间当日注册登录及已绑定阿里云奖励的发放记录。\n5. 简短记录领取或已领取状态、当日记录和当前余额；未到账时明确说明。登录失效、验证码或浏览器断连时停止并报告具体阻碍。\n\n## Learned from past runs\n- 2026-11-16 已验证：基础登录奖励200魔粒，已绑定阿里云额外50魔粒，发放记录有效期1天。规则以当日实际页面为准。\n- 本任务仅领取已有账户的每日免费登录奖励；不自动点赞收藏、发布、邀请、修改资料、绑定新账号、兑换或消费。\n- 余额可能随其他使用变化，以当日发放记录作为领取证据，不以余额增减单独判定。\n"
+      },
+      "helpers": [],
+      "contentHash": "sha256:c4738d892a52e1d53a6fc8b66a72ca38124fd741e25cd55e92c915e70b1fb68a"
+    },
+    {
+      "id": "public-literature-fulltext",
+      "name": "neo-public-literature-fulltext",
+      "title": {
+        "zh": "公开学术文献全文 PDF 检索与归档",
+        "en": "Open-Access Literature PDF Retriever"
+      },
+      "description": {
+        "zh": "按原目录接续寻找合法公开完整 PDF，核验身份和完整性后单流程备份并更新原 Excel 及审计记录。",
+        "en": "Locate legitimate open-access full-text PDFs, verify identity and integrity, and update the source Excel ledger cleanly."
+      },
+      "site": "scholar.google.com",
+      "category": "research",
+      "proOnly": false,
+      "avgTokensSaved": 48000,
+      "verifiedCleanRuns": 14,
+      "skillCreation": {
+        "description": "按原目录接续寻找合法公开完整PDF，核验身份和完整性后单流程备份并更新原Excel及审计。",
+        "site": "scholar.google.com",
+        "steps": [
+          "Call the mark_skill_run tool with name: neo-public-literature-fulltext so this run is recorded.",
+          "读取用户指定原Excel、coverage_audit.json、next_source_plan.json和未完成CSV。核对PDF数量、本地链接、已保存DOI；保留原顺序、编号、样式和重复记录。",
+          "使用browser.pages.list()获取当前标签；使用browser.page(id)复用任务标签，或browser.open(url)打开独立公开来源。只按既有明确线索或合法公开搜索发现的URL导航。",
+          "使用page.goto(url)和page.evaluate(()=>({url:location.href,text:document.body.innerText,...}))读取真实动态页面；准备状态不明确时使用browseros-neo wait工具等待目标题名或input等实际信号。观察标题、DOI、Files、版本及公开许可。",
+          "使用browseros-neo snapshot/grep获取实际ref，通过act处理普通Cookie拒绝、整表搜索字段填写和Open/Full Text按钮。遇到UGent only、Embargoed、登录、付费、403、证书警告或真人验证时保存证据并停止该路径。",
+          "在正常打开且无访问限制的原PDF页面，使用page.evaluate中的正常同源fetch(location.href)读取字节；检查HTTP200、%PDF-及大小上限，将base64结果保存为工具返回的本地文件，再使用本地Python解码。不要保存临时签名URL的查询凭据，只记录永久元数据和文件入口。",
+          "使用本地PyMuPDF或pypdf核对题名、DOI或其他可靠身份、所有页可解析、正文和参考文献完整、版本；渲染并读取首尾页。记录永久来源、访问时间、页数、版本、字节数、SHA-256。摘要、海报、目录、引用和不同文章不计入。",
+          "每批在用户原目录先备份后，由单一流程合并已核验PDF与原Excel、审计、续接计划、未完成CSV和队列。复核所有本地链接、累计及剩余数、原格式和顺序，保存提交凭据及断点；报告实际新增全文，不以搜索次数代替成果。"
+        ],
+        "learnedNotes": [
+          "静态HTML没有PDF链接不能代表仓储没有附件：NVA的动态Files/Open按钮提供了可下载出版版。",
+          "独立Research Portal/Pure门户与旧DSpace仓储可能有不同公开副本；只跟进实际链接，不重试已停止的受限路径。",
+          "旧出版平台TOC的显式Full Text链接可能仍可公开下载；Abstract PDF必须排除。",
+          "有相邻作者密码表单时，只能跟进独立明确的公开Full Text入口，不填写密码表单、不猜测受限文件路径。",
+          "macOS原生保存面板无法由浏览器工具操控时，可在已正常打开的公开PDF页面用page.evaluate读取原始PDF字节；这是原文件保存，不是打印生成PDF。",
+          "每批只允许一个合并写入者，先备份并核对文件SHA-256未变；写入前后验证原行顺序、样式及其他超链接未改变。"
+        ],
+        "body": "---\nname: neo-public-literature-fulltext\ndescription: \"按原目录接续寻找合法公开完整PDF，核验身份和完整性后单流程备份并更新原Excel及审计。\"\ntools: browseros-neo\n---\n\n## Steps\n1. Call the mark_skill_run tool with name: neo-public-literature-fulltext so this run is recorded.\n2. 读取用户指定原Excel、coverage_audit.json、next_source_plan.json和未完成CSV。核对PDF数量、本地链接、已保存DOI；保留原顺序、编号、样式和重复记录。\n3. 使用browser.pages.list()获取当前标签；使用browser.page(id)复用任务标签，或browser.open(url)打开独立公开来源。只按既有明确线索或合法公开搜索发现的URL导航。\n4. 使用page.goto(url)和page.evaluate(()=>({url:location.href,text:document.body.innerText,...}))读取真实动态页面；准备状态不明确时使用browseros-neo wait工具等待目标题名或input等实际信号。观察标题、DOI、Files、版本及公开许可。\n5. 使用browseros-neo snapshot/grep获取实际ref，通过act处理普通Cookie拒绝、整表搜索字段填写和Open/Full Text按钮。遇到UGent only、Embargoed、登录、付费、403、证书警告或真人验证时保存证据并停止该路径。\n6. 在正常打开且无访问限制的原PDF页面，使用page.evaluate中的正常同源fetch(location.href)读取字节；检查HTTP200、%PDF-及大小上限，将base64结果保存为工具返回的本地文件，再使用本地Python解码。不要保存临时签名URL的查询凭据，只记录永久元数据和文件入口。\n7. 使用本地PyMuPDF或pypdf核对题名、DOI或其他可靠身份、所有页可解析、正文和参考文献完整、版本；渲染并读取首尾页。记录永久来源、访问时间、页数、版本、字节数、SHA-256。摘要、海报、目录、引用和不同文章不计入。\n8. 每批在用户原目录先备份后，由单一流程合并已核验PDF与原Excel、审计、续接计划、未完成CSV和队列。复核所有本地链接、累计及剩余数、原格式和顺序，保存提交凭据及断点；报告实际新增全文，不以搜索次数代替成果。\n\n## Learned from past runs\n- 静态HTML没有PDF链接不能代表仓储没有附件：NVA的动态Files/Open按钮提供了可下载出版版。\n- 独立Research Portal/Pure门户与旧DSpace仓储可能有不同公开副本；只跟进实际链接，不重试已停止的受限路径。\n- 旧出版平台TOC的显式Full Text链接可能仍可公开下载；Abstract PDF必须排除。\n- 有相邻作者密码表单时，只能跟进独立明确的公开Full Text入口，不填写密码表单、不猜测受限文件路径。\n- macOS原生保存面板无法由浏览器工具操控时，可在已正常打开的公开PDF页面用page.evaluate读取原始PDF字节；这是原文件保存，不是打印生成PDF。\n- 每批只允许一个合并写入者，先备份并核对文件SHA-256未变；写入前后验证原行顺序、样式及其他超链接未改变。\n"
+      },
+      "helpers": [],
+      "contentHash": "sha256:44e012ccbd10d884faa1ad91e1cad7e7cd972e685fda4ff75b6b7205b33dee2d"
+    },
+    {
+      "id": "multiplatform-content-matrix",
+      "name": "neo-multiplatform-content-matrix",
+      "title": {
+        "zh": "多平台内容矩阵同步分发（Pro）",
+        "en": "Multi-Platform Content Matrix Publisher (Pro)"
+      },
+      "description": {
+        "zh": "一次编排，通过跨设备或本机已登录会话协同分发至公众号草稿箱、小红书创作者中心与飞书文档，并汇总回执。",
+        "en": "Distribute one verified article package across WeChat drafts, Xiaohongshu Creator Studio, and Feishu Docs using live sessions."
+      },
+      "site": "creator.xiaohongshu.com",
+      "category": "growth",
+      "proOnly": true,
+      "avgTokensSaved": 76000,
+      "verifiedCleanRuns": 19,
+      "skillCreation": {
+        "description": "Coordinate multi-platform draft publication across WeChat, Xiaohongshu, and Feishu using live reBrowser sessions.",
+        "site": "creator.xiaohongshu.com",
+        "steps": [
+          "Call mark_skill_run with name: neo-multiplatform-content-matrix.",
+          "Prepare platform-specific title, summary, tags, and cover assets from the local source bundle.",
+          "Open target creator tabs in parallel with browser.pages.newPage() and populate drafts without triggering final publish unless approved.",
+          "Reload each draft list to confirm persistence and return unified draft URLs."
+        ],
+        "learnedNotes": [
+          "Keep each platform in an isolated tab and verify draft persistence after reload before returning.",
+          "Never include session tokens or local absolute user paths in reports."
+        ],
+        "body": "---\nname: neo-multiplatform-content-matrix\ndescription: \"Coordinate multi-platform draft publication across WeChat, Xiaohongshu, and Feishu using live reBrowser sessions.\"\ntools: reBrowser\n---\n\n## Steps\n1. Call the mark_skill_run tool with name: neo-multiplatform-content-matrix so this run is recorded.\n2. Prepare platform-specific title, summary, tags, and cover assets from the local source bundle.\n3. Open target creator tabs in parallel and populate drafts without triggering final publish unless explicitly requested.\n4. Reload each draft list to confirm persistence and return unified draft URLs.\n\n## Learned from past runs\n- Keep each platform in an isolated tab and verify draft persistence after reload before returning.\n- Never include session tokens or local absolute user paths in reports.\n"
+      },
+      "helpers": [],
+      "contentHash": "sha256:b79b78d68baa8849cb83b6f0e66bb08e886387d5d1c31a3ac57bf6bd73168149"
+    }
+  ]
+}

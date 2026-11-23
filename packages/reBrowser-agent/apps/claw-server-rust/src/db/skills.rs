@@ -198,6 +198,22 @@ impl SkillsRepository {
             .await?;
         Ok(())
     }
+
+    pub async fn set_last_contributed_hash(&self, name: &str, hash: &str) -> AppResult<()> {
+        if let Some(mut model) = self.get(name).await? {
+            model.last_contributed_hash = Some(hash.to_owned());
+            self.update(model).await?;
+        }
+        Ok(())
+    }
+
+    pub async fn set_catalog_id(&self, name: &str, catalog_id: &str) -> AppResult<()> {
+        if let Some(mut model) = self.get(name).await? {
+            model.catalog_id = Some(catalog_id.to_owned());
+            self.update(model).await?;
+        }
+        Ok(())
+    }
 }
 
 fn dispatch_is_error(result_meta: Option<&str>) -> bool {
@@ -221,5 +237,7 @@ fn into_active(model: skills::Model) -> skills::ActiveModel {
         linked_agents_json: Set(model.linked_agents_json),
         created_at: Set(model.created_at),
         updated_at: Set(model.updated_at),
+        last_contributed_hash: Set(model.last_contributed_hash),
+        catalog_id: Set(model.catalog_id),
     }
 }

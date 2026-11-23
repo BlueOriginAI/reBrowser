@@ -10,7 +10,10 @@ use axum::{
     extract::{Path, Query, State},
     http::StatusCode,
 };
-use claw_api::models::{self, Skill, SkillCreate, SkillDetail, SkillList, SkillRun, SkillRunList};
+use claw_api::models::{
+    self, Skill, SkillCatalogInstallResponse, SkillCatalogList, SkillCreate, SkillDetail,
+    SkillList, SkillRun, SkillRunList,
+};
 use harness_integrations::AgentId;
 use serde::Deserialize;
 use std::collections::HashMap;
@@ -150,8 +153,49 @@ pub(super) async fn list_runs(
     Ok(Json(list))
 }
 
+pub(super) async fn catalog(
+    Extension(request_id): Extension<RequestId>,
+    State(state): State<AppState>,
+) -> Result<Json<SkillCatalogList>, CanonicalError> {
+    let list = state
+        .skills
+        .list_catalog(&state.config.browserclaw_dir)
+        .await
+        .map_err(|source| map_error(&request_id, source))?;
+    Ok(Json(list))
+}
+
+pub(super) async fn install_catalog(
+    Extension(request_id): Extension<RequestId>,
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+) -> Result<Json<SkillCatalogInstallResponse>, CanonicalError> {
+    let (view, helpers_installed) = state
+        .skills
+        .install_from_catalog(&id, &state.config.browserclaw_dir, &state.account_bridge)
+        .await
+        .map_err(|source| map_error(&request_id, source))?;
+    Ok(Json(SkillCatalogInstallResponse {
+        installed: true,
+        skill: skill_to_dto(view),
+        helpers_installed,
+    }))
+}
+
 fn map_error(request_id: &RequestId, source: AppError) -> CanonicalError {
     match source.status() {
+        StatusCode::UNAUTHORIZED => error(
+            request_id,
+            StatusCode::UNAUTHORIZED,
+            "account_login_required",
+            &source.to_string(),
+        ),
+        StatusCode::FORBIDDEN => error(
+            request_id,
+            StatusCode::FORBIDDEN,
+            "pro_subscription_required",
+            &source.to_string(),
+        ),
         StatusCode::NOT_FOUND => error(
             request_id,
             StatusCode::NOT_FOUND,

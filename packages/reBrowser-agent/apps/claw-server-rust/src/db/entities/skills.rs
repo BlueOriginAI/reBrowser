@@ -14,6 +14,8 @@ pub struct Model {
     pub linked_agents_json: String,
     pub created_at: i64,
     pub updated_at: i64,
+    pub last_contributed_hash: Option<String>,
+    pub catalog_id: Option<String>,
 }
 
 #[derive(Copy, Clone, Debug, EnumIter, DeriveRelation)]

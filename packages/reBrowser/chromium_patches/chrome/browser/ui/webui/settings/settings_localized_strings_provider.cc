@@ -145,7 +145,12 @@ diff --git a/chrome/browser/ui/webui/settings/settings_localized_strings_provide
 +      {"remocodeOverviewFreePlan", "Free plan", "免费版"},
 +      {"remocodeOverviewExpires", "Valid until", "有效期至"},
 +      {"remocodeOverviewActive", "Your subscription is active", "订阅已生效"},
-+      {"remocodeOverviewUpgradeHint", "Unlock cloud sync across your devices.", "升级以解锁跨设备云同步。"},
++      {"remocodeOverviewUpgradeHint", "Unlock cross-device browser Reroute across your machines.", "升级 Pro 解锁同账号跨设备浏览器远程路由（Reroute）。"},
++      {"remocodeOverviewRerouteTitle", "Cross-device browser Reroute", "跨设备浏览器远程路由 (Reroute)"},
++      {"remocodeOverviewRerouteDescription", "Route local MCP tool calls to your signed-in reBrowser on another computer via Go Relay.", "通过加密中继将随身电脑上的 Agent 操作无缝路由到家里或公司主机的已登录 reBrowser。"},
++      {"remocodeOverviewSkillsTitle", "Verified Skills & Site Helpers", "官方精选 Skills 与站点 Helpers"},
++      {"remocodeOverviewSkillsDescription", "One-click install curated automation skills in the New Tab Skills page.", "登录后可在新建标签页 Skills 市场一键安装高频站点自动化技能。"},
++      {"remocodeOverviewLoginFree", "Sign-in free", "登录免费用"},
 +      {"remocodeOverviewRefreshSubscription", "Refresh subscription", "刷新订阅"},
 +      {"remocodeOverviewManageSubscription", "Manage subscription", "管理订阅"},
 +      {"remocodeOverviewUpgrade", "Get reBrowser Pro", "升级 Pro"},
@@ -166,7 +171,7 @@ diff --git a/chrome/browser/ui/webui/settings/settings_localized_strings_provide
 +      {"remocodeOverviewIdeDescription", "The native desktop IDE for agents", "Agent 原生桌面 IDE"},
 +      {"remocodeOverviewBarDescription", "Your local Codex account and model gateway", "本地 Codex 账户与模型网关"},
 +      {"remocodeOverviewUnavailable", "Temporarily unavailable", "暂不可用"},
-+      {"remocodeOverviewSignInHint", "Sign in to see your subscription.", "登录后查看订阅与同步能力。"},
++      {"remocodeOverviewSignInHint", "Sign in to install verified skills and view your devices.", "登录后可一键安装精选 Skills 并查看在线设备。"},
 +      {"remocodeOverviewRequestFailed", "Could not refresh. Please try again.", "刷新失败，请重试。"},
 +  };
 +  for (const auto& text : kRemocodeOverviewStrings) {

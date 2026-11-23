@@ -1,6 +1,7 @@
 import { useLocale } from '@browseros/i18n/react'
 import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useMemo, useState } from 'react'
+import { RerouteDeviceBar } from '@/components/cockpit/RerouteDeviceBar'
 import {
   type Harness,
   isUserFacingHarness,
@@ -91,6 +92,7 @@ export function Mcp() {
   return (
     <div className="mx-auto flex w-full max-w-xl flex-col gap-8 px-8 pt-8 pb-16">
       <HeroCard url={url} />
+      <RerouteDeviceBar />
       <section className="space-y-2">
         <header className="flex items-baseline justify-between gap-3">
           <h2 className="font-semibold text-cyanotype-ink text-lg">

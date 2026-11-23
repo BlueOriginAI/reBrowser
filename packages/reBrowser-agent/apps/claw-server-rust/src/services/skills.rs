@@ -4,9 +4,17 @@ use crate::{
         entities::{skill_runs, skills},
     },
     error::{AppError, AppResult, IoPath},
-    services::harness::{BROWSEROS_MCP_SERVER_NAME, HarnessService},
+    services::{
+        account_bridge::AccountBridgeService,
+        harness::{BROWSEROS_MCP_SERVER_NAME, HarnessService},
+        helpers,
+    },
+};
+use claw_api::models::{
+    LocalizedText, SkillCatalogCreation, SkillCatalogHelper, SkillCatalogItem, SkillCatalogList,
 };
 use harness_integrations::{AgentId, SkillSpec};
+use serde::Deserialize;
 use std::{
     collections::{BTreeSet, HashMap},
     path::PathBuf,
@@ -29,6 +37,35 @@ const MAX_RUN_LIMIT: u64 = 100;
 
 /// Where the agent gets told to drive the browser from a skill's frontmatter.
 const SKILL_TOOLS: &str = BROWSEROS_MCP_SERVER_NAME;
+
+const EMBEDDED_VERIFIED_CATALOG_JSON: &str =
+    include_str!("../../resources/verified-skills.json");
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct VerifiedCatalogDocument {
+    version: i64,
+    updated_at: i64,
+    items: Vec<VerifiedCatalogEntry>,
+}
+
+#[derive(Clone, Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct VerifiedCatalogEntry {
+    id: String,
+    name: String,
+    title: LocalizedText,
+    description: LocalizedText,
+    site: String,
+    category: String,
+    pro_only: bool,
+    avg_tokens_saved: i64,
+    verified_clean_runs: i64,
+    content_hash: String,
+    skill_creation: SkillCatalogCreation,
+    #[serde(default)]
+    helpers: Vec<SkillCatalogHelper>,
+}
 
 /// Skill creation surface, independent of transport. The MCP tool and the REST
 /// handler both build this.
@@ -252,6 +289,8 @@ impl SkillService {
             linked_agents_json: "[]".to_string(),
             created_at: now,
             updated_at: now,
+            last_contributed_hash: None,
+            catalog_id: None,
         }
     }
 
@@ -460,6 +499,140 @@ impl SkillService {
             .await
             .unwrap_or_default()
     }
+
+    pub async fn list_catalog(&self, browserclaw_dir: &std::path::Path) -> AppResult<SkillCatalogList> {
+        let doc = load_verified_catalog(browserclaw_dir).await?;
+        let installed_models = self.repo.all().await?;
+        let mut installed_map = HashMap::new();
+        for model in installed_models {
+            installed_map.insert(model.name.clone(), model);
+        }
+        let items = doc
+            .items
+            .into_iter()
+            .map(|entry| {
+                let installed_model = installed_map.get(&entry.name);
+                let installed = installed_model.is_some();
+                let update_available = installed_model.is_some_and(|model| {
+                    model.catalog_id.as_deref() == Some(entry.id.as_str())
+                        && model.last_contributed_hash.as_deref() != Some(entry.content_hash.as_str())
+                });
+                SkillCatalogItem {
+                    id: entry.id,
+                    name: entry.name,
+                    title: entry.title,
+                    description: entry.description,
+                    site: entry.site,
+                    category: entry.category,
+                    pro_only: entry.pro_only,
+                    avg_tokens_saved: entry.avg_tokens_saved,
+                    verified_clean_runs: entry.verified_clean_runs,
+                    content_hash: entry.content_hash,
+                    installed,
+                    update_available,
+                }
+            })
+            .collect();
+        Ok(SkillCatalogList {
+            version: doc.version,
+            updated_at: doc.updated_at,
+            items,
+        })
+    }
+
+    pub async fn install_from_catalog(
+        &self,
+        id: &str,
+        browserclaw_dir: &std::path::Path,
+        account_bridge: &AccountBridgeService,
+    ) -> AppResult<(SkillView, usize)> {
+        let bridge = account_bridge.read_snapshot().await;
+        if !bridge.signed_in {
+            return Err(AppError::unauthorized(
+                "Sign in to your Remocode account to install verified skills.",
+            ));
+        }
+        let doc = load_verified_catalog(browserclaw_dir).await?;
+        let entry = doc
+            .items
+            .into_iter()
+            .find(|item| item.id == id || item.name == id)
+            .ok_or_else(|| AppError::not_found("verified skill not found"))?;
+        if entry.pro_only && !bridge.is_pro() {
+            return Err(AppError::forbidden(
+                "Upgrade to reBrowser Pro to install Pro-exclusive skills.",
+            ));
+        }
+
+        let name = normalized_skill_name(&entry.name)?;
+        let content = if !entry.skill_creation.body.trim().is_empty() {
+            entry.skill_creation.body.clone()
+        } else {
+            render_skill_markdown(
+                &name,
+                &entry.skill_creation.description,
+                &entry.skill_creation.steps,
+                &entry.skill_creation.learned_notes,
+            )
+        };
+
+        let _guard = self.mutate.lock().await;
+        let site = entry
+            .skill_creation
+            .site
+            .clone()
+            .or_else(|| (!entry.site.is_empty()).then_some(entry.site.clone()));
+        let mut model = self.new_skill_model(
+            &name,
+            entry.skill_creation.description.clone(),
+            site.clone(),
+            SkillOrigin::Directory,
+            None,
+        );
+        model.catalog_id = Some(entry.id.clone());
+
+        let view = match self.try_install_new(&name, &content, model).await? {
+            Some(view) => view,
+            None => {
+                let detail = self
+                    .update_locked(
+                        &name,
+                        UpdateSkill {
+                            description: Some(entry.skill_creation.description.clone()),
+                            site,
+                            steps: None,
+                            learned_notes: None,
+                            body: Some(content),
+                        },
+                    )
+                    .await?;
+                self.repo.set_catalog_id(&name, &entry.id).await?;
+                detail.view
+            }
+        };
+
+        let mut helpers_installed = 0usize;
+        for helper in &entry.helpers {
+            if helpers::write_helper(browserclaw_dir, &helper.host, &helper.name, &helper.markdown)
+                .is_ok()
+            {
+                helpers_installed += 1;
+            }
+        }
+        Ok((view, helpers_installed))
+    }
+}
+
+async fn load_verified_catalog(browserclaw_dir: &std::path::Path) -> AppResult<VerifiedCatalogDocument> {
+    let override_path = browserclaw_dir.join("verified-skills.json");
+    if let Ok(raw) = tokio::fs::read_to_string(&override_path).await
+        && let Ok(doc) = serde_json::from_str::<VerifiedCatalogDocument>(&raw)
+    {
+        return Ok(doc);
+    }
+    Ok(serde_json::from_str::<VerifiedCatalogDocument>(
+        EMBEDDED_VERIFIED_CATALOG_JSON,
+    )?)
 }
 
 fn stats_from_runs(runs: &[skill_runs::Model]) -> RunStats {

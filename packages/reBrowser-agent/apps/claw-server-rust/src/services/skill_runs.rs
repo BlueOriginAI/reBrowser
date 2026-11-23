@@ -18,12 +18,15 @@ use ulid::Ulid;
 /// completes, by projecting the session's audit stats into a `skill_runs` row.
 /// The mark ties a session to a skill; the projection runs from the session
 /// completion hook, with a startup reconcile sweep as the durability backstop.
+pub type CleanRunHook = Arc<dyn Fn(String) + Send + Sync>;
+
 pub struct SkillRunService {
     repo: SkillsRepository,
     audit_log: Arc<AuditLog>,
     /// Serializes projection so concurrent finalizers of the same skill cannot
     /// read the same max run number and assign duplicate run numbers.
     finalize_lock: Mutex<()>,
+    clean_run_hook: std::sync::RwLock<Option<CleanRunHook>>,
 }
 
 impl SkillRunService {
@@ -33,6 +36,13 @@ impl SkillRunService {
             repo,
             audit_log,
             finalize_lock: Mutex::new(()),
+            clean_run_hook: std::sync::RwLock::new(None),
+        }
+    }
+
+    pub fn set_clean_run_hook(&self, hook: CleanRunHook) {
+        if let Ok(mut guard) = self.clean_run_hook.write() {
+            *guard = Some(hook);
         }
     }
 
@@ -83,6 +93,14 @@ impl SkillRunService {
         // The run is durable now (this call inserted it or a prior one did), so
         // the mark has served its purpose.
         self.repo.delete_mark(session_id).await?;
+        if recorded
+            && task.error_count == 0
+            && !matches!(task.status, TaskStatus::Failed | TaskStatus::Cancelled)
+            && let Ok(guard) = self.clean_run_hook.read()
+            && let Some(hook) = guard.as_ref()
+        {
+            hook(mark.skill_name);
+        }
         Ok(recorded)
     }
 

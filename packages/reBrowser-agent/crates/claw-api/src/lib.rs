@@ -2,4 +2,6 @@
 #[path = "generated/mod.rs"]
 pub mod models;
 
+pub mod commercial;
+
 pub use models::*;

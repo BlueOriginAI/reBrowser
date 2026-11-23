@@ -448,7 +448,9 @@ fn allowed_service_edge(source: &str, target: &str) -> bool {
             | ("recordings", "browser")
             | ("replay", "recordings")
             | ("tab_cleanup", "browser")
-            | ("skills", "harness")
+            | ("skills", "harness" | "helpers" | "account_bridge")
+            | ("skill_contributor", "skills" | "helpers" | "account_bridge")
+            | ("reroute", "account_bridge")
     )
 }
 

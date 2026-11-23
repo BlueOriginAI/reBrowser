@@ -180,6 +180,22 @@ new file mode 100644
 +    </div>
 +  </div>
 +  <div class="feature">
++    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h9"/><circle cx="18" cy="17" r="2.5"/></svg>
++    <div class="feature-copy">
++      <span class="feature-title">$i18n{remocodeOverviewRerouteTitle}</span>
++      <span class="secondary">$i18n{remocodeOverviewRerouteDescription}</span>
++    </div>
++    <span class="feature-status" active$="[[isPro_(account_, subscription_)]]">$i18n{remocodeOverviewProOnly}</span>
++  </div>
++  <div class="feature">
++    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l2.5 5 5.5.8-4 3.9.9 5.5-4.9-2.6-4.9 2.6.9-5.5-4-3.9 5.5-.8z"/></svg>
++    <div class="feature-copy">
++      <span class="feature-title">$i18n{remocodeOverviewSkillsTitle}</span>
++      <span class="secondary">$i18n{remocodeOverviewSkillsDescription}</span>
++    </div>
++    <span class="feature-status" active>$i18n{remocodeOverviewLoginFree}</span>
++  </div>
++  <div class="feature" hidden>
 +    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a5 5 0 0 1-1-9.9A6 6 0 0 1 18 7a5.5 5.5 0 0 1 .5 11H16M9 15l3-3 3 3M12 12v9"/></svg>
 +    <div class="feature-copy">
 +      <span class="feature-title">$i18n{remocodeOverviewCloudSync}</span>
@@ -192,14 +208,14 @@ new file mode 100644
 +        disabled="[[cloudToggleDisabled_(account_, subscription_, cloudTogglePending_)]]">
 +    </cr-toggle>
 +  </div>
-+  <details class="notice" hidden$="[[!subscription_.conflictCount]]">
++  <details class="notice" hidden>
 +    <summary>[[conflictSummary_(subscription_)]]</summary>
 +    <p>$i18n{remocodeOverviewConflictsHelp}</p>
 +    <template is="dom-repeat" items="[[subscription_.conflicts]]">
 +      <p>[[conflictTitle_(item)]] · [[conflictRemote_(item)]]</p>
 +    </template>
 +  </details>
-+  <div id="cloudSyncCategories" class="cloud-categories" role="group"
++  <div id="cloudSyncCategories" class="cloud-categories" role="group" hidden
 +      aria-label="$i18n{remocodeOverviewCloudSync}">
 +    <div class="sync-category">
 +      <div class="sync-category-label">$i18n{remocodeSyncBookmarks}

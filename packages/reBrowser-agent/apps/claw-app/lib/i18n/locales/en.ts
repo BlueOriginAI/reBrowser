@@ -215,4 +215,29 @@ export const en: Catalog = {
     'The MCP server gives your agent the tools. The skill tells it how to use them: to work in its own tabs instead of yours, to name its session so you can find it in the cockpit, and to reach for this browser rather than its own fetcher.',
   'Run this in your project, or add -g to install it for every project.':
     'Run this in your project, or add -g to install it for every project.',
+  'skills.catalog.title': 'Verified Skills Market',
+  'skills.catalog.subtitle':
+    'One-click install curated browser workflows into your connected agents.',
+  'skills.catalog.install': 'Install',
+  'skills.catalog.installed': 'Installed',
+  'skills.catalog.update': 'Update',
+  'skills.catalog.proBadge': 'PRO',
+  'skills.catalog.tokensSaved': '~{{count}} tokens saved',
+  'skills.catalog.verifiedRuns': '{{count}} clean runs',
+  'skills.catalog.loginPrompt':
+    'Sign in to your Remocode account in Browser Settings (chrome://settings/people) to install verified skills for free.',
+  'skills.catalog.proPrompt':
+    'Upgrade to reBrowser Pro in Browser Settings (chrome://settings/people) to unlock Pro-exclusive workflows.',
+  'skills.catalog.installFailed': 'Could not install this skill.',
+  'reroute.title': 'Cross-Device Execution (reBrowser Reroute)',
+  'reroute.localTarget': 'This machine (Local)',
+  'reroute.remoteTarget': 'Routing to {{device}}',
+  'reroute.allowIncoming':
+    'Allow other signed-in devices to route to this browser',
+  'reroute.signInHint':
+    'Sign in to your Remocode account in Settings to view your other computers and enable cross-device Reroute.',
+  'reroute.proHint':
+    'Your other devices appear here once signed in. Upgrade to reBrowser Pro to route local MCP calls to a remote computer.',
+  'reroute.offline': 'Relay offline',
+  'reroute.onlineCount': '{{count}} online',
 }

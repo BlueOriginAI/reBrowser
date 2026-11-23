@@ -172,6 +172,10 @@ impl AppRuntime {
                     }
                 }),
             },
+            BackgroundTask {
+                name: "reroute relay loop",
+                handle: state.reroute.spawn_background_loop(shutdown.child_token()),
+            },
         ];
         // Reads the cohort from PostHog remote configuration using the analytics
         // credentials this build already embeds, so shipping it needs nothing else
